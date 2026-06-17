@@ -1,0 +1,71 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+UserSettings/
+
+# Memory captures
+[Mm]emoryCaptures/
+
+# IDE
+.vs/
+.idea/
+.vscode/
+
+# Rider
+[Aa]ssets/Plugins/Editor/JetBrains*
+
+# Visual Studio
+ExportedObj/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Generated meta files
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build files
+*.apk
+*.aab
+*.app
+*.unitypackage
+
+# Crash reports
+sysinfo.txt
+
+# Addressables
+Assets/StreamingAssets/aa*
+Assets/AddressableAssetsData/*/*.bin
+
+# Rider cache
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# Generated test results
+TestResults/
+
+# JetBrains cache
+*.DotSettings.user
