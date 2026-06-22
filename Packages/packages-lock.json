@@ -1,5 +1,23 @@
 {
   "dependencies": {
+    "com.thenathannator.hidrogen": {
+      "version": "https://github.com/TheNathannator/HIDrogen.git?path=/Packages/com.thenathannator.hidrogen",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.inputsystem": "1.4.4"
+      },
+      "hash": "65986a2984a668a5cced7f64b6c1f91ba4f273e3"
+    },
+    "com.thenathannator.plasticband": {
+      "version": "https://github.com/TheNathannator/PlasticBand-Unity.git?path=/Packages/com.thenathannator.plasticband",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.inputsystem": "1.4.4"
+      },
+      "hash": "38fb20f6fe7bbc2884d4db847277e7bc061403f7"
+    },
     "com.unity.2d.animation": {
       "version": "10.2.0",
       "depth": 0,
@@ -141,7 +159,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.inputsystem": {
-      "version": "1.14.0",
+      "version": "1.14.2",
       "depth": 0,
       "source": "registry",
       "dependencies": {
