@@ -11,23 +11,51 @@ namespace Resource.Scripts
 
         [Header("地面检测")]
         public Transform groundCheck;
-        public float groundCheckRadius = 0.1f;
+        public float groundCheckRadius = 0.2f;
         public LayerMask groundLayer;
+
+        [Header("墙壁检测")]
+        public Transform wallCheckLeft;
+        public Transform wallCheckRight;
+        public float wallCheckRadius = 0.2f;
+        public LayerMask wallLayer;
 
         private Rigidbody2D rb;
         private bool isGrounded = false;
+        private bool isTouchingWallLeft = false;
+        private bool isTouchingWallRight = false;
         private float debugTimer = 0f;
 
         void Start()
         {
             rb = GetComponent<Rigidbody2D>();
-            Debug.Log("PlayerController 初始化完成");
+        }
+
+        void FixedUpdate()
+        {
+            CheckGround();
+            CheckWalls();
+            HandleMovement();
         }
 
         void Update()
         {
-            // 地面检测
-            if (groundCheck != null)
+            HandleJump();
+
+            debugTimer += Time.deltaTime;
+            if (debugTimer >= 1f)
+            {
+                debugTimer = 0f;
+                Debug.Log($"isGrounded:{isGrounded} | " +
+                          $"WallLeft:{isTouchingWallLeft} | " +
+                          $"WallRight:{isTouchingWallRight} | " +
+                          $"velocity:{rb.linearVelocity}");
+            }
+        }
+
+        void CheckGround()
+        {
+            if (groundCheck != null && groundLayer != 0)
             {
                 isGrounded = Physics2D.OverlapCircle(
                     groundCheck.position,
@@ -35,25 +63,27 @@ namespace Resource.Scripts
                     groundLayer
                 );
             }
-
-            HandleJump();
-
-            // 每秒打印一次状态
-            debugTimer += Time.deltaTime;
-            if (debugTimer >= 1f)
-            {
-                debugTimer = 0f;
-                Debug.Log($"isGrounded:{isGrounded} | " +
-                          $"velocity:{rb.linearVelocity} | " +
-                          $"position:{transform.position} | " +
-                          $"groundCheck:{(groundCheck != null ? groundCheck.position.ToString() : "未设置")} | " +
-                          $"groundLayer:{groundLayer.value}");
-            }
         }
 
-        void FixedUpdate()
+        void CheckWalls()
         {
-            HandleMovement();
+            if (wallCheckLeft != null && wallLayer != 0)
+            {
+                isTouchingWallLeft = Physics2D.OverlapCircle(
+                    wallCheckLeft.position,
+                    wallCheckRadius,
+                    wallLayer
+                );
+            }
+
+            if (wallCheckRight != null && wallLayer != 0)
+            {
+                isTouchingWallRight = Physics2D.OverlapCircle(
+                    wallCheckRight.position,
+                    wallCheckRadius,
+                    wallLayer
+                );
+            }
         }
 
         void HandleMovement()
@@ -82,41 +112,24 @@ namespace Resource.Scripts
                     moveInput = r2 - l2;
             }
 
-            float yBefore = rb.linearVelocity.y;
-
-            if (isGrounded)
+            // 左边碰墙 → 禁止向左移动
+            if (isTouchingWallLeft && moveInput < 0)
             {
-                rb.linearVelocity = new Vector2(
-                    moveInput * maxMoveSpeed,
-                    rb.linearVelocity.y
-                );
-            }
-            else
-            {
-                // 空中锁死 Y 轴不能变正
-                float yVel = Mathf.Min(rb.linearVelocity.y, 0f);
-                rb.linearVelocity = new Vector2(
-                    moveInput * maxMoveSpeed,
-                    yVel
-                );
-
-                // Debug：检测 Y 轴是否被斜面推高
-                if (rb.linearVelocity.y > 0.1f)
-                {
-                    Debug.LogWarning($"空中 Y 轴被推高！" +
-                                    $"修正前 Y:{yBefore:F3} | " +
-                                    $"修正后 Y:{rb.linearVelocity.y:F3}");
-                }
+                Debug.Log("左边碰墙！禁止向左移动");
+                moveInput = 0f;
             }
 
-            // 每帧打印移动状态（只在有输入时）
-            if (Mathf.Abs(moveInput) > 0)
+            // 右边碰墙 → 禁止向右移动
+            if (isTouchingWallRight && moveInput > 0)
             {
-                Debug.Log($"移动输入:{moveInput:F2} | " +
-                          $"isGrounded:{isGrounded} | " +
-                          $"velocityX:{rb.linearVelocity.x:F3} | " +
-                          $"velocityY:{rb.linearVelocity.y:F3}");
+                Debug.Log("右边碰墙！禁止向右移动");
+                moveInput = 0f;
             }
+
+            rb.linearVelocity = new Vector2(
+                moveInput * maxMoveSpeed,
+                rb.linearVelocity.y
+            );
         }
 
         void HandleJump()
@@ -136,57 +149,55 @@ namespace Resource.Scripts
                 Debug.Log($"跳跃尝试 | isGrounded:{isGrounded}");
                 if (isGrounded)
                 {
-                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-                    Debug.Log($"跳跃成功！jumpForce:{jumpForce}");
-                }
-                else
-                {
-                    Debug.LogWarning("跳跃失败：不在地面上！");
+                    rb.linearVelocity = new Vector2(
+                        rb.linearVelocity.x, jumpForce);
+                    Debug.Log("跳跃成功！");
                 }
             }
         }
 
         void OnCollisionEnter2D(Collision2D col)
         {
-            if (groundCheck == null)
-            {
-                foreach (ContactPoint2D contact in col.contacts)
-                {
-                    Debug.Log($"碰撞点法线 Y:{contact.normal.y:F3} | " +
-                              $"碰撞物体:{col.gameObject.name}");
-                    if (contact.normal.y > 0.5f)
-                        isGrounded = true;
-                }
-            }
-        }
-
-        void OnCollisionStay2D(Collision2D col)
-        {
-            // 关键！持续检测碰撞点，找出是否被斜面推高
             foreach (ContactPoint2D contact in col.contacts)
-            {
-                if (Mathf.Abs(contact.normal.x) > 0.3f)
-                {
-                    Debug.LogWarning($"碰到斜面！法线 X:{contact.normal.x:F3} | " +
-                                    $"法线 Y:{contact.normal.y:F3} | " +
-                                    $"当前 velocityY:{rb.linearVelocity.y:F3} | " +
-                                    $"isGrounded:{isGrounded}");
-                }
-            }
+                if (contact.normal.y > 0.5f)
+                    isGrounded = true;
         }
 
         void OnCollisionExit2D(Collision2D col)
         {
-            if (groundCheck == null)
-                isGrounded = false;
+            isGrounded = false;
         }
 
-        void OnDrawGizmosSelected()
+        void OnDrawGizmos()
         {
+            // 地面检测圆（绿/红）
             if (groundCheck != null)
             {
                 Gizmos.color = isGrounded ? Color.green : Color.red;
                 Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+                // 从玩家画线到 GroundCheck
+                Gizmos.color = Color.green;
+                Gizmos.DrawLine(transform.position, groundCheck.position);
+            }
+
+            // 左墙检测圆（蓝/青）
+            if (wallCheckLeft != null)
+            {
+                Gizmos.color = isTouchingWallLeft ? Color.blue : Color.cyan;
+                Gizmos.DrawWireSphere(wallCheckLeft.position, wallCheckRadius);
+                // 从玩家画线到 WallCheckLeft
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawLine(transform.position, wallCheckLeft.position);
+            }
+
+            // 右墙检测圆（黄/白）
+            if (wallCheckRight != null)
+            {
+                Gizmos.color = isTouchingWallRight ? Color.yellow : Color.white;
+                Gizmos.DrawWireSphere(wallCheckRight.position, wallCheckRadius);
+                // 从玩家画线到 WallCheckRight
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawLine(transform.position, wallCheckRight.position);
             }
         }
     }

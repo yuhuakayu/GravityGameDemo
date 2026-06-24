@@ -21,8 +21,8 @@ namespace Resource.Scripts
 
             if (Keyboard.current != null)
             {
-                if (Keyboard.current.qKey.isPressed) input = -1f;
-                if (Keyboard.current.eKey.isPressed) input =  1f;
+                if (Keyboard.current.qKey.isPressed) input = 1f;
+                if (Keyboard.current.eKey.isPressed) input = -1f;
             }
 
             var gamepad = Gamepad.current;
@@ -38,17 +38,10 @@ namespace Resource.Scripts
                 currentAngle, targetAngle, Time.deltaTime * smoothing);
 
             if (pivot != null)
-            {
-                transform.RotateAround(
-                    pivot.position,
-                    Vector3.forward,
-                    input * rotateSpeed * Time.deltaTime
-                );
-            }
+                transform.RotateAround(pivot.position, Vector3.forward,
+                    input * rotateSpeed * Time.deltaTime);
             else
-            {
                 transform.rotation = Quaternion.Euler(0f, 0f, currentAngle);
-            }
         }
     }
 }
