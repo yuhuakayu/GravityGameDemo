@@ -10,7 +10,7 @@ namespace Resource.Scripts
         public float smoothing = 8f;
 
         [Header("旋转中心")]
-        public Transform pivot; // 拖入任意物体作为旋转中心，不填则以自身为中心
+        public Transform pivot;
 
         private float currentAngle = 0f;
         private float targetAngle = 0f;
@@ -39,16 +39,14 @@ namespace Resource.Scripts
 
             if (pivot != null)
             {
-                // 以 pivot 为中心旋转
                 transform.RotateAround(
-                    pivot.position, 
-                    Vector3.forward, 
+                    pivot.position,
+                    Vector3.forward,
                     input * rotateSpeed * Time.deltaTime
                 );
             }
             else
             {
-                // 以自身原点为中心
                 transform.rotation = Quaternion.Euler(0f, 0f, currentAngle);
             }
         }
