@@ -5,6 +5,10 @@ namespace Resource.Scripts
 {
     public class PlayerController : MonoBehaviour
     {
+        [Header("调试")]
+        public bool isDebugLog    = false;   // 控制台 Log
+        public bool isDebugGizmos = false;   // Scene 画图
+
         [Header("移动设置")]
         public float maxMoveSpeed = 6f;
         public float jumpForce = 12f;
@@ -25,10 +29,17 @@ namespace Resource.Scripts
         private bool isTouchingWallLeft = false;
         private bool isTouchingWallRight = false;
         private float debugTimer = 0f;
+        private SpriteRenderer _spriteRenderer;
 
         void Start()
         {
             rb = GetComponent<Rigidbody2D>();
+            // 在子级 PlayerIM 上查找 SpriteRenderer
+            Transform playerIM = transform.Find("PlayerIM");
+            if (playerIM != null)
+                _spriteRenderer = playerIM.GetComponent<SpriteRenderer>();
+            if (_spriteRenderer == null)
+                _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         }
 
         void FixedUpdate()
@@ -42,14 +53,17 @@ namespace Resource.Scripts
         {
             HandleJump();
 
-            debugTimer += Time.deltaTime;
-            if (debugTimer >= 1f)
+            if (isDebugLog)
             {
-                debugTimer = 0f;
-                Debug.Log($"isGrounded:{isGrounded} | " +
-                          $"WallLeft:{isTouchingWallLeft} | " +
-                          $"WallRight:{isTouchingWallRight} | " +
-                          $"velocity:{rb.linearVelocity}");
+                debugTimer += Time.deltaTime;
+                if (debugTimer >= 1f)
+                {
+                    debugTimer = 0f;
+                    Debug.Log($"isGrounded:{isGrounded} | " +
+                              $"WallLeft:{isTouchingWallLeft} | " +
+                              $"WallRight:{isTouchingWallRight} | " +
+                              $"velocity:{rb.linearVelocity}");
+                }
             }
         }
 
@@ -115,14 +129,14 @@ namespace Resource.Scripts
             // 左边碰墙 → 禁止向左移动
             if (isTouchingWallLeft && moveInput < 0)
             {
-                Debug.Log("左边碰墙！禁止向左移动");
+                if (isDebugLog) Debug.Log("左边碰墙！禁止向左移动");
                 moveInput = 0f;
             }
 
             // 右边碰墙 → 禁止向右移动
             if (isTouchingWallRight && moveInput > 0)
             {
-                Debug.Log("右边碰墙！禁止向右移动");
+                if (isDebugLog) Debug.Log("右边碰墙！禁止向右移动");
                 moveInput = 0f;
             }
 
@@ -130,6 +144,10 @@ namespace Resource.Scripts
                 moveInput * maxMoveSpeed,
                 rb.linearVelocity.y
             );
+
+            // Sprite 翻转：向左 → flipX=true，向右 → flipX=false
+            if (_spriteRenderer != null && moveInput != 0f)
+                _spriteRenderer.flipX = moveInput > 0f;
         }
 
         void HandleJump()
@@ -146,12 +164,12 @@ namespace Resource.Scripts
 
             if (jumpPressed)
             {
-                Debug.Log($"跳跃尝试 | isGrounded:{isGrounded}");
+                if (isDebugLog) Debug.Log($"跳跃尝试 | isGrounded:{isGrounded}");
                 if (isGrounded)
                 {
                     rb.linearVelocity = new Vector2(
                         rb.linearVelocity.x, jumpForce);
-                    Debug.Log("跳跃成功！");
+                    if (isDebugLog) Debug.Log("跳跃成功！");
                 }
             }
         }
@@ -170,12 +188,13 @@ namespace Resource.Scripts
 
         void OnDrawGizmos()
         {
+            if (!isDebugGizmos) return;
+
             // 地面检测圆（绿/红）
             if (groundCheck != null)
             {
                 Gizmos.color = isGrounded ? Color.green : Color.red;
                 Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
-                // 从玩家画线到 GroundCheck
                 Gizmos.color = Color.green;
                 Gizmos.DrawLine(transform.position, groundCheck.position);
             }
@@ -185,7 +204,6 @@ namespace Resource.Scripts
             {
                 Gizmos.color = isTouchingWallLeft ? Color.blue : Color.cyan;
                 Gizmos.DrawWireSphere(wallCheckLeft.position, wallCheckRadius);
-                // 从玩家画线到 WallCheckLeft
                 Gizmos.color = Color.cyan;
                 Gizmos.DrawLine(transform.position, wallCheckLeft.position);
             }
@@ -195,7 +213,6 @@ namespace Resource.Scripts
             {
                 Gizmos.color = isTouchingWallRight ? Color.yellow : Color.white;
                 Gizmos.DrawWireSphere(wallCheckRight.position, wallCheckRadius);
-                // 从玩家画线到 WallCheckRight
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawLine(transform.position, wallCheckRight.position);
             }

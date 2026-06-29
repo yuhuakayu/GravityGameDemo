@@ -5,6 +5,10 @@ namespace Resource.Scripts
 {
     public class WorldRotator : MonoBehaviour
     {
+        [Header("调试")]
+        public bool isDebugLog    = false;   // 控制台 Log
+        public bool isDebugGizmos = false;   // Scene 画图（暂无，占位）
+
         [Header("旋转设置")]
         public float rotateSpeed = 90f;
         public float smoothing = 8f;
@@ -42,6 +46,9 @@ namespace Resource.Scripts
                     input * rotateSpeed * Time.deltaTime);
             else
                 transform.rotation = Quaternion.Euler(0f, 0f, currentAngle);
+
+            if (isDebugLog)
+                Debug.Log($"[WorldRotator] angle={currentAngle:F1}  eulerZ={transform.eulerAngles.z:F1}");
         }
     }
 }
