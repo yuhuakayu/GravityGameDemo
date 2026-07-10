@@ -557,6 +557,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 796104340}
+  - component: {fileID: 796104341}
   m_Layer: 0
   m_Name: 360TurnMain
   m_TagString: Untagged
@@ -579,6 +580,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &796104341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 796104339}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ced844b4e66164e4b98038329c551f1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isDebugLog: 0
+  isDebugScan: 1
+  gyroZOffset: 27
+  gyroDeadzone: 0.05
+  gyroSmoothing: 8
+  invertGyro: 0
 --- !u!1 &909372310
 GameObject:
   m_ObjectHideFlags: 0
@@ -2631,10 +2650,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isDebugLog: 0
-  isDebugGizmos: 1
+  isDebugScanGamepads: 1
   rotateSpeed: 120
-  smoothing: 8
   pivot: {fileID: 796104340}
+  steeringRange: 720
+  _steeringAngle: 0
 --- !u!1 &2136483897
 GameObject:
   m_ObjectHideFlags: 0

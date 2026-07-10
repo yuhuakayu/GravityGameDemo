@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "com.thenathannator.hidrogen": "https://github.com/TheNathannator/HIDrogen.git?path=/Packages/com.thenathannator.hidrogen",
     "com.thenathannator.plasticband": "https://github.com/TheNathannator/PlasticBand-Unity.git?path=/Packages/com.thenathannator.plasticband",
     "com.unity.2d.animation": "10.2.0",
     "com.unity.2d.aseprite": "1.2.4",

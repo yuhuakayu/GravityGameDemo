@@ -202,10 +202,13 @@ namespace Resource.Scripts
             Vector2 newPos           = _pivotWorldPos - pivotOffsetWorld;
 
             // ── 9. 驱动 Kinematic Rigidbody2D ────────────────────
-            // NaN 防护：任一值异常时重置，避免 Unity Assertion 报错
-            if (float.IsNaN(newZRot) || float.IsNaN(newPos.x) || float.IsNaN(newPos.y))
+            // 防护：任一值为 NaN 或 Infinity 时重置，避免 Unity Assertion 报错
+            bool badRot = float.IsNaN(newZRot)  || float.IsInfinity(newZRot);
+            bool badPos = float.IsNaN(newPos.x)  || float.IsInfinity(newPos.x)
+                       || float.IsNaN(newPos.y)  || float.IsInfinity(newPos.y);
+            if (badRot || badPos)
             {
-                Debug.LogWarning("[PivotPendulum] 检测到 NaN，已重置速度！");
+                Debug.LogWarning($"[PivotPendulum] 检测到非法值（NaN/Inf），已重置！rot={newZRot} pos={newPos}");
                 _angularVelocity = 0f;
                 _angle = Mathf.Clamp(0f, minAngle, maxAngle);
                 return;
