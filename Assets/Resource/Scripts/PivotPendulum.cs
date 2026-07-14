@@ -21,9 +21,11 @@ namespace Resource.Scripts
     /// 180° = 6点钟（自然悬挂位置，重力方向）
     ///
     /// 场景结构：
-    ///   Clock  （此脚本 + Rigidbody2D + Collider2D，不要放在 WorldRoot 下）
-    ///     Circle   → 拖入 Pivot        （固定圆心，游戏中不移动）
-    ///     Grivity  → 拖入 GravityPoint  （球/锤，决定初始臂长和角度）
+    ///   Pivot 可以是任意外部物体（比如挂在 WorldRoot 下、纯视觉的支架），不需要是 Clock
+    ///   的子物体——pivot.position 每帧实时读取，不缓存，圆心动了摆锤会正确跟上。
+    ///   Clock  （此脚本 + Rigidbody2D + Collider2D）
+    ///     Grivity  → 拖入 GravityPoint  （球/锤，决定臂长，必须是 Clock 自己的子物体，
+    ///                                    脚本靠它反推 Clock 该在的位置/角度）
     /// </summary>
     public class PivotPendulum : MonoBehaviour
     {
@@ -34,9 +36,9 @@ namespace Resource.Scripts
 
         // ── 关键点 ───────────────────────────────────────────────
         [Header("关键点")]
-        [Tooltip("固定圆心（Circle），游戏过程中世界坐标不变")]
+        [Tooltip("圆心/锚点，每帧实时读取世界坐标，不需要是 Clock 的子物体，可以挂在会转动/移动的支架下")]
         public Transform pivot;
-        [Tooltip("重力点（Grivity），决定初始臂长和起始角度")]
+        [Tooltip("重力点（Grivity），必须是 Clock 自己的子物体，决定臂长和起始角度")]
         public Transform gravityPoint;
         [Tooltip("玩家 Transform，调试重力线从玩家中心出发")]
         public Transform player;
@@ -64,15 +66,26 @@ namespace Resource.Scripts
         [Tooltip("WorldRoot GameObject（可选）。填入后，世界旋转时自动触发延迟；留空则延迟不生效")]
         public Transform worldRoot;
 
+        [Header("撞击音效")]
+        [Tooltip("角速度低于此值（度/秒）不触发撞击声，避免贴着边界静止时反复触发")]
+        public float impactSfxMinSpeed = 8f;
+        [Tooltip("角速度达到此值（度/秒）时撞击声为最大音量")]
+        public float impactSfxMaxSpeed = 180f;
+
+        [Header("玩家碰撞")]
+        [Tooltip("关闭（默认）：撞到玩家表现得像普通墙壁，不会把玩家撞飞。打开：保留 Unity 物理的真实撞击力，可以当发射/助力机制用")]
+        public bool dealsImpactForce = false;
+        [Tooltip("dealsImpactForce 关闭时生效：玩家碰到摆锤后速度上限（超过会被压回这个值），只是防止被撞飞，不影响正常移动/跳跃手感")]
+        public float maxPlayerSpeedOnContact = 14f;
+
         // ── 运行时私有变量 ───────────────────────────────────────
         private Rigidbody2D _rb;
         private float _angle;             // 当前角度（顺时针，0 = 12点钟）
         private float _angularVelocity;   // 度/秒，正值 = 顺时针
 
         private float   _armLength;
-        private Vector2 _pivotWorldPos;    // pivot 世界坐标（Start 缓存，固定不变）
-        private Vector2 _pivotOffsetLocal; // pivot 在 Clock 本地坐标系的偏移
-        private float   _localArmAngle;    // arm 在 Clock 本地空间从 up 方向顺时针的角度
+        private Vector2 _gravityOffsetLocal; // gravityPoint 在 Clock 本地坐标系的偏移（Clock 自己的子物体，固定不变，可以缓存）
+        private float   _localArmAngle;      // arm 在 Clock 本地空间从 up 方向顺时针的角度
 
         private float _delayTimer    = 0f; // 剩余延迟时间
         private float _prevWorldAngle = 0f; // 上一帧 worldRoot 的 Z 角度
@@ -95,8 +108,7 @@ namespace Resource.Scripts
                 enabled = false;
                 return;
             }
-            _pivotWorldPos    = pivot.position;
-            _pivotOffsetLocal = transform.InverseTransformPoint(pivot.position);
+            _gravityOffsetLocal = transform.InverseTransformPoint(gravityPoint.position);
 
             // arm 在 Clock 本地空间中从 up 方向顺时针的角度
             Vector3 armLocal = transform.InverseTransformDirection(
@@ -179,11 +191,13 @@ namespace Resource.Scripts
             // ── 5. 边界限制 ───────────────────────────────────────
             if (_angle < minAngle)
             {
+                PlayImpactSfx(Mathf.Abs(_angularVelocity));
                 _angle           = minAngle;
                 _angularVelocity = Mathf.Abs(_angularVelocity) * bounciness;  // 正=顺时针弹回
             }
             else if (_angle > maxAngle)
             {
+                PlayImpactSfx(Mathf.Abs(_angularVelocity));
                 _angle           = maxAngle;
                 _angularVelocity = -Mathf.Abs(_angularVelocity) * bounciness; // 负=逆时针弹回
             }
@@ -197,9 +211,14 @@ namespace Resource.Scripts
             float worldArmAngle = Mathf.Atan2(finalArm.x, finalArm.y) * Mathf.Rad2Deg;
             float newZRot       = _localArmAngle - worldArmAngle;
 
-            // ── 8. 计算 Clock 需要的世界位置（保证 pivot 固定在原处）
-            Vector2 pivotOffsetWorld = Quaternion.Euler(0f, 0f, newZRot) * (Vector3)_pivotOffsetLocal;
-            Vector2 newPos           = _pivotWorldPos - pivotOffsetWorld;
+            // ── 8. 计算 Clock 需要的世界位置 ───────────────────────
+            //   pivot 现在当"活的外部锚点"用（不要求是 Clock 的子物体，比如挂在
+            //   WorldRoot 下的支架），每帧实时读它的世界坐标。先算出摆锤末端
+            //   （Grivity）应该落在的世界坐标，再反推 Clock 自己该在哪——
+            //   Grivity 是 Clock 自己的子物体，局部偏移固定，可以放心用缓存值。
+            Vector2 bobWorldPos        = (Vector2)pivot.position + finalArm * _armLength;
+            Vector2 gravityOffsetWorld = Quaternion.Euler(0f, 0f, newZRot) * (Vector3)_gravityOffsetLocal;
+            Vector2 newPos             = bobWorldPos - gravityOffsetWorld;
 
             // ── 9. 驱动 Kinematic Rigidbody2D ────────────────────
             // 防护：任一值为 NaN 或 Infinity 时重置，避免 Unity Assertion 报错
@@ -222,7 +241,7 @@ namespace Resource.Scripts
 
             if (isDebugGizmos)
             {
-                Vector3 origin = player != null ? player.position : (Vector3)_pivotWorldPos;
+                Vector3 origin = player != null ? player.position : pivot.position;
                 Debug.DrawRay(origin, gravDir * 3f, new Color(1f, 0.5f, 0f));
             }
         }
@@ -231,6 +250,32 @@ namespace Resource.Scripts
         public void AddImpulse(float degreesPerSecond)
         {
             _angularVelocity += degreesPerSecond;
+        }
+
+        // Enter 只在接触第一帧触发、Stay 从第二帧开始触发，两个都要接，
+        // 不然第一下最猛的撞击（Enter 那一帧）不会被压制
+        void OnCollisionEnter2D(Collision2D col) => LimitImpactVelocity(col);
+        void OnCollisionStay2D(Collision2D col)  => LimitImpactVelocity(col);
+
+        void LimitImpactVelocity(Collision2D col)
+        {
+            if (dealsImpactForce) return;
+
+            var playerRb = col.rigidbody;
+            if (playerRb == null) return;
+            if (col.collider.GetComponentInParent<PlayerController>() == null) return;
+
+            // 只压制"因为这次碰撞产生的额外速度"，正常移动/跳跃/下落速度不受影响
+            if (playerRb.linearVelocity.magnitude > maxPlayerSpeedOnContact)
+                playerRb.linearVelocity = playerRb.linearVelocity.normalized * maxPlayerSpeedOnContact;
+        }
+
+        void PlayImpactSfx(float impactSpeed)
+        {
+            if (impactSpeed < impactSfxMinSpeed) return;
+            float range = Mathf.Max(0.01f, impactSfxMaxSpeed - impactSfxMinSpeed);
+            float impact01 = Mathf.Clamp01((impactSpeed - impactSfxMinSpeed) / range);
+            SfxManager.Instance.PlayPivotClack(impact01);
         }
 
         // ─────────────────────────────────────────────────────────
