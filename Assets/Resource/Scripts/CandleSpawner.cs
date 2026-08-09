@@ -17,6 +17,8 @@ namespace Resource.Scripts
 
         void Start()
         {
+            if (transform.Find("Candle (Auto)") != null) return; // 场景里已经摆好了，不重复生成
+
             var prefab = Resources.Load<GameObject>(candlePrefabPath);
             if (prefab == null)
             {
@@ -24,7 +26,7 @@ namespace Resource.Scripts
                 return;
             }
 
-            var candle = Instantiate(prefab, spawnPosition, Quaternion.identity);
+            var candle = Instantiate(prefab, spawnPosition, Quaternion.identity, transform);
             candle.name = "Candle (Auto)";
             candle.AddComponent<TorchLight2D>();
         }

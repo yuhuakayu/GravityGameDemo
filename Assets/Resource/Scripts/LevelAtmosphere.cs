@@ -76,8 +76,11 @@ namespace Resource.Scripts
                 cam.gameObject.AddComponent<FollowTarget2D>();
         }
 
+        /// <summary>场景里已经摆好同名背景就直接复用（位置/缩放/贴图不重算），没有才照参数新建。</summary>
         void BuildBackground(Camera cam)
         {
+            if (transform.Find("Background (Auto)") != null) return;
+
             var sprite = Resources.Load<Sprite>(backgroundResourcePath);
             if (sprite == null)
             {
@@ -86,6 +89,7 @@ namespace Resource.Scripts
             }
 
             var go = new GameObject("Background (Auto)");
+            go.transform.SetParent(transform, false);
             go.transform.position = new Vector3(cam.transform.position.x, cam.transform.position.y, 0f);
 
             var sr = go.AddComponent<SpriteRenderer>();
@@ -108,6 +112,8 @@ namespace Resource.Scripts
             layer.cameraTransform = cam.transform;
         }
 
+        /// <summary>石柱剪影同名的就跳过（位置/大小是随机生成的，场景里已经摆好就不重新随机），
+        /// 没有才照参数新建。</summary>
         void BuildForegroundSilhouette(Camera cam)
         {
             Sprite pillarSprite = CreatePillarSprite(64);
@@ -117,7 +123,11 @@ namespace Resource.Scripts
 
             for (int i = 0; i < foregroundPillarCount; i++)
             {
-                var go = new GameObject($"ForegroundSilhouette (Auto) {i}");
+                string goName = $"ForegroundSilhouette (Auto) {i}";
+                if (transform.Find(goName) != null) continue;
+
+                var go = new GameObject(goName);
+                go.transform.SetParent(transform, false);
 
                 float xNorm = foregroundPillarCount > 1
                     ? (i / (float)(foregroundPillarCount - 1)) - 0.5f
@@ -143,7 +153,17 @@ namespace Resource.Scripts
 
         void BuildFireflies(Camera cam)
         {
+            var existing = transform.Find("Fireflies (Auto)");
+            if (existing != null)
+            {
+                // 粒子系统已经在场景里了，只需要保证跟随摄像机的引用是对的（场景切换后摄像机是新实例）
+                var existingFollower = existing.GetComponent<FollowTarget2D>();
+                if (existingFollower != null) existingFollower.target = cam.transform;
+                return;
+            }
+
             var go = new GameObject("Fireflies (Auto)");
+            go.transform.SetParent(transform, false);
             go.transform.position = cam.transform.position;
 
             var ps = go.AddComponent<ParticleSystem>();

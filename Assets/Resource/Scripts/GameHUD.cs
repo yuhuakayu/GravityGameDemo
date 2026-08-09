@@ -10,10 +10,12 @@ using UnityEngine.UI;
 namespace Resource.Scripts
 {
     /// <summary>
-    /// 运行时自建的 HUD + 暂停菜单（没有对应美术资源，先用纯色 UI 占位，逻辑和交互都是完整的）。
+    /// HUD + 暂停菜单（没有对应美术资源，先用纯色 UI 占位，逻辑和交互都是完整的）。
     ///   HUD：左上角关卡名，右上角设置按钮。
     ///   暂停菜单：点设置按钮或按 ESC 打开，继续 / 重开本关 / 退出游戏，按钮有 hover/点击反馈，面板有淡入淡出。
-    /// 由 PlayerController.Start() 自动创建。
+    /// UI 层级改成了"场景里已经有就直接复用，没有才新建"，编辑期不进 Play 模式也能在
+    /// Hierarchy 里看到/调整这些物体；事件监听器/协程这些没法存进场景文件的运行时绑定，
+    /// 每次 Start() 都会重新走一遍。
     /// </summary>
     public class GameHUD : MonoBehaviour
     {
@@ -46,6 +48,7 @@ namespace Resource.Scripts
 
         void Start()
         {
+            _localizedTexts.Clear();
             EnsureEventSystem();
             BuildHud();
             BuildPauseMenu();
@@ -60,9 +63,9 @@ namespace Resource.Scripts
         }
 
         /// <summary>用 Localization 表里的 key 建文字，并且登记下来，语言切换时统一刷新</summary>
-        private GameObject CreateLocalizedText(Transform parent, string key, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize)
+        private GameObject CreateLocalizedText(Transform parent, string key, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize, string goName = "Text")
         {
-            var go = CreateSettingsText(parent, LocalizationManager.Instance.Get(key), anchorMin, anchorMax, align, fontSize);
+            var go = CreateSettingsText(parent, LocalizationManager.Instance.Get(key), anchorMin, anchorMax, align, fontSize, goName);
             _localizedTexts.Add((go.GetComponent<Text>(), key));
             return go;
         }
@@ -304,8 +307,8 @@ namespace Resource.Scripts
             _isPaused = false;
             _pausePanelRoot.SetActive(false);
             SfxManager.Instance.PlayButtonClick();
-            GameFlowState.HasEnteredGame = false; // 回主菜单了，下次重新进这个场景要再显示一次主菜单
-            SceneTransition.Instance.LoadScene(SceneManager.GetActiveScene().name);
+            GameFlowState.HasEnteredGame = false; // 主菜单现在是独立场景，回去就用不上这个标记了，保留只是不影响其它地方的判断
+            SceneTransition.Instance.LoadScene("MainMenu");
         }
 
         // ── EventSystem（UGUI 按钮点击必须有这个才会响应输入）─────────────
@@ -319,120 +322,167 @@ namespace Resource.Scripts
         }
 
         // ── HUD ──────────────────────────────────────────────────
+        /// <summary>场景里已经摆好 HUDCanvas 就直接复用，没有才照默认值新建。</summary>
         private void BuildHud()
         {
-            var canvasGO = new GameObject("HUDCanvas (Auto)");
-            canvasGO.transform.SetParent(transform, false);
-            var canvas = canvasGO.AddComponent<Canvas>();
-            canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 10;
-            var scaler = canvasGO.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight  = 0.5f;
-            canvasGO.AddComponent<GraphicRaycaster>();
+            var existingCanvas = transform.Find("HUDCanvas (Auto)");
+            GameObject canvasGO;
+            if (existingCanvas != null)
+            {
+                canvasGO = existingCanvas.gameObject;
+            }
+            else
+            {
+                canvasGO = new GameObject("HUDCanvas (Auto)");
+                canvasGO.transform.SetParent(transform, false);
+                var canvas = canvasGO.AddComponent<Canvas>();
+                canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 10;
+                var scaler = canvasGO.AddComponent<CanvasScaler>();
+                scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+                scaler.matchWidthOrHeight  = 0.5f;
+                canvasGO.AddComponent<GraphicRaycaster>();
+            }
 
             // 左上角关卡名
-            var labelGO = new GameObject("LevelLabel", typeof(RectTransform));
-            labelGO.transform.SetParent(canvasGO.transform, false);
-            var labelRT = labelGO.GetComponent<RectTransform>();
-            labelRT.anchorMin = labelRT.anchorMax = new Vector2(0f, 1f);
-            labelRT.pivot = new Vector2(0f, 1f);
-            labelRT.anchoredPosition = new Vector2(24f, -20f);
-            labelRT.sizeDelta = new Vector2(300f, 50f);
-            var labelText = labelGO.AddComponent<Text>();
+            var existingLabel = canvasGO.transform.Find("LevelLabel");
+            Text labelText;
+            if (existingLabel != null)
+            {
+                labelText = existingLabel.GetComponent<Text>();
+            }
+            else
+            {
+                var labelGO = new GameObject("LevelLabel", typeof(RectTransform));
+                labelGO.transform.SetParent(canvasGO.transform, false);
+                var labelRT = labelGO.GetComponent<RectTransform>();
+                labelRT.anchorMin = labelRT.anchorMax = new Vector2(0f, 1f);
+                labelRT.pivot = new Vector2(0f, 1f);
+                labelRT.anchoredPosition = new Vector2(24f, -20f);
+                labelRT.sizeDelta = new Vector2(300f, 50f);
+                labelText = labelGO.AddComponent<Text>();
+                labelText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                labelText.fontSize = 28;
+                labelText.color = Color.white;
+                labelText.alignment = TextAnchor.UpperLeft;
+                labelText.raycastTarget = false;
+            }
             labelText.text = levelLabel;
-            labelText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            labelText.fontSize = 28;
-            labelText.color = Color.white;
-            labelText.alignment = TextAnchor.UpperLeft;
-            labelText.raycastTarget = false;
 
             // 右上角齿轮按钮：点开是 继续/设置/重新开始/退出游戏 的菜单，设置在里面是单独一层
             // （没有美术资源，用程序生成的齿轮剪影当图标，不用文字）
-            var settingsBtn = CreateButton(canvasGO.transform, "", new Vector2(56f, 56f), ButtonColor);
+            var settingsBtn = CreateButton(canvasGO.transform, "", new Vector2(56f, 56f), ButtonColor, "Button_Settings");
             var settingsRT = settingsBtn.GetComponent<RectTransform>();
             settingsRT.anchorMin = settingsRT.anchorMax = new Vector2(1f, 1f);
             settingsRT.pivot = new Vector2(1f, 1f);
-            settingsRT.anchoredPosition = new Vector2(-24f, -20f);
             settingsBtn.onClick.AddListener(TogglePause);
+            if (existingCanvas == null) settingsRT.anchoredPosition = new Vector2(-24f, -20f);
 
-            var gearIconGO = new GameObject("GearIcon", typeof(RectTransform));
-            gearIconGO.transform.SetParent(settingsBtn.transform, false);
-            var gearIconRT = gearIconGO.GetComponent<RectTransform>();
-            gearIconRT.anchorMin = new Vector2(0.18f, 0.18f);
-            gearIconRT.anchorMax = new Vector2(0.82f, 0.82f);
-            gearIconRT.offsetMin = Vector2.zero;
-            gearIconRT.offsetMax = Vector2.zero;
-            var gearIconImg = gearIconGO.AddComponent<Image>();
-            gearIconImg.sprite = CreateGearIconSprite(64);
-            gearIconImg.color = Color.white;
-            gearIconImg.raycastTarget = false;
+            if (settingsBtn.transform.Find("GearIcon") == null)
+            {
+                var gearIconGO = new GameObject("GearIcon", typeof(RectTransform));
+                gearIconGO.transform.SetParent(settingsBtn.transform, false);
+                var gearIconRT = gearIconGO.GetComponent<RectTransform>();
+                gearIconRT.anchorMin = new Vector2(0.18f, 0.18f);
+                gearIconRT.anchorMax = new Vector2(0.82f, 0.82f);
+                gearIconRT.offsetMin = Vector2.zero;
+                gearIconRT.offsetMax = Vector2.zero;
+                var gearIconImg = gearIconGO.AddComponent<Image>();
+                gearIconImg.sprite = CreateGearIconSprite(64);
+                gearIconImg.color = Color.white;
+                gearIconImg.raycastTarget = false;
+            }
         }
 
         // ── 暂停菜单 ─────────────────────────────────────────────
         private void BuildPauseMenu()
         {
-            var canvasGO = new GameObject("PauseCanvas (Auto)");
-            canvasGO.transform.SetParent(transform, false);
-            var canvas = canvasGO.AddComponent<Canvas>();
-            canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 500; // 盖在 HUD 之上，但在转场虹膜（1000）之下
-            var scaler = canvasGO.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight  = 0.5f;
-            canvasGO.AddComponent<GraphicRaycaster>();
+            var existingCanvas = transform.Find("PauseCanvas (Auto)");
+            GameObject canvasGO;
+            if (existingCanvas != null)
+            {
+                canvasGO = existingCanvas.gameObject;
+                _pauseCanvasGroup = canvasGO.GetComponent<CanvasGroup>();
+            }
+            else
+            {
+                canvasGO = new GameObject("PauseCanvas (Auto)");
+                canvasGO.transform.SetParent(transform, false);
+                var canvas = canvasGO.AddComponent<Canvas>();
+                canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 500; // 盖在 HUD 之上，但在转场虹膜（1000）之下
+                var scaler = canvasGO.AddComponent<CanvasScaler>();
+                scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+                scaler.matchWidthOrHeight  = 0.5f;
+                canvasGO.AddComponent<GraphicRaycaster>();
 
+                _pauseCanvasGroup = canvasGO.AddComponent<CanvasGroup>();
+                _pauseCanvasGroup.alpha = 0f;
+            }
             _pausePanelRoot = canvasGO;
-            _pauseCanvasGroup = canvasGO.AddComponent<CanvasGroup>();
-            _pauseCanvasGroup.alpha = 0f;
 
             // 半透明遮罩
-            var overlayGO = new GameObject("Overlay", typeof(RectTransform));
-            overlayGO.transform.SetParent(canvasGO.transform, false);
-            var overlayRT = overlayGO.GetComponent<RectTransform>();
-            overlayRT.anchorMin = Vector2.zero;
-            overlayRT.anchorMax = Vector2.one;
-            overlayRT.offsetMin = Vector2.zero;
-            overlayRT.offsetMax = Vector2.zero;
-            var overlayImg = overlayGO.AddComponent<Image>();
-            overlayImg.color = OverlayColor;
+            if (canvasGO.transform.Find("Overlay") == null)
+            {
+                var overlayGO = new GameObject("Overlay", typeof(RectTransform));
+                overlayGO.transform.SetParent(canvasGO.transform, false);
+                var overlayRT = overlayGO.GetComponent<RectTransform>();
+                overlayRT.anchorMin = Vector2.zero;
+                overlayRT.anchorMax = Vector2.one;
+                overlayRT.offsetMin = Vector2.zero;
+                overlayRT.offsetMax = Vector2.zero;
+                var overlayImg = overlayGO.AddComponent<Image>();
+                overlayImg.color = OverlayColor;
+            }
 
             // 面板
-            var panelGO = new GameObject("Panel", typeof(RectTransform));
-            panelGO.transform.SetParent(canvasGO.transform, false);
-            var panelRT = panelGO.GetComponent<RectTransform>();
-            panelRT.anchorMin = panelRT.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRT.pivot = new Vector2(0.5f, 0.5f);
-            panelRT.sizeDelta = new Vector2(420f, 440f);
-            panelRT.anchoredPosition = Vector2.zero;
-            var panelImg = panelGO.AddComponent<Image>();
-            panelImg.color = PanelColor;
+            var existingPanel = canvasGO.transform.Find("Panel");
+            GameObject panelGO;
+            if (existingPanel != null)
+            {
+                panelGO = existingPanel.gameObject;
+            }
+            else
+            {
+                panelGO = new GameObject("Panel", typeof(RectTransform));
+                panelGO.transform.SetParent(canvasGO.transform, false);
+                var panelRT = panelGO.GetComponent<RectTransform>();
+                panelRT.anchorMin = panelRT.anchorMax = new Vector2(0.5f, 0.5f);
+                panelRT.pivot = new Vector2(0.5f, 0.5f);
+                panelRT.sizeDelta = new Vector2(420f, 440f);
+                panelRT.anchoredPosition = Vector2.zero;
+                var panelImg = panelGO.AddComponent<Image>();
+                panelImg.color = PanelColor;
+            }
 
             // 标题
-            var titleGO = new GameObject("Title", typeof(RectTransform));
-            titleGO.transform.SetParent(panelGO.transform, false);
-            var titleRT = titleGO.GetComponent<RectTransform>();
-            titleRT.anchorMin = new Vector2(0f, 1f);
-            titleRT.anchorMax = new Vector2(1f, 1f);
-            titleRT.pivot = new Vector2(0.5f, 1f);
-            titleRT.anchoredPosition = new Vector2(0f, -24f);
-            titleRT.sizeDelta = new Vector2(0f, 60f);
-            var titleText = titleGO.AddComponent<Text>();
-            titleText.text = "已暂停";
-            titleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            titleText.fontSize = 34;
-            titleText.color = Color.white;
-            titleText.alignment = TextAnchor.MiddleCenter;
-            titleText.raycastTarget = false;
+            if (panelGO.transform.Find("Title") == null)
+            {
+                var titleGO = new GameObject("Title", typeof(RectTransform));
+                titleGO.transform.SetParent(panelGO.transform, false);
+                var titleRT = titleGO.GetComponent<RectTransform>();
+                titleRT.anchorMin = new Vector2(0f, 1f);
+                titleRT.anchorMax = new Vector2(1f, 1f);
+                titleRT.pivot = new Vector2(0.5f, 1f);
+                titleRT.anchoredPosition = new Vector2(0f, -24f);
+                titleRT.sizeDelta = new Vector2(0f, 60f);
+                var titleText = titleGO.AddComponent<Text>();
+                titleText.text = "已暂停";
+                titleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                titleText.fontSize = 34;
+                titleText.color = Color.white;
+                titleText.alignment = TextAnchor.MiddleCenter;
+                titleText.raycastTarget = false;
+            }
 
             // 四个按钮：继续 / 设置 / 重新开始 / 退出游戏
             var resumeBtn = CreateButton(panelGO.transform, "继续", new Vector2(320f, 56f), ButtonColor);
             PositionInPanel(resumeBtn.GetComponent<RectTransform>(), 0);
             resumeBtn.onClick.AddListener(ClosePause);
 
-            var settingsMenuBtn = CreateButton(panelGO.transform, LocalizationManager.Instance.Get("settings.title"), new Vector2(320f, 56f), ButtonColor);
+            var settingsMenuBtn = CreateButton(panelGO.transform, LocalizationManager.Instance.Get("settings.title"), new Vector2(320f, 56f), ButtonColor, "Button_SettingsMenu");
             PositionInPanel(settingsMenuBtn.GetComponent<RectTransform>(), 1);
             settingsMenuBtn.onClick.AddListener(OpenSettings);
             _localizedTexts.Add((settingsMenuBtn.GetComponentInChildren<Text>(), "settings.title"));
@@ -445,12 +495,13 @@ namespace Resource.Scripts
             PositionInPanel(exitBtn.GetComponent<RectTransform>(), 3);
             exitBtn.onClick.AddListener(OnReturnToMainMenuClicked);
 
+            _pauseButtons.Clear();
             _pauseButtons.Add(resumeBtn);
             _pauseButtons.Add(settingsMenuBtn);
             _pauseButtons.Add(restartBtn);
             _pauseButtons.Add(exitBtn);
 
-            canvasGO.SetActive(false);
+            if (existingCanvas == null) canvasGO.SetActive(false);
         }
 
         /// <summary>把按钮竖直排布在面板里，index 0 在最上面</summary>
@@ -464,86 +515,136 @@ namespace Resource.Scripts
         // ── 设置面板 UI ──────────────────────────────────────────
         private void BuildSettingsPanel()
         {
-            var canvasGO = new GameObject("SettingsCanvas (Auto)");
-            canvasGO.transform.SetParent(transform, false);
-            var canvas = canvasGO.AddComponent<Canvas>();
-            canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 600; // 盖在暂停菜单（500）之上
-            var scaler = canvasGO.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight  = 0.5f;
-            canvasGO.AddComponent<GraphicRaycaster>();
+            var existingCanvas = transform.Find("SettingsCanvas (Auto)");
+            GameObject canvasGO;
+            if (existingCanvas != null)
+            {
+                canvasGO = existingCanvas.gameObject;
+                _settingsCanvasGroup = canvasGO.GetComponent<CanvasGroup>();
+            }
+            else
+            {
+                canvasGO = new GameObject("SettingsCanvas (Auto)");
+                canvasGO.transform.SetParent(transform, false);
+                var canvas = canvasGO.AddComponent<Canvas>();
+                canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 600; // 盖在暂停菜单（500）之上
+                var scaler = canvasGO.AddComponent<CanvasScaler>();
+                scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+                scaler.matchWidthOrHeight  = 0.5f;
+                canvasGO.AddComponent<GraphicRaycaster>();
 
+                _settingsCanvasGroup = canvasGO.AddComponent<CanvasGroup>();
+                _settingsCanvasGroup.alpha = 0f;
+            }
             _settingsPanelRoot = canvasGO;
-            _settingsCanvasGroup = canvasGO.AddComponent<CanvasGroup>();
-            _settingsCanvasGroup.alpha = 0f;
 
-            var overlayGO = new GameObject("Overlay", typeof(RectTransform));
-            overlayGO.transform.SetParent(canvasGO.transform, false);
-            var overlayRT = overlayGO.GetComponent<RectTransform>();
-            overlayRT.anchorMin = Vector2.zero;
-            overlayRT.anchorMax = Vector2.one;
-            overlayRT.offsetMin = Vector2.zero;
-            overlayRT.offsetMax = Vector2.zero;
-            overlayGO.AddComponent<Image>().color = OverlayColor;
+            if (canvasGO.transform.Find("Overlay") == null)
+            {
+                var overlayGO = new GameObject("Overlay", typeof(RectTransform));
+                overlayGO.transform.SetParent(canvasGO.transform, false);
+                var overlayRT = overlayGO.GetComponent<RectTransform>();
+                overlayRT.anchorMin = Vector2.zero;
+                overlayRT.anchorMax = Vector2.one;
+                overlayRT.offsetMin = Vector2.zero;
+                overlayRT.offsetMax = Vector2.zero;
+                overlayGO.AddComponent<Image>().color = OverlayColor;
+            }
 
-            var panelGO = new GameObject("Panel", typeof(RectTransform));
-            panelGO.transform.SetParent(canvasGO.transform, false);
-            var panelRT = panelGO.GetComponent<RectTransform>();
-            panelRT.anchorMin = panelRT.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRT.pivot = new Vector2(0.5f, 0.5f);
-            panelRT.sizeDelta = new Vector2(560f, 540f);
-            panelGO.AddComponent<Image>().color = PanelColor;
+            var existingPanel = canvasGO.transform.Find("Panel");
+            GameObject panelGO;
+            if (existingPanel != null)
+            {
+                panelGO = existingPanel.gameObject;
+            }
+            else
+            {
+                panelGO = new GameObject("Panel", typeof(RectTransform));
+                panelGO.transform.SetParent(canvasGO.transform, false);
+                var panelRT = panelGO.GetComponent<RectTransform>();
+                panelRT.anchorMin = panelRT.anchorMax = new Vector2(0.5f, 0.5f);
+                panelRT.pivot = new Vector2(0.5f, 0.5f);
+                panelRT.sizeDelta = new Vector2(560f, 540f);
+                panelGO.AddComponent<Image>().color = PanelColor;
+            }
 
-            var titleGO = new GameObject("Title", typeof(RectTransform));
-            titleGO.transform.SetParent(panelGO.transform, false);
-            var titleRT = titleGO.GetComponent<RectTransform>();
-            titleRT.anchorMin = new Vector2(0f, 1f);
-            titleRT.anchorMax = new Vector2(1f, 1f);
-            titleRT.pivot = new Vector2(0.5f, 1f);
-            titleRT.anchoredPosition = new Vector2(0f, -24f);
-            titleRT.sizeDelta = new Vector2(0f, 50f);
-            var titleText = titleGO.AddComponent<Text>();
+            var existingTitle = panelGO.transform.Find("Title");
+            Text titleText;
+            if (existingTitle != null)
+            {
+                titleText = existingTitle.GetComponent<Text>();
+            }
+            else
+            {
+                var titleGO = new GameObject("Title", typeof(RectTransform));
+                titleGO.transform.SetParent(panelGO.transform, false);
+                var titleRT = titleGO.GetComponent<RectTransform>();
+                titleRT.anchorMin = new Vector2(0f, 1f);
+                titleRT.anchorMax = new Vector2(1f, 1f);
+                titleRT.pivot = new Vector2(0.5f, 1f);
+                titleRT.anchoredPosition = new Vector2(0f, -24f);
+                titleRT.sizeDelta = new Vector2(0f, 50f);
+                titleText = titleGO.AddComponent<Text>();
+                titleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                titleText.fontSize = 30;
+                titleText.color = Color.white;
+                titleText.alignment = TextAnchor.MiddleCenter;
+                titleText.raycastTarget = false;
+            }
             titleText.text = LocalizationManager.Instance.Get("settings.title");
-            titleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            titleText.fontSize = 30;
-            titleText.color = Color.white;
-            titleText.alignment = TextAnchor.MiddleCenter;
-            titleText.raycastTarget = false;
             _localizedTexts.Add((titleText, "settings.title"));
 
-            var contentGO = new GameObject("Content", typeof(RectTransform));
-            contentGO.transform.SetParent(panelGO.transform, false);
-            var contentRT = contentGO.GetComponent<RectTransform>();
-            contentRT.anchorMin = new Vector2(0.5f, 0.5f);
-            contentRT.anchorMax = new Vector2(0.5f, 0.5f);
-            contentRT.sizeDelta = new Vector2(460f, 440f);
-            contentRT.anchoredPosition = new Vector2(0f, -20f);
-            var layout = contentGO.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 14f;
-            layout.childControlWidth = true;
-            layout.childForceExpandWidth = true;
-            layout.childControlHeight = false;
-            layout.childForceExpandHeight = false;
+            var existingContent = panelGO.transform.Find("Content");
+            GameObject contentGO;
+            if (existingContent != null)
+            {
+                contentGO = existingContent.gameObject;
+            }
+            else
+            {
+                contentGO = new GameObject("Content", typeof(RectTransform));
+                contentGO.transform.SetParent(panelGO.transform, false);
+                var contentRT = contentGO.GetComponent<RectTransform>();
+                contentRT.anchorMin = new Vector2(0.5f, 0.5f);
+                contentRT.anchorMax = new Vector2(0.5f, 0.5f);
+                contentRT.sizeDelta = new Vector2(460f, 440f);
+                contentRT.anchoredPosition = new Vector2(0f, -20f);
+                var layout = contentGO.AddComponent<VerticalLayoutGroup>();
+                layout.spacing = 14f;
+                layout.childControlWidth = true;
+                layout.childForceExpandWidth = true;
+                layout.childControlHeight = false;
+                layout.childForceExpandHeight = false;
+            }
 
             var settings = SettingsManager.Instance;
 
-            _masterDrag = AddSettingsSlider(contentGO.transform, "settings.master", settings.masterVolume, settings.SetMasterVolume);
-            _musicDrag  = AddSettingsSlider(contentGO.transform, "settings.music", settings.musicVolume, settings.SetMusicVolume);
-            _sfxDrag    = AddSettingsSlider(contentGO.transform, "settings.sfx", settings.sfxVolume, settings.SetSfxVolume);
+            _settingsRowBg.Clear();
+            _masterDrag = AddSettingsSlider(contentGO.transform, "Row_Master", "settings.master", settings.masterVolume, settings.SetMasterVolume);
+            _musicDrag  = AddSettingsSlider(contentGO.transform, "Row_Music", "settings.music", settings.musicVolume, settings.SetMusicVolume);
+            _sfxDrag    = AddSettingsSlider(contentGO.transform, "Row_Sfx", "settings.sfx", settings.sfxVolume, settings.SetSfxVolume);
             AddSettingsResolutionRow(contentGO.transform, settings);
             AddSettingsFullscreenRow(contentGO.transform, settings);
             AddSettingsLanguageRow(contentGO.transform);
             AddSettingsCloseRow(contentGO.transform);
 
-            canvasGO.SetActive(false);
+            if (existingCanvas == null) canvasGO.SetActive(false);
         }
 
-        /// <summary>设置面板里的一行：自带一个可高亮的背景（十字键选中这一行时会被染黄）</summary>
-        private RectTransform CreateSettingsRow(Transform parent, float height)
+        /// <summary>设置面板里的一行：自带一个可高亮的背景（十字键选中这一行时会被染黄）。
+        /// rowName 必须在同一父物体下互不相同，不然找现成物体时会找错。</summary>
+        private RectTransform CreateSettingsRow(Transform parent, string rowName, float height)
         {
-            var row = new GameObject("Row", typeof(RectTransform));
+            var existing = parent.Find(rowName);
+            if (existing != null)
+            {
+                var existingBg = existing.GetComponent<Image>();
+                if (existingBg != null) _settingsRowBg.Add(existingBg);
+                return existing.GetComponent<RectTransform>();
+            }
+
+            var row = new GameObject(rowName, typeof(RectTransform));
             row.transform.SetParent(parent, false);
             var rt = row.GetComponent<RectTransform>();
             var le = row.AddComponent<LayoutElement>();
@@ -593,9 +694,19 @@ namespace Resource.Scripts
             return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
         }
 
-        private GameObject CreateSettingsText(Transform parent, string text, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize)
+        /// <summary>找同名文字物体就复用（位置/字号不覆盖，只更新文字内容），没有才新建。
+        /// goName 留空时默认 "Text"——同一父物体下建多个文字必须传不同的 goName。</summary>
+        private GameObject CreateSettingsText(Transform parent, string text, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize, string goName = "Text")
         {
-            var go = new GameObject("Text", typeof(RectTransform));
+            var existing = parent.Find(goName);
+            if (existing != null)
+            {
+                var existingText = existing.GetComponent<Text>();
+                if (existingText != null) existingText.text = text;
+                return existing.gameObject;
+            }
+
+            var go = new GameObject(goName, typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = anchorMin;
@@ -612,47 +723,60 @@ namespace Resource.Scripts
             return go;
         }
 
-        private DebugSliderDrag AddSettingsSlider(Transform parent, string labelKey, float initial, System.Action<float> setter)
+        private DebugSliderDrag AddSettingsSlider(Transform parent, string rowName, string labelKey, float initial, System.Action<float> setter)
         {
-            var row = CreateSettingsRow(parent, 56f);
+            var row = CreateSettingsRow(parent, rowName, 56f);
             CreateLocalizedText(row.transform, labelKey, new Vector2(0f, 0.5f), new Vector2(1f, 1f), TextAnchor.LowerLeft, 17);
 
-            var barGO = new GameObject("Bar", typeof(RectTransform));
-            barGO.transform.SetParent(row.transform, false);
-            var barRT = barGO.GetComponent<RectTransform>();
-            barRT.anchorMin = new Vector2(0f, 0.05f);
-            barRT.anchorMax = new Vector2(1f, 0.45f);
-            barRT.offsetMin = Vector2.zero;
-            barRT.offsetMax = Vector2.zero;
-            var barImg = barGO.AddComponent<Image>();
-            barImg.color = new Color(0.16f, 0.16f, 0.2f, 1f);
+            var existingBar = row.Find("Bar");
+            GameObject barGO;
+            RectTransform barRT, fillRT;
+            if (existingBar != null)
+            {
+                barGO = existingBar.gameObject;
+                barRT = barGO.GetComponent<RectTransform>();
+                fillRT = barGO.transform.Find("Fill").GetComponent<RectTransform>();
+            }
+            else
+            {
+                barGO = new GameObject("Bar", typeof(RectTransform));
+                barGO.transform.SetParent(row.transform, false);
+                barRT = barGO.GetComponent<RectTransform>();
+                barRT.anchorMin = new Vector2(0f, 0.05f);
+                barRT.anchorMax = new Vector2(1f, 0.45f);
+                barRT.offsetMin = Vector2.zero;
+                barRT.offsetMax = Vector2.zero;
+                var barImg = barGO.AddComponent<Image>();
+                barImg.color = new Color(0.16f, 0.16f, 0.2f, 1f);
 
-            var fillGO = new GameObject("Fill", typeof(RectTransform));
-            fillGO.transform.SetParent(barGO.transform, false);
-            var fillRT = fillGO.GetComponent<RectTransform>();
-            fillRT.anchorMin = Vector2.zero;
-            fillRT.anchorMax = new Vector2(Mathf.Clamp01(initial), 1f);
-            fillRT.offsetMin = Vector2.zero;
-            fillRT.offsetMax = Vector2.zero;
-            fillGO.AddComponent<Image>().color = new Color(0.3f, 0.62f, 0.95f, 1f);
+                var fillGO = new GameObject("Fill", typeof(RectTransform));
+                fillGO.transform.SetParent(barGO.transform, false);
+                fillRT = fillGO.GetComponent<RectTransform>();
+                fillRT.anchorMin = Vector2.zero;
+                fillRT.anchorMax = new Vector2(Mathf.Clamp01(initial), 1f);
+                fillRT.offsetMin = Vector2.zero;
+                fillRT.offsetMax = Vector2.zero;
+                fillGO.AddComponent<Image>().color = new Color(0.3f, 0.62f, 0.95f, 1f);
+            }
 
-            var dragger = barGO.AddComponent<DebugSliderDrag>();
+            var dragger = barGO.GetComponent<DebugSliderDrag>();
+            if (dragger == null) dragger = barGO.AddComponent<DebugSliderDrag>();
             dragger.Init(barRT, fillRT, 0f, 1f, setter);
             return dragger;
         }
 
         private void AddSettingsResolutionRow(Transform parent, SettingsManager settings)
         {
-            var row = CreateSettingsRow(parent, 46f);
+            var row = CreateSettingsRow(parent, "Row_Resolution", 46f);
             CreateLocalizedText(row.transform, "settings.display", new Vector2(0f, 0f), new Vector2(0.35f, 1f), TextAnchor.MiddleLeft, 17);
 
-            var prevBtn = CreateButton(row.transform, "<", new Vector2(40f, 34f), ButtonColor);
+            var prevBtn = CreateButton(row.transform, "<", new Vector2(40f, 34f), ButtonColor, "Button_Prev");
             var prevRT = prevBtn.GetComponent<RectTransform>();
             prevRT.anchorMin = prevRT.anchorMax = new Vector2(0.45f, 0.5f);
 
-            _resolutionLabel = CreateSettingsText(row.transform, ResolutionLabel(settings), new Vector2(0.53f, 0f), new Vector2(0.8f, 1f), TextAnchor.MiddleCenter, 15).GetComponent<Text>();
+            _resolutionLabel = CreateSettingsText(row.transform, ResolutionLabel(settings), new Vector2(0.53f, 0f), new Vector2(0.8f, 1f), TextAnchor.MiddleCenter, 15, "Text_Value").GetComponent<Text>();
 
-            var nextBtn = CreateButton(row.transform, ">", new Vector2(40f, 34f), ButtonColor);
+            var nextBtn = CreateButton(row.transform, ">", new Vector2(40f, 34f), ButtonColor, "Button_Next");
             var nextRT = nextBtn.GetComponent<RectTransform>();
             nextRT.anchorMin = nextRT.anchorMax = new Vector2(0.9f, 0.5f);
 
@@ -676,49 +800,63 @@ namespace Resource.Scripts
 
         private void AddSettingsFullscreenRow(Transform parent, SettingsManager settings)
         {
-            var row = CreateSettingsRow(parent, 40f);
+            var row = CreateSettingsRow(parent, "Row_Fullscreen", 40f);
             CreateLocalizedText(row.transform, "settings.fullscreen", new Vector2(0f, 0f), new Vector2(0.6f, 1f), TextAnchor.MiddleLeft, 17);
 
-            var toggleGO = new GameObject("Toggle", typeof(RectTransform));
-            toggleGO.transform.SetParent(row.transform, false);
-            var toggleRT = toggleGO.GetComponent<RectTransform>();
-            toggleRT.anchorMin = new Vector2(0.8f, 0.15f);
-            toggleRT.anchorMax = new Vector2(0.95f, 0.85f);
-            toggleRT.offsetMin = Vector2.zero;
-            toggleRT.offsetMax = Vector2.zero;
-            var bgImg = toggleGO.AddComponent<Image>();
-            bgImg.color = new Color(0.16f, 0.16f, 0.2f, 1f);
+            var existingToggle = row.Find("Toggle");
+            GameObject toggleGO;
+            Image bgImg, checkImg;
+            if (existingToggle != null)
+            {
+                toggleGO = existingToggle.gameObject;
+                bgImg = toggleGO.GetComponent<Image>();
+                checkImg = toggleGO.transform.Find("Check").GetComponent<Image>();
+            }
+            else
+            {
+                toggleGO = new GameObject("Toggle", typeof(RectTransform));
+                toggleGO.transform.SetParent(row.transform, false);
+                var toggleRT = toggleGO.GetComponent<RectTransform>();
+                toggleRT.anchorMin = new Vector2(0.8f, 0.15f);
+                toggleRT.anchorMax = new Vector2(0.95f, 0.85f);
+                toggleRT.offsetMin = Vector2.zero;
+                toggleRT.offsetMax = Vector2.zero;
+                bgImg = toggleGO.AddComponent<Image>();
+                bgImg.color = new Color(0.16f, 0.16f, 0.2f, 1f);
 
-            var checkGO = new GameObject("Check", typeof(RectTransform));
-            checkGO.transform.SetParent(toggleGO.transform, false);
-            var checkRT = checkGO.GetComponent<RectTransform>();
-            checkRT.anchorMin = new Vector2(0.15f, 0.15f);
-            checkRT.anchorMax = new Vector2(0.85f, 0.85f);
-            checkRT.offsetMin = Vector2.zero;
-            checkRT.offsetMax = Vector2.zero;
-            var checkImg = checkGO.AddComponent<Image>();
-            checkImg.color = new Color(0.35f, 0.85f, 0.45f, 1f);
+                var checkGO = new GameObject("Check", typeof(RectTransform));
+                checkGO.transform.SetParent(toggleGO.transform, false);
+                var checkRT = checkGO.GetComponent<RectTransform>();
+                checkRT.anchorMin = new Vector2(0.15f, 0.15f);
+                checkRT.anchorMax = new Vector2(0.85f, 0.85f);
+                checkRT.offsetMin = Vector2.zero;
+                checkRT.offsetMax = Vector2.zero;
+                checkImg = checkGO.AddComponent<Image>();
+                checkImg.color = new Color(0.35f, 0.85f, 0.45f, 1f);
+            }
 
-            _fullscreenToggle = toggleGO.AddComponent<Toggle>();
+            _fullscreenToggle = toggleGO.GetComponent<Toggle>();
+            if (_fullscreenToggle == null) _fullscreenToggle = toggleGO.AddComponent<Toggle>();
             _fullscreenToggle.targetGraphic = bgImg;
             _fullscreenToggle.graphic = checkImg;
+            _fullscreenToggle.onValueChanged.RemoveAllListeners();
             _fullscreenToggle.isOn = settings.fullscreen;
             _fullscreenToggle.onValueChanged.AddListener(v => settings.SetFullscreen(v));
         }
 
         private void AddSettingsLanguageRow(Transform parent)
         {
-            var row = CreateSettingsRow(parent, 44f);
+            var row = CreateSettingsRow(parent, "Row_Language", 44f);
             CreateLocalizedText(row.transform, "settings.language", new Vector2(0f, 0f), new Vector2(0.35f, 1f), TextAnchor.MiddleLeft, 17);
 
-            var prevBtn = CreateButton(row.transform, "<", new Vector2(40f, 34f), ButtonColor);
+            var prevBtn = CreateButton(row.transform, "<", new Vector2(40f, 34f), ButtonColor, "Button_Prev");
             var prevRT = prevBtn.GetComponent<RectTransform>();
             prevRT.anchorMin = prevRT.anchorMax = new Vector2(0.45f, 0.5f);
 
             var loc = LocalizationManager.Instance;
-            _settingsLanguageLabel = CreateSettingsText(row.transform, loc.LanguageName(loc.CurrentLanguage), new Vector2(0.53f, 0f), new Vector2(0.8f, 1f), TextAnchor.MiddleCenter, 15).GetComponent<Text>();
+            _settingsLanguageLabel = CreateSettingsText(row.transform, loc.LanguageName(loc.CurrentLanguage), new Vector2(0.53f, 0f), new Vector2(0.8f, 1f), TextAnchor.MiddleCenter, 15, "Text_Value").GetComponent<Text>();
 
-            var nextBtn = CreateButton(row.transform, ">", new Vector2(40f, 34f), ButtonColor);
+            var nextBtn = CreateButton(row.transform, ">", new Vector2(40f, 34f), ButtonColor, "Button_Next");
             var nextRT = nextBtn.GetComponent<RectTransform>();
             nextRT.anchorMin = nextRT.anchorMax = new Vector2(0.9f, 0.5f);
 
@@ -728,8 +866,8 @@ namespace Resource.Scripts
 
         private void AddSettingsCloseRow(Transform parent)
         {
-            var row = CreateSettingsRow(parent, 56f);
-            var closeBtn = CreateButton(row.transform, LocalizationManager.Instance.Get("settings.close"), new Vector2(200f, 46f), ButtonColor);
+            var row = CreateSettingsRow(parent, "Row_Close", 56f);
+            var closeBtn = CreateButton(row.transform, LocalizationManager.Instance.Get("settings.close"), new Vector2(200f, 46f), ButtonColor, "Button_Close");
             var closeRT = closeBtn.GetComponent<RectTransform>();
             closeRT.anchorMin = closeRT.anchorMax = new Vector2(0.5f, 0.5f);
             closeBtn.onClick.AddListener(CloseSettings);
@@ -737,52 +875,76 @@ namespace Resource.Scripts
         }
 
         // ── 通用按钮（纯色背景 + 文字 + hover/点击反馈，没有美术资源，先用纯色占位）──
-        private Button CreateButton(Transform parent, string label, Vector2 size, Color color)
+        /// <summary>找场景里已经摆好的同名按钮就直接复用（位置/大小/颜色不覆盖），没有才新建。
+        /// 事件监听器（闭包，没法存进场景文件）不管哪种情况都要重新挂一遍。</summary>
+        private Button CreateButton(Transform parent, string label, Vector2 size, Color color, string goName = null)
         {
-            var go = new GameObject($"Button_{label}", typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var rt = go.GetComponent<RectTransform>();
-            rt.sizeDelta = size;
+            goName ??= $"Button_{label}";
+            var existing = parent.Find(goName);
+            GameObject go;
+            RectTransform rt;
+            Image img;
+            Button btn;
 
-            var img = go.AddComponent<Image>();
-            img.color = color;
+            if (existing != null)
+            {
+                go = existing.gameObject;
+                rt = go.GetComponent<RectTransform>();
+                img = go.GetComponent<Image>();
+                btn = go.GetComponent<Button>();
+                var existingLabel = go.GetComponentInChildren<Text>();
+                if (existingLabel != null) existingLabel.text = label;
+            }
+            else
+            {
+                go = new GameObject(goName, typeof(RectTransform));
+                go.transform.SetParent(parent, false);
+                rt = go.GetComponent<RectTransform>();
+                rt.sizeDelta = size;
 
-            var btn = go.AddComponent<Button>();
-            btn.targetGraphic = img;
-            var colors = btn.colors;
-            colors.normalColor      = Color.white;
-            colors.highlightedColor = new Color(1.15f, 1.15f, 1.15f, 1f);
-            colors.pressedColor     = new Color(0.8f, 0.8f, 0.8f, 1f);
-            colors.fadeDuration     = 0.08f;
-            btn.colors = colors;
+                img = go.AddComponent<Image>();
+                img.color = color;
 
-            var textGO = new GameObject("Label", typeof(RectTransform));
-            textGO.transform.SetParent(go.transform, false);
-            var textRT = textGO.GetComponent<RectTransform>();
-            textRT.anchorMin = Vector2.zero;
-            textRT.anchorMax = Vector2.one;
-            textRT.offsetMin = Vector2.zero;
-            textRT.offsetMax = Vector2.zero;
-            var text = textGO.AddComponent<Text>();
-            text.text = label;
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 22;
-            text.color = Color.white;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.raycastTarget = false;
+                btn = go.AddComponent<Button>();
+                btn.targetGraphic = img;
+                var colors = btn.colors;
+                colors.normalColor      = Color.white;
+                colors.highlightedColor = new Color(1.15f, 1.15f, 1.15f, 1f);
+                colors.pressedColor     = new Color(0.8f, 0.8f, 0.8f, 1f);
+                colors.fadeDuration     = 0.08f;
+                btn.colors = colors;
 
-            // 选中/悬停时外围包一圈黄线，跟主菜单那边同一套视觉
+                var textGO = new GameObject("Label", typeof(RectTransform));
+                textGO.transform.SetParent(go.transform, false);
+                var textRT = textGO.GetComponent<RectTransform>();
+                textRT.anchorMin = Vector2.zero;
+                textRT.anchorMax = Vector2.one;
+                textRT.offsetMin = Vector2.zero;
+                textRT.offsetMax = Vector2.zero;
+                var text = textGO.AddComponent<Text>();
+                text.text = label;
+                text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                text.fontSize = 22;
+                text.color = Color.white;
+                text.alignment = TextAnchor.MiddleCenter;
+                text.raycastTarget = false;
+            }
+
+            // 选中/悬停时外围包一圈黄线，跟主菜单那边同一套视觉——找现成的就复用，没有才建
             var borders = new Image[4];
             const float borderThickness = 5f;
-            borders[0] = CreateBorderBar(go.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), borderThickness);
-            borders[1] = CreateBorderBar(go.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), borderThickness);
-            borders[2] = CreateBorderBar(go.transform, new Vector2(0f, 0f), new Vector2(0f, 1f), borderThickness);
-            borders[3] = CreateBorderBar(go.transform, new Vector2(1f, 0f), new Vector2(1f, 1f), borderThickness);
+            borders[0] = CreateBorderBar(go.transform, "Border_Top",    new Vector2(0f, 1f), new Vector2(1f, 1f), borderThickness);
+            borders[1] = CreateBorderBar(go.transform, "Border_Bottom", new Vector2(0f, 0f), new Vector2(1f, 0f), borderThickness);
+            borders[2] = CreateBorderBar(go.transform, "Border_Left",   new Vector2(0f, 0f), new Vector2(0f, 1f), borderThickness);
+            borders[3] = CreateBorderBar(go.transform, "Border_Right",  new Vector2(1f, 0f), new Vector2(1f, 1f), borderThickness);
             _buttonBorders[btn] = borders;
 
+            btn.onClick.RemoveAllListeners();
             btn.onClick.AddListener(() => StartCoroutine(PunchScale(rt)));
 
-            var trigger = go.AddComponent<EventTrigger>();
+            var trigger = go.GetComponent<EventTrigger>();
+            if (trigger == null) trigger = go.AddComponent<EventTrigger>();
+            trigger.triggers.Clear();
             var enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
             enterEntry.callback.AddListener(_ =>
             {
@@ -798,9 +960,13 @@ namespace Resource.Scripts
             return btn;
         }
 
-        private Image CreateBorderBar(Transform parent, Vector2 anchorMin, Vector2 anchorMax, float thickness)
+        /// <summary>找同名的边框条就复用，没有才新建——borderName 必须在同一父物体下互不相同。</summary>
+        private Image CreateBorderBar(Transform parent, string borderName, Vector2 anchorMin, Vector2 anchorMax, float thickness)
         {
-            var go = new GameObject("BorderBar", typeof(RectTransform));
+            var existing = parent.Find(borderName);
+            if (existing != null) return existing.GetComponent<Image>();
+
+            var go = new GameObject(borderName, typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = anchorMin;

@@ -110,14 +110,13 @@ namespace Resource.Scripts
             if (FindObjectOfType<CandleSpawner>() == null)
                 new GameObject("CandleSpawner (Auto)").AddComponent<CandleSpawner>();
 
-            if (FindObjectOfType<MainMenuUI>() == null)
-                new GameObject("MainMenuUI (Auto)").AddComponent<MainMenuUI>();
-
             BuildPlayerLight();
         }
 
         void BuildPlayerLight()
         {
+            if (transform.Find("PlayerLight2D (Auto)") != null) return; // 场景里已经摆好了
+
             var lightGO = new GameObject("PlayerLight2D (Auto)");
             lightGO.transform.SetParent(transform, false);
             lightGO.transform.localPosition = Vector3.zero;
@@ -409,6 +408,13 @@ namespace Resource.Scripts
         // ── 跑步手感 / 脚步声 / 扬尘（项目里没有现成的沙尘美术资源，用运行时生成的 ParticleSystem）──
         void BuildDustTrail()
         {
+            var existing = transform.Find("DustTrail (Auto)");
+            if (existing != null)
+            {
+                _dustTrail = existing.GetComponent<ParticleSystem>();
+                return;
+            }
+
             var dustGO = new GameObject("DustTrail (Auto)");
             dustGO.transform.SetParent(transform, false);
             dustGO.transform.localPosition = groundCheck != null

@@ -100,8 +100,20 @@ namespace Resource.Scripts
         }
 
         // ── 运行时搭 UI ─────────────────────────────────────────
+        /// <summary>场景里已经摆好 TransitionCanvas 就直接复用，没有才照默认值新建。</summary>
         private void BuildUI()
         {
+            float refDiag = Mathf.Sqrt(_refResolution.x * _refResolution.x + _refResolution.y * _refResolution.y);
+            _maxScale = (refDiag * 1.3f) / BaseCircleSize;
+
+            var existingCanvas = transform.Find("TransitionCanvas");
+            if (existingCanvas != null)
+            {
+                _iris = existingCanvas.Find("Iris").GetComponent<RectTransform>();
+                _iris.localScale = Vector3.zero; // 默认全开，不挡屏幕
+                return;
+            }
+
             var canvasGO = new GameObject("TransitionCanvas");
             canvasGO.transform.SetParent(transform, false);
             var canvas = canvasGO.AddComponent<Canvas>();
@@ -125,9 +137,6 @@ namespace Resource.Scripts
             var img = irisGO.AddComponent<Image>();
             img.sprite = CreateCircleSprite(128);
             img.color = Color.black;
-
-            float refDiag = Mathf.Sqrt(_refResolution.x * _refResolution.x + _refResolution.y * _refResolution.y);
-            _maxScale = (refDiag * 1.3f) / BaseCircleSize;
 
             _iris.localScale = Vector3.zero; // 默认全开，不挡屏幕
         }

@@ -77,91 +77,112 @@ namespace Resource.Scripts
         }
 
         // ── 运行时搭 UI ─────────────────────────────────────────
+        /// <summary>场景里已经摆好 DebugTuningCanvas 就直接复用，没有才照默认值新建。</summary>
         private void BuildUI()
         {
             _worldRotator = FindObjectOfType<WorldRotator>();
             _player       = FindObjectOfType<PlayerController>();
 
-            var canvasGO = new GameObject("DebugTuningCanvas (Auto)");
-            canvasGO.transform.SetParent(transform, false);
-            var canvas = canvasGO.AddComponent<Canvas>();
-            canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 800; // HUD(10) < 暂停菜单(500) < 这个(800) < 转场虹膜(1000)
-            var scaler = canvasGO.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight  = 0.5f;
-            canvasGO.AddComponent<GraphicRaycaster>();
+            var existingCanvas = transform.Find("DebugTuningCanvas (Auto)");
+            GameObject canvasGO;
+            RectTransform panelRT;
+            RectTransform contentRT;
+            ScrollRect scrollRect;
 
-            _panelRoot = new GameObject("Panel");
-            _panelRoot.transform.SetParent(canvasGO.transform, false);
-            var panelRT = _panelRoot.AddComponent<RectTransform>();
-            panelRT.anchorMin = new Vector2(1f, 1f);
-            panelRT.anchorMax = new Vector2(1f, 1f);
-            panelRT.pivot = new Vector2(1f, 1f);
-            panelRT.anchoredPosition = new Vector2(-20f, -20f);
-            panelRT.sizeDelta = new Vector2(460f, 760f);
-            var panelImg = _panelRoot.AddComponent<Image>();
-            panelImg.color = new Color(0.06f, 0.06f, 0.08f, 0.9f);
+            if (existingCanvas != null)
+            {
+                canvasGO = existingCanvas.gameObject;
+                _panelRoot = canvasGO.transform.Find("Panel").gameObject;
+                panelRT = _panelRoot.GetComponent<RectTransform>();
+                _readoutText = _panelRoot.transform.Find("Text_Readout").GetComponent<Text>();
+                var scrollGOExisting = _panelRoot.transform.Find("Scroll").gameObject;
+                scrollRect = scrollGOExisting.GetComponent<ScrollRect>();
+                contentRT = scrollGOExisting.transform.Find("Viewport/Content").GetComponent<RectTransform>();
+                _content = contentRT.transform;
+            }
+            else
+            {
+                canvasGO = new GameObject("DebugTuningCanvas (Auto)");
+                canvasGO.transform.SetParent(transform, false);
+                var canvas = canvasGO.AddComponent<Canvas>();
+                canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = 800; // HUD(10) < 暂停菜单(500) < 这个(800) < 转场虹膜(1000)
+                var scaler = canvasGO.AddComponent<CanvasScaler>();
+                scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+                scaler.matchWidthOrHeight  = 0.5f;
+                canvasGO.AddComponent<GraphicRaycaster>();
 
-            // 标题
-            var title = CreateText(_panelRoot.transform, "调试面板（F1 显示/隐藏）",
-                new Vector2(0f, 1f), new Vector2(1f, 1f), TextAnchor.MiddleCenter, 20);
-            var titleRT = title.GetComponent<RectTransform>();
-            titleRT.anchoredPosition = new Vector2(16f, -18f);
-            titleRT.sizeDelta = new Vector2(-32f, 36f);
+                _panelRoot = new GameObject("Panel");
+                _panelRoot.transform.SetParent(canvasGO.transform, false);
+                panelRT = _panelRoot.AddComponent<RectTransform>();
+                panelRT.anchorMin = new Vector2(1f, 1f);
+                panelRT.anchorMax = new Vector2(1f, 1f);
+                panelRT.pivot = new Vector2(1f, 1f);
+                panelRT.anchoredPosition = new Vector2(-20f, -20f);
+                panelRT.sizeDelta = new Vector2(460f, 760f);
+                var panelImg = _panelRoot.AddComponent<Image>();
+                panelImg.color = new Color(0.06f, 0.06f, 0.08f, 0.9f);
 
-            // 实时读数
-            var readoutGO = CreateText(_panelRoot.transform, "", new Vector2(0f, 1f), new Vector2(1f, 1f), TextAnchor.UpperLeft, 15);
-            var readoutRT = readoutGO.GetComponent<RectTransform>();
-            readoutRT.anchoredPosition = new Vector2(16f, -62f);
-            readoutRT.sizeDelta = new Vector2(-32f, 150f);
-            _readoutText = readoutGO.GetComponent<Text>();
-            _readoutText.color = new Color(0.6f, 0.9f, 1f);
+                // 标题
+                var title = CreateText(_panelRoot.transform, "调试面板（F1 显示/隐藏）",
+                    new Vector2(0f, 1f), new Vector2(1f, 1f), TextAnchor.MiddleCenter, 20, "Text_Title");
+                var titleRT = title.GetComponent<RectTransform>();
+                titleRT.anchoredPosition = new Vector2(16f, -18f);
+                titleRT.sizeDelta = new Vector2(-32f, 36f);
 
-            // 滚动区域
-            var scrollGO = new GameObject("Scroll", typeof(RectTransform));
-            scrollGO.transform.SetParent(_panelRoot.transform, false);
-            var scrollRT = scrollGO.GetComponent<RectTransform>();
-            scrollRT.anchorMin = Vector2.zero;
-            scrollRT.anchorMax = Vector2.one;
-            scrollRT.offsetMin = new Vector2(8f, 8f);
-            scrollRT.offsetMax = new Vector2(-8f, -220f);
-            var scrollRect = scrollGO.AddComponent<ScrollRect>();
+                // 实时读数
+                var readoutGO = CreateText(_panelRoot.transform, "", new Vector2(0f, 1f), new Vector2(1f, 1f), TextAnchor.UpperLeft, 15, "Text_Readout");
+                var readoutRT = readoutGO.GetComponent<RectTransform>();
+                readoutRT.anchoredPosition = new Vector2(16f, -62f);
+                readoutRT.sizeDelta = new Vector2(-32f, 150f);
+                _readoutText = readoutGO.GetComponent<Text>();
+                _readoutText.color = new Color(0.6f, 0.9f, 1f);
 
-            var viewportGO = new GameObject("Viewport", typeof(RectTransform));
-            viewportGO.transform.SetParent(scrollGO.transform, false);
-            var viewportRT = viewportGO.GetComponent<RectTransform>();
-            viewportRT.anchorMin = Vector2.zero;
-            viewportRT.anchorMax = Vector2.one;
-            viewportRT.offsetMin = Vector2.zero;
-            viewportRT.offsetMax = Vector2.zero;
-            viewportGO.AddComponent<Image>().color = new Color(0, 0, 0, 0.01f); // 透明但要有 Graphic 才能当 Mask 目标
-            viewportGO.AddComponent<RectMask2D>();
+                // 滚动区域
+                var scrollGO = new GameObject("Scroll", typeof(RectTransform));
+                scrollGO.transform.SetParent(_panelRoot.transform, false);
+                var scrollRT = scrollGO.GetComponent<RectTransform>();
+                scrollRT.anchorMin = Vector2.zero;
+                scrollRT.anchorMax = Vector2.one;
+                scrollRT.offsetMin = new Vector2(8f, 8f);
+                scrollRT.offsetMax = new Vector2(-8f, -220f);
+                scrollRect = scrollGO.AddComponent<ScrollRect>();
 
-            var contentGO = new GameObject("Content", typeof(RectTransform));
-            contentGO.transform.SetParent(viewportGO.transform, false);
-            var contentRT = contentGO.GetComponent<RectTransform>();
-            contentRT.anchorMin = new Vector2(0f, 1f);
-            contentRT.anchorMax = new Vector2(1f, 1f);
-            contentRT.pivot = new Vector2(0.5f, 1f);
-            contentRT.anchoredPosition = Vector2.zero;
-            var vLayout = contentGO.AddComponent<VerticalLayoutGroup>();
-            vLayout.spacing = 6f;
-            vLayout.padding = new RectOffset(4, 4, 4, 4);
-            vLayout.childControlHeight = false;
-            vLayout.childControlWidth  = true;
-            vLayout.childForceExpandHeight = false;
-            vLayout.childForceExpandWidth  = true;
-            var fitter = contentGO.AddComponent<ContentSizeFitter>();
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                var viewportGO = new GameObject("Viewport", typeof(RectTransform));
+                viewportGO.transform.SetParent(scrollGO.transform, false);
+                var viewportRT = viewportGO.GetComponent<RectTransform>();
+                viewportRT.anchorMin = Vector2.zero;
+                viewportRT.anchorMax = Vector2.one;
+                viewportRT.offsetMin = Vector2.zero;
+                viewportRT.offsetMax = Vector2.zero;
+                viewportGO.AddComponent<Image>().color = new Color(0, 0, 0, 0.01f); // 透明但要有 Graphic 才能当 Mask 目标
+                viewportGO.AddComponent<RectMask2D>();
 
-            scrollRect.viewport = viewportRT;
-            scrollRect.content  = contentRT;
-            scrollRect.horizontal = false;
-            scrollRect.vertical   = true;
+                var contentGO = new GameObject("Content", typeof(RectTransform));
+                contentGO.transform.SetParent(viewportGO.transform, false);
+                contentRT = contentGO.GetComponent<RectTransform>();
+                contentRT.anchorMin = new Vector2(0f, 1f);
+                contentRT.anchorMax = new Vector2(1f, 1f);
+                contentRT.pivot = new Vector2(0.5f, 1f);
+                contentRT.anchoredPosition = Vector2.zero;
+                var vLayout = contentGO.AddComponent<VerticalLayoutGroup>();
+                vLayout.spacing = 6f;
+                vLayout.padding = new RectOffset(4, 4, 4, 4);
+                vLayout.childControlHeight = false;
+                vLayout.childControlWidth  = true;
+                vLayout.childForceExpandHeight = false;
+                vLayout.childForceExpandWidth  = true;
+                var fitter = contentGO.AddComponent<ContentSizeFitter>();
+                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            _content = contentGO.transform;
+                scrollRect.viewport = viewportRT;
+                scrollRect.content  = contentRT;
+                scrollRect.horizontal = false;
+                scrollRect.vertical   = true;
+
+                _content = contentGO.transform;
+            }
 
             // ── 分组：世界旋转 ──
             AddSectionLabel("世界旋转");
@@ -208,7 +229,10 @@ namespace Resource.Scripts
 
         private void AddSectionLabel(string text)
         {
-            var go = CreateText(_content, text, Vector2.zero, Vector2.one, TextAnchor.MiddleCenter, 17);
+            bool existed = _content.Find($"Section_{text}") != null;
+            var go = CreateText(_content, text, Vector2.zero, Vector2.one, TextAnchor.MiddleCenter, 17, $"Section_{text}");
+            if (existed) return; // 分组名本身就是找现成物体的 key，已经存在就不用再摆一次 LayoutElement
+
             go.GetComponent<Text>().fontStyle = FontStyle.Bold;
             go.GetComponent<Text>().color = new Color(1f, 0.8f, 0.4f);
             var le = go.AddComponent<LayoutElement>();
@@ -220,43 +244,60 @@ namespace Resource.Scripts
 
         private void AddFloatRow(string label, float min, float max, float initial, System.Action<float> setter)
         {
-            var row = new GameObject($"Row_{label}", typeof(RectTransform));
-            row.transform.SetParent(_content, false);
-            var le = row.AddComponent<LayoutElement>();
-            le.preferredHeight = 58f;
-            le.minHeight = 58f;
-            le.preferredWidth = RowWidth;
-            le.minWidth = RowWidth;
+            var existingRow = _content.Find($"Row_{label}");
+            GameObject row;
+            RectTransform barRT, fillRT;
+            Text valueText;
 
-            // 上半：标签，占满整行宽度
-            CreateText(row.transform, label, new Vector2(0f, 0.55f), new Vector2(1f, 1f), TextAnchor.LowerCenter, 15);
+            if (existingRow != null)
+            {
+                row = existingRow.gameObject;
+                var barGOExisting = row.transform.Find("Bar").gameObject;
+                barRT = barGOExisting.GetComponent<RectTransform>();
+                fillRT = barGOExisting.transform.Find("Fill").GetComponent<RectTransform>();
+                valueText = row.transform.Find("Text_Value").GetComponent<Text>();
+            }
+            else
+            {
+                row = new GameObject($"Row_{label}", typeof(RectTransform));
+                row.transform.SetParent(_content, false);
+                var le = row.AddComponent<LayoutElement>();
+                le.preferredHeight = 58f;
+                le.minHeight = 58f;
+                le.preferredWidth = RowWidth;
+                le.minWidth = RowWidth;
 
-            // 下半：滑条 + 数值
-            var barGO = new GameObject("Bar", typeof(RectTransform));
-            barGO.transform.SetParent(row.transform, false);
-            var barRT = barGO.GetComponent<RectTransform>();
-            barRT.anchorMin = new Vector2(0f, 0.05f);
-            barRT.anchorMax = new Vector2(0.78f, 0.5f);
-            barRT.offsetMin = Vector2.zero;
-            barRT.offsetMax = Vector2.zero;
-            var barImg = barGO.AddComponent<Image>();
-            barImg.color = new Color(0.16f, 0.16f, 0.2f, 1f);
+                // 上半：标签，占满整行宽度
+                CreateText(row.transform, label, new Vector2(0f, 0.55f), new Vector2(1f, 1f), TextAnchor.LowerCenter, 15, "Text_Label");
 
-            var fillGO = new GameObject("Fill", typeof(RectTransform));
-            fillGO.transform.SetParent(barGO.transform, false);
-            var fillRT = fillGO.GetComponent<RectTransform>();
-            float t0 = max > min ? Mathf.InverseLerp(min, max, initial) : 0f;
-            fillRT.anchorMin = Vector2.zero;
-            fillRT.anchorMax = new Vector2(Mathf.Clamp01(t0), 1f);
-            fillRT.offsetMin = Vector2.zero;
-            fillRT.offsetMax = Vector2.zero;
-            var fillImg = fillGO.AddComponent<Image>();
-            fillImg.color = new Color(0.3f, 0.62f, 0.95f, 1f);
+                // 下半：滑条 + 数值
+                var barGO = new GameObject("Bar", typeof(RectTransform));
+                barGO.transform.SetParent(row.transform, false);
+                barRT = barGO.GetComponent<RectTransform>();
+                barRT.anchorMin = new Vector2(0f, 0.05f);
+                barRT.anchorMax = new Vector2(0.78f, 0.5f);
+                barRT.offsetMin = Vector2.zero;
+                barRT.offsetMax = Vector2.zero;
+                var barImg = barGO.AddComponent<Image>();
+                barImg.color = new Color(0.16f, 0.16f, 0.2f, 1f);
 
-            var valueGO = CreateText(row.transform, initial.ToString("F2"), new Vector2(0.8f, 0.05f), new Vector2(1f, 0.5f), TextAnchor.MiddleRight, 14);
-            var valueText = valueGO.GetComponent<Text>();
+                var fillGO = new GameObject("Fill", typeof(RectTransform));
+                fillGO.transform.SetParent(barGO.transform, false);
+                fillRT = fillGO.GetComponent<RectTransform>();
+                float t0 = max > min ? Mathf.InverseLerp(min, max, initial) : 0f;
+                fillRT.anchorMin = Vector2.zero;
+                fillRT.anchorMax = new Vector2(Mathf.Clamp01(t0), 1f);
+                fillRT.offsetMin = Vector2.zero;
+                fillRT.offsetMax = Vector2.zero;
+                var fillImg = fillGO.AddComponent<Image>();
+                fillImg.color = new Color(0.3f, 0.62f, 0.95f, 1f);
 
-            var dragger = barGO.AddComponent<DebugSliderDrag>();
+                var valueGO = CreateText(row.transform, initial.ToString("F2"), new Vector2(0.8f, 0.05f), new Vector2(1f, 0.5f), TextAnchor.MiddleRight, 14, "Text_Value");
+                valueText = valueGO.GetComponent<Text>();
+            }
+
+            var dragger = row.transform.Find("Bar").GetComponent<DebugSliderDrag>();
+            if (dragger == null) dragger = row.transform.Find("Bar").gameObject.AddComponent<DebugSliderDrag>();
             dragger.Init(barRT, fillRT, min, max, value =>
             {
                 setter(value);
@@ -266,49 +307,82 @@ namespace Resource.Scripts
 
         private void AddToggleRow(string label, bool initial, System.Action<bool> setter)
         {
-            var row = new GameObject($"Row_{label}", typeof(RectTransform));
-            row.transform.SetParent(_content, false);
-            var le = row.AddComponent<LayoutElement>();
-            le.preferredHeight = 56f;
-            le.minHeight = 56f;
-            le.preferredWidth = RowWidth;
-            le.minWidth = RowWidth;
+            var existingRow = _content.Find($"Row_{label}");
+            GameObject row;
+            if (existingRow != null)
+            {
+                row = existingRow.gameObject;
+            }
+            else
+            {
+                row = new GameObject($"Row_{label}", typeof(RectTransform));
+                row.transform.SetParent(_content, false);
+                var le = row.AddComponent<LayoutElement>();
+                le.preferredHeight = 56f;
+                le.minHeight = 56f;
+                le.preferredWidth = RowWidth;
+                le.minWidth = RowWidth;
 
-            // 上半：标签，占满整行宽度
-            CreateText(row.transform, label, new Vector2(0f, 0.55f), new Vector2(1f, 1f), TextAnchor.LowerCenter, 15);
+                // 上半：标签，占满整行宽度
+                CreateText(row.transform, label, new Vector2(0f, 0.55f), new Vector2(1f, 1f), TextAnchor.LowerCenter, 15, "Text_Label");
+            }
 
             // 下半：开关
-            var toggleGO = new GameObject("Toggle", typeof(RectTransform));
-            toggleGO.transform.SetParent(row.transform, false);
-            var toggleRT = toggleGO.GetComponent<RectTransform>();
-            toggleRT.anchorMin = new Vector2(0f, 0.05f);
-            toggleRT.anchorMax = new Vector2(0.14f, 0.5f);
-            toggleRT.offsetMin = Vector2.zero;
-            toggleRT.offsetMax = Vector2.zero;
+            var existingToggle = row.transform.Find("Toggle");
+            GameObject toggleGO;
+            Image bgImg, checkImg;
+            if (existingToggle != null)
+            {
+                toggleGO = existingToggle.gameObject;
+                bgImg = toggleGO.GetComponent<Image>();
+                checkImg = toggleGO.transform.Find("Checkmark").GetComponent<Image>();
+            }
+            else
+            {
+                toggleGO = new GameObject("Toggle", typeof(RectTransform));
+                toggleGO.transform.SetParent(row.transform, false);
+                var toggleRT = toggleGO.GetComponent<RectTransform>();
+                toggleRT.anchorMin = new Vector2(0f, 0.05f);
+                toggleRT.anchorMax = new Vector2(0.14f, 0.5f);
+                toggleRT.offsetMin = Vector2.zero;
+                toggleRT.offsetMax = Vector2.zero;
 
-            var bgImg = toggleGO.AddComponent<Image>();
-            bgImg.color = new Color(0.16f, 0.16f, 0.2f, 1f);
+                bgImg = toggleGO.AddComponent<Image>();
+                bgImg.color = new Color(0.16f, 0.16f, 0.2f, 1f);
 
-            var checkGO = new GameObject("Checkmark", typeof(RectTransform));
-            checkGO.transform.SetParent(toggleGO.transform, false);
-            var checkRT = checkGO.GetComponent<RectTransform>();
-            checkRT.anchorMin = new Vector2(0.15f, 0.15f);
-            checkRT.anchorMax = new Vector2(0.85f, 0.85f);
-            checkRT.offsetMin = Vector2.zero;
-            checkRT.offsetMax = Vector2.zero;
-            var checkImg = checkGO.AddComponent<Image>();
-            checkImg.color = new Color(0.35f, 0.85f, 0.45f, 1f);
+                var checkGO = new GameObject("Checkmark", typeof(RectTransform));
+                checkGO.transform.SetParent(toggleGO.transform, false);
+                var checkRT = checkGO.GetComponent<RectTransform>();
+                checkRT.anchorMin = new Vector2(0.15f, 0.15f);
+                checkRT.anchorMax = new Vector2(0.85f, 0.85f);
+                checkRT.offsetMin = Vector2.zero;
+                checkRT.offsetMax = Vector2.zero;
+                checkImg = checkGO.AddComponent<Image>();
+                checkImg.color = new Color(0.35f, 0.85f, 0.45f, 1f);
+            }
 
-            var toggle = toggleGO.AddComponent<Toggle>();
+            var toggle = toggleGO.GetComponent<Toggle>();
+            if (toggle == null) toggle = toggleGO.AddComponent<Toggle>();
             toggle.targetGraphic = bgImg;
             toggle.graphic = checkImg;
+            toggle.onValueChanged.RemoveAllListeners();
             toggle.isOn = initial;
             toggle.onValueChanged.AddListener(v => setter(v));
         }
 
-        private GameObject CreateText(Transform parent, string text, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize)
+        /// <summary>找同名文字物体就复用（位置/字号不覆盖，只更新文字内容），没有才新建。
+        /// goName 留空时默认 "Text"——同一父物体下建多个文字必须传不同的 goName。</summary>
+        private GameObject CreateText(Transform parent, string text, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize, string goName = "Text")
         {
-            var go = new GameObject("Text", typeof(RectTransform));
+            var existing = parent.Find(goName);
+            if (existing != null)
+            {
+                var existingText = existing.GetComponent<Text>();
+                if (existingText != null) existingText.text = text;
+                return existing.gameObject;
+            }
+
+            var go = new GameObject(goName, typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = anchorMin;

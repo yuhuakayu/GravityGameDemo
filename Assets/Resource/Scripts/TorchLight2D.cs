@@ -25,12 +25,16 @@ namespace Resource.Scripts
         {
             _seed = Random.Range(0f, 100f);
 
-            _light = gameObject.AddComponent<Light2D>();
-            _light.lightType = Light2D.LightType.Point;
-            _light.color = lightColor;
-            _light.pointLightOuterRadius = outerRadius;
-            _light.pointLightInnerRadius = innerRadius;
-            _light.falloffIntensity = 0.5f;
+            _light = GetComponent<Light2D>();
+            if (_light == null)
+            {
+                _light = gameObject.AddComponent<Light2D>();
+                _light.lightType = Light2D.LightType.Point;
+                _light.color = lightColor;
+                _light.pointLightOuterRadius = outerRadius;
+                _light.pointLightInnerRadius = innerRadius;
+                _light.falloffIntensity = 0.5f;
+            }
 
             SfxManager.Instance.AttachTorchLoop(transform);
         }
