@@ -52,8 +52,12 @@ namespace Resource.Scripts
         public float autoMoveSpeed = 6f;
         [Tooltip("自动移动模式下的初始移动方向（角度，0=右，90=上，180=左，270=下）")]
         public float autoMoveStartAngle = 0f;
+        [Tooltip("世界旋转的时候先暂停横向自动移动（重力/掉落不受影响），转停了之后要再等这么多秒才恢复移动")]
+        public float rotationMoveDelay = 0.5f;
         private Vector2 _autoMoveDir = Vector2.right;
         private bool _isDead = false;
+        private WorldRotator _worldRotator;
+        private float _resumeMoveTimer;
 
         private Rigidbody2D rb;
         private bool isGrounded = false;
@@ -94,6 +98,7 @@ namespace Resource.Scripts
                 _autoMoveDir = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)).normalized;
                 // 重力保持组件上配置的值（跟 Stage1 的玩家一致，默认 1），不再清零——
                 // HandleAutoMove() 只覆盖滑行方向那根轴，另一根轴留给重力正常影响。
+                _worldRotator = FindObjectOfType<WorldRotator>();
             }
 
             BuildDustTrail();
@@ -264,13 +269,24 @@ namespace Resource.Scripts
         /// 不管；往左走时只看左边检测器，右边碰墙不管（同方向才挡，不同方向不挡）。
         /// 一旦挡住那一侧的检测器不再碰墙，横向移动自动恢复。
         /// 方向只能靠撞 WallRedirect 墙来改变。
+        ///
+        /// 另外：世界正在被转动的时候先暂停横向移动，不能一边转世界一边继续往前滑；
+        /// 转停了之后还要再等 rotationMoveDelay 秒才恢复，给玩家一点反应时间。
+        /// 重力/掉落全程不受影响。
         /// </summary>
         void HandleAutoMove()
         {
             if (_isDead) return;
 
-            bool blocked = (_autoMoveDir.x > 0f && isTouchingWallRight) ||
-                           (_autoMoveDir.x < 0f && isTouchingWallLeft);
+            bool isRotating = _worldRotator != null && _worldRotator.IsRotating;
+            if (isRotating)
+                _resumeMoveTimer = rotationMoveDelay;
+            else if (_resumeMoveTimer > 0f)
+                _resumeMoveTimer -= Time.fixedDeltaTime;
+
+            bool wallBlocked = (_autoMoveDir.x > 0f && isTouchingWallRight) ||
+                                (_autoMoveDir.x < 0f && isTouchingWallLeft);
+            bool blocked = wallBlocked || _resumeMoveTimer > 0f;
             float targetX = blocked ? 0f : _autoMoveDir.x * autoMoveSpeed;
             rb.linearVelocity = new Vector2(targetX, rb.linearVelocity.y);
 

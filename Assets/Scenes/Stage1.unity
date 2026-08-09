@@ -681,6 +681,7 @@ GameObject:
   - component: {fileID: 113028869}
   - component: {fileID: 113028868}
   - component: {fileID: 113028865}
+  - component: {fileID: 113028870}
   m_Layer: 7
   m_Name: StrandForClock
   m_TagString: Untagged
@@ -805,6 +806,21 @@ Transform:
   - {fileID: 2011127175}
   m_Father: {fileID: 1887328973}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 89.096}
+--- !u!114 &113028870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 113028864}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d416282d86e25744b23f5791df2d031, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  redirectAngle: 0
+  arrowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  arrowSize: 1
 --- !u!1 &120122959
 GameObject:
   m_ObjectHideFlags: 0
@@ -8009,6 +8025,7 @@ GameObject:
   - component: {fileID: 349630354}
   - component: {fileID: 349630356}
   - component: {fileID: 349630355}
+  - component: {fileID: 349630357}
   m_Layer: 7
   m_Name: StrandForClock (1)
   m_TagString: Untagged
@@ -8133,6 +8150,21 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &349630357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 349630353}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d416282d86e25744b23f5791df2d031, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  redirectAngle: 180
+  arrowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  arrowSize: 1
 --- !u!1 &369695929
 GameObject:
   m_ObjectHideFlags: 0
@@ -14442,8 +14474,8 @@ MonoBehaviour:
   m_ShadowVolumeIntensityEnabled: 0
   m_ShadowVolumeIntensity: 0.75
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 0.5
@@ -24250,9 +24282,10 @@ MonoBehaviour:
   rumbleEnabled: 1
   rumbleLowFreq: 0.15
   rumbleHighFreq: 0.05
-  autoMoveMode: 0
+  autoMoveMode: 1
   autoMoveSpeed: 6
   autoMoveStartAngle: 0
+  rotationMoveDelay: 0.5
 --- !u!50 &1033022772
 Rigidbody2D:
   serializedVersion: 5
@@ -24464,8 +24497,8 @@ MonoBehaviour:
   m_ShadowVolumeIntensityEnabled: 0
   m_ShadowVolumeIntensity: 0.75
   m_LocalBounds:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
   m_PointLightInnerAngle: 360
   m_PointLightOuterAngle: 360
   m_PointLightInnerRadius: 1.5
@@ -27202,6 +27235,7 @@ GameObject:
   - component: {fileID: 1472338271}
   - component: {fileID: 1472338270}
   - component: {fileID: 1472338269}
+  - component: {fileID: 1472338274}
   m_Layer: 7
   m_Name: Clock (1)
   m_TagString: Untagged
@@ -27382,6 +27416,21 @@ Transform:
   - {fileID: 1763218342}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 89.962}
+--- !u!114 &1472338274
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1472338268}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d416282d86e25744b23f5791df2d031, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  redirectAngle: 180
+  arrowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  arrowSize: 1
 --- !u!1 &1488289569
 GameObject:
   m_ObjectHideFlags: 0
@@ -29744,6 +29793,7 @@ GameObject:
   - component: {fileID: 1676756956}
   - component: {fileID: 1676756959}
   - component: {fileID: 1676756958}
+  - component: {fileID: 1676756960}
   m_Layer: 7
   m_Name: Clock
   m_TagString: Untagged
@@ -29924,6 +29974,21 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &1676756960
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676756954}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d416282d86e25744b23f5791df2d031, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  redirectAngle: 0
+  arrowColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  arrowSize: 1
 --- !u!1 &1680889430
 GameObject:
   m_ObjectHideFlags: 0

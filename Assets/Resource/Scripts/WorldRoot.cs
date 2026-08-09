@@ -56,6 +56,10 @@ namespace Resource.Scripts
         public float SteeringAngleReadout => _steeringAngle;
         private float _lastGearTickAngle;
 
+        /// <summary>这一帧世界是否正在被玩家转动（输入不为 0）——自动移动模式下用来暂停横向移动，
+        /// 避免转世界的同时玩家还在往前滑，两件事叠在一起不好判断。</summary>
+        public bool IsRotating { get; private set; }
+
         void Start()
         {
             float z = transform.eulerAngles.z;
@@ -128,6 +132,7 @@ namespace Resource.Scripts
             }
 
             input *= rotateSpeed;
+            IsRotating = Mathf.Abs(input) > 0.001f;
 
             // 方向盘角度累加 + 限幅（可关闭）
             _steeringAngle += input * Time.deltaTime;
