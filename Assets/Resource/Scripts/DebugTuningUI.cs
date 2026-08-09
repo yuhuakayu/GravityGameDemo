@@ -202,6 +202,8 @@ namespace Resource.Scripts
             // 避免第一帧渲染出来的时候行宽/行高还是没算过的默认值
             LayoutRebuilder.ForceRebuildLayoutImmediate(contentRT);
             LayoutRebuilder.ForceRebuildLayoutImmediate(panelRT);
+
+            _panelRoot.SetActive(false); // 默认隐藏，按 F1 呼出
         }
 
         private void AddSectionLabel(string text)

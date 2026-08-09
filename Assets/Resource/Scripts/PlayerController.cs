@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 
 namespace Resource.Scripts
 {
@@ -42,6 +43,18 @@ namespace Resource.Scripts
         [Range(0f, 1f)] public float rumbleLowFreq = 0.15f;
         [Range(0f, 1f)] public float rumbleHighFreq = 0.05f;
 
+        [Header("紧迫感玩法：自动移动 + 撞墙强制转向（默认关，不影响原本手动移动的关卡）")]
+        [Tooltip("打开后：手柄/键盘的左右移动完全失效，重力也会被关掉，玩家按固定方向自动滑行，" +
+                 "方向只能靠撞到 WallRedirect 墙来改变——世界旋转变成玩家唯一能做的操作，" +
+                 "转世界＝改变接下来会撞上哪面墙。撞到 HazardKill 物体直接死亡重开本关")]
+        public bool autoMoveMode = false;
+        [Tooltip("自动滑行的速度")]
+        public float autoMoveSpeed = 6f;
+        [Tooltip("自动移动模式下的初始移动方向（角度，0=右，90=上，180=左，270=下）")]
+        public float autoMoveStartAngle = 0f;
+        private Vector2 _autoMoveDir = Vector2.right;
+        private bool _isDead = false;
+
         private Rigidbody2D rb;
         private bool isGrounded = false;
         public bool IsGrounded => isGrounded;
@@ -74,6 +87,14 @@ namespace Resource.Scripts
 
             if (_spriteRenderer != null)
                 _spriteBaseScale = _spriteRenderer.transform.localScale;
+
+            if (autoMoveMode)
+            {
+                float rad = autoMoveStartAngle * Mathf.Deg2Rad;
+                _autoMoveDir = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)).normalized;
+                // 重力保持组件上配置的值（跟 Stage1 的玩家一致，默认 1），不再清零——
+                // HandleAutoMove() 只覆盖滑行方向那根轴，另一根轴留给重力正常影响。
+            }
 
             BuildDustTrail();
 
@@ -115,6 +136,7 @@ namespace Resource.Scripts
             CheckGround();
             CheckWalls();
             HandleMovement();
+            if (autoMoveMode) CheckAutoMoveFootContact();
         }
 
         void Update()
@@ -177,6 +199,12 @@ namespace Resource.Scripts
 
         void HandleMovement()
         {
+            if (autoMoveMode)
+            {
+                HandleAutoMove();
+                return;
+            }
+
             float moveInput = 0f;
 
             if (Keyboard.current != null)
@@ -229,8 +257,35 @@ namespace Resource.Scripts
             UpdateRumble(moveInput);
         }
 
+        /// <summary>
+        /// 自动滑行：Y 轴永远只交给重力，绝不会出现强行往上飘的效果——玩家默认就是
+        /// 一直在往下掉。真正被 _autoMoveDir 控制的只有横向（X）：跟 Stage1 手动移动
+        /// 同一套三个判定点（groundCheck / wallCheckLeft / wallCheckRight），只有撞到
+        /// "前进方向那一侧"的墙才会暂停横向移动——往右走时只看右边检测器，左边碰墙
+        /// 不管；往左走时只看左边检测器，右边碰墙不管（同方向才挡，不同方向不挡）。
+        /// 一旦挡住那一侧的检测器不再碰墙，横向移动自动恢复。
+        /// 方向只能靠撞 WallRedirect 墙来改变。
+        /// </summary>
+        void HandleAutoMove()
+        {
+            if (_isDead) return;
+
+            bool blocked = (_autoMoveDir.x > 0f && isTouchingWallRight) ||
+                           (_autoMoveDir.x < 0f && isTouchingWallLeft);
+            float targetX = blocked ? 0f : _autoMoveDir.x * autoMoveSpeed;
+            rb.linearVelocity = new Vector2(targetX, rb.linearVelocity.y);
+
+            if (_spriteRenderer != null && Mathf.Abs(_autoMoveDir.x) > 0.01f)
+                _spriteRenderer.flipX = _autoMoveDir.x > 0f;
+
+            UpdateFootsteps(targetX);
+            UpdateSquashStretch(1f);
+        }
+
         void HandleJump()
         {
+            if (autoMoveMode) return; // 自动移动模式没有跳跃，方向完全靠撞墙决定
+
             bool jumpPressed = false;
 
             if (Keyboard.current != null &&
@@ -258,6 +313,10 @@ namespace Resource.Scripts
 
         void OnCollisionEnter2D(Collision2D col)
         {
+            // 自动移动模式下，撞墙转向/触雷死亡改成只认脚底（见 CheckAutoMoveFootContact），
+            // 身体其它部位撞上不算，这里直接跳过。
+            if (autoMoveMode) return;
+
             bool wasGrounded = isGrounded;
 
             foreach (ContactPoint2D contact in col.contacts)
@@ -275,7 +334,76 @@ namespace Resource.Scripts
 
         void OnCollisionExit2D(Collision2D col)
         {
+            if (autoMoveMode) return;
             isGrounded = false;
+        }
+
+        void OnTriggerEnter2D(Collider2D other)
+        {
+            // 同上，自动移动模式下这里不再处理，统一走 CheckAutoMoveFootContact 的脚底检测。
+        }
+
+        private bool _footTouchingSpecial = false;
+
+        /// <summary>
+        /// 自动移动模式下，只有脚底（groundCheck 那个检测点，跟手动模式判断"有没有踩到地面"
+        /// 用的是同一个点）碰到 WallRedirect/HazardKill 才会触发效果——身体撞到侧面或头顶
+        /// 不算，必须是脚踩上去。跟 CheckGround()/CheckWalls() 一样用 OverlapCircle 轮询，
+        /// 而不是用碰撞回调，这样不用额外挂子物体碰撞体。
+        /// </summary>
+        void CheckAutoMoveFootContact()
+        {
+            if (groundCheck == null) return;
+
+            // OverlapCircle（单结果版）会先命中玩家自己的碰撞体——脚底检测点本来就在
+            // 玩家自身碰撞体范围内，永远轮不到真正的墙，所以这里用 All 版本再手动排除自己。
+            var hits = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius);
+            Collider2D found = null;
+            foreach (var h in hits)
+            {
+                if (h.attachedRigidbody == rb) continue;
+                if (h.GetComponent<WallRedirect>() != null || h.GetComponent<HazardKill>() != null)
+                {
+                    found = h;
+                    break;
+                }
+            }
+
+            bool touchingNow = found != null;
+            if (touchingNow && !_footTouchingSpecial)
+                HandleAutoMoveCollision(found.gameObject);
+
+            _footTouchingSpecial = touchingNow;
+        }
+
+        /// <summary>自动移动模式下脚底碰到东西：WallRedirect 改变方向，HazardKill 直接死亡重开</summary>
+        void HandleAutoMoveCollision(GameObject other)
+        {
+            if (_isDead) return;
+
+            var hazard = other.GetComponent<HazardKill>();
+            if (hazard != null)
+            {
+                Die();
+                return;
+            }
+
+            var redirect = other.GetComponent<WallRedirect>();
+            if (redirect != null)
+            {
+                _autoMoveDir = redirect.RedirectDirection;
+                SfxManager.Instance.PlayWallBump();
+            }
+        }
+
+        /// <summary>撞到致命物体：停下、放死亡音效、重新加载当前场景</summary>
+        void Die()
+        {
+            if (_isDead) return;
+            _isDead = true;
+            rb.linearVelocity = Vector2.zero;
+            SfxManager.Instance.PlayPlayerDeath();
+            SceneTransition.Instance.LoadScene(SceneManager.GetActiveScene().name);
         }
 
         // ── 跑步手感 / 脚步声 / 扬尘（项目里没有现成的沙尘美术资源，用运行时生成的 ParticleSystem）──

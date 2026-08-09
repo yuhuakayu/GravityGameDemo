@@ -56,6 +56,7 @@ namespace Resource.Scripts
         private AudioClip _torchLoopClip;
         private AudioClip _gearClickClip;
         private AudioClip _stageCompleteClip;
+        private AudioClip _playerDeathClip;
 
         void Awake()
         {
@@ -177,6 +178,15 @@ namespace Resource.Scripts
             src.PlayOneShot(_stageCompleteClip, 0.6f * masterVolume);
         }
 
+        /// <summary>玩家死亡（撞到尖刺等致命物体）时的下坠音效</summary>
+        public void PlayPlayerDeath()
+        {
+            if (!sfxEnabled) return;
+            var src = NextOneShotSource();
+            src.pitch = 1f;
+            src.PlayOneShot(_playerDeathClip, 0.65f * masterVolume);
+        }
+
         public void PlayDoorOpen()
         {
             if (!sfxEnabled) return;
@@ -255,6 +265,10 @@ namespace Resource.Scripts
                 t => NoiseRaw() * 0.6f * EnvAD(t, 0.04f, 0.001f) + Sine(t, 65f) * 0.8f * EnvAD(t, 0.14f, 0.005f));
             // 通关上升音阶：四个音依次播放，each note 用自己的局部时间起相位，避免音符之间相位跳变的爆音
             _stageCompleteClip = CreateClip("StageComplete", 0.56f, StageCompleteArp);
+            // 死亡音效：下坠音阶 + 噪声，短促但明显区别于普通撞墙声
+            _playerDeathClip = CreateClip("PlayerDeath", 0.45f,
+                t => SineSweep(t, 0.4f, 500f, 90f) * 0.7f * EnvAD(t, 0.4f, 0.01f)
+                   + NoiseRaw() * 0.35f * EnvAD(t, 0.1f, 0.002f));
         }
 
         private AudioClip CreateClip(string name, float duration, Func<float, float> waveform)

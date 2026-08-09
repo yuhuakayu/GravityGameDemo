@@ -1423,7 +1423,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isDebugLog: 0
-  isDebugScan: 1
+  isDebugScan: 0
   gyroZOffset: 27
   gyroDeadzone: 0.05
   gyroSmoothing: 8
@@ -6888,6 +6888,9 @@ MonoBehaviour:
   rumbleEnabled: 1
   rumbleLowFreq: 0.15
   rumbleHighFreq: 0.05
+  autoMoveMode: 0
+  autoMoveSpeed: 6
+  autoMoveStartAngle: 0
 --- !u!50 &1033022772
 Rigidbody2D:
   serializedVersion: 5
@@ -8070,7 +8073,7 @@ MonoBehaviour:
   isDebugLog: 0
   isDebugScanGamepads: 1
   rotateSpeed: 120
-  useGyroIfAvailable: 1
+  useGyroIfAvailable: 0
   stickDeadzone: 0.05
   stickSmoothing: 12
   stickSustainTime: 0.08
