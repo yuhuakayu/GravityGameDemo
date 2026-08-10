@@ -74,10 +74,12 @@ namespace Resource.Scripts
                 if (l2 < 0.05f) l2 = 0f;
                 if (r2 < 0.05f) r2 = 0f;
                 ApplyZoom(r2 - l2);
-
-                if (gamepad.buttonSouth.wasPressedThisFrame)
-                    OnStartGameClicked();
             }
+
+            // 跟主菜单/关卡内设置面板同一套确认键：键盘 Enter 或手柄南键（×/A）
+            bool confirmPressed = (Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame)
+                || (gamepad != null && gamepad.buttonSouth.wasPressedThisFrame);
+            if (confirmPressed) OnStartGameClicked();
 
             DrawBoundsGizmo();
         }
@@ -180,11 +182,13 @@ namespace Resource.Scripts
             _canvasGO = canvasGO;
             canvasGO.SetActive(true);
 
-            // 操作提示（左上角）
+            // 操作提示（左上角，跟 GameHUD 的关卡名标签同一种点锚点写法，不用拉伸锚点，
+            // 避免 sizeDelta/anchoredPosition 在拉伸轴上语义变化导致位置算错）
             var hintGO = CreateText(canvasGO.transform, "Text_Hint",
                 "左右扳机：缩放视野\n左摇杆：移动视角",
-                new Vector2(0f, 1f), new Vector2(0.5f, 1f), TextAnchor.UpperLeft, 22);
+                new Vector2(0f, 1f), new Vector2(0f, 1f), TextAnchor.UpperLeft, 26);
             var hintRT = hintGO.GetComponent<RectTransform>();
+            hintRT.pivot = new Vector2(0f, 1f);
             if (existingCanvas == null)
             {
                 hintRT.anchoredPosition = new Vector2(24f, -20f);
