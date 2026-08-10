@@ -22,8 +22,8 @@ namespace Resource.Scripts
                  "不会一直绑着玩家（不然平时走位时背景的视差移动也会被这个旋转换算带偏）")]
         public Transform rotationPivot;
 
-        private Vector3 _startPosition;
-        private Vector3 _cameraStartPosition;
+        private Vector3 _lastCameraPos;
+        private Quaternion _lastSourceRotation;
         private WorldRotator _rotator;
 
         void Start()
@@ -31,41 +31,42 @@ namespace Resource.Scripts
             if (cameraTransform == null && Camera.main != null)
                 cameraTransform = Camera.main.transform;
 
-            _startPosition = transform.position;
-            _cameraStartPosition = cameraTransform != null ? cameraTransform.position : Vector3.zero;
+            _lastCameraPos = cameraTransform != null ? cameraTransform.position : Vector3.zero;
+            _lastSourceRotation = rotationSource != null ? rotationSource.rotation : Quaternion.identity;
 
             if (rotationSource != null)
                 _rotator = rotationSource.GetComponent<WorldRotator>();
         }
 
+        /// <summary>
+        /// 全部走"这一帧的增量"，不是每帧从某个固定基准重新算一次绝对位置——
+        /// WorldRotator.IsRotating 没有滞回，摇杆抖动会导致它单帧内 true/false 来回跳，
+        /// 之前每帧在"绝对位置 A"和"绝对位置 B"之间直接切换，一跳就是一次瞬移，看起来像抽搐。
+        /// 改成每帧只叠加"这一帧摄像机挪了多少"+"这一帧世界转了多少"，isRotating 跳变
+        /// 顶多让某一帧少转一点/多转一点，位置永远是连续的，不会瞬移。
+        /// </summary>
         void LateUpdate()
         {
             if (cameraTransform == null) return;
 
-            Vector3 camDelta = cameraTransform.position - _cameraStartPosition;
-            Vector3 flatPos = _startPosition + new Vector3(
-                camDelta.x * parallaxFactor,
-                camDelta.y * parallaxFactor,
+            Vector3 camFrameDelta = cameraTransform.position - _lastCameraPos;
+            transform.position += new Vector3(
+                camFrameDelta.x * parallaxFactor,
+                camFrameDelta.y * parallaxFactor,
                 0f);
+            _lastCameraPos = cameraTransform.position;
 
             if (rotationSource != null)
             {
                 bool isRotating = _rotator != null && _rotator.IsRotating;
                 if (rotationPivot != null && isRotating)
                 {
+                    Quaternion frameDeltaRotation = rotationSource.rotation * Quaternion.Inverse(_lastSourceRotation);
                     Vector3 pivot = rotationPivot.position;
-                    Vector3 rotatedOffset = rotationSource.rotation * (flatPos - pivot);
-                    transform.position = pivot + rotatedOffset;
-                }
-                else
-                {
-                    transform.position = flatPos;
+                    transform.position = pivot + frameDeltaRotation * (transform.position - pivot);
                 }
                 transform.rotation = rotationSource.rotation;
-            }
-            else
-            {
-                transform.position = flatPos;
+                _lastSourceRotation = rotationSource.rotation;
             }
         }
     }
