@@ -17,12 +17,14 @@ namespace Resource.Scripts
                  "背景贴图属于场景本体的一部分，世界转的时候背景不跟着转会显得背景和前景是两个不同步的图层")]
         public Transform rotationSource;
 
-        [Tooltip("旋转的中心点（一般是玩家）：不为空时，位置也会跟着绕这个点转，跟世界旋转的中心保持一致，" +
-                 "而不是绕图层自己的锚点原地转。为空则只改朝向，位置还是照常跟摄像机走视差")]
+        [Tooltip("旋转的中心点（一般是玩家）：世界正在转的那几帧，位置会绕这个点转，跟世界旋转的中心保持一致，" +
+                 "而不是绕图层自己的锚点原地转。旋转一停就解除绑定，回到普通的摄像机视差跟随，" +
+                 "不会一直绑着玩家（不然平时走位时背景的视差移动也会被这个旋转换算带偏）")]
         public Transform rotationPivot;
 
         private Vector3 _startPosition;
         private Vector3 _cameraStartPosition;
+        private WorldRotator _rotator;
 
         void Start()
         {
@@ -31,6 +33,9 @@ namespace Resource.Scripts
 
             _startPosition = transform.position;
             _cameraStartPosition = cameraTransform != null ? cameraTransform.position : Vector3.zero;
+
+            if (rotationSource != null)
+                _rotator = rotationSource.GetComponent<WorldRotator>();
         }
 
         void LateUpdate()
@@ -45,7 +50,8 @@ namespace Resource.Scripts
 
             if (rotationSource != null)
             {
-                if (rotationPivot != null)
+                bool isRotating = _rotator != null && _rotator.IsRotating;
+                if (rotationPivot != null && isRotating)
                 {
                     Vector3 pivot = rotationPivot.position;
                     Vector3 rotatedOffset = rotationSource.rotation * (flatPos - pivot);
