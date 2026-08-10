@@ -53,7 +53,7 @@ namespace Resource.Scripts
         [Tooltip("自动移动模式下的初始移动方向（角度，0=右，90=上，180=左，270=下）")]
         public float autoMoveStartAngle = 0f;
         [Tooltip("世界旋转的时候先暂停横向自动移动（重力/掉落不受影响），转停了之后要再等这么多秒才恢复移动")]
-        public float rotationMoveDelay = 0.5f;
+        public float rotationMoveDelay = 0.2f;
         private Vector2 _autoMoveDir = Vector2.right;
         private bool _isDead = false;
         private WorldRotator _worldRotator;

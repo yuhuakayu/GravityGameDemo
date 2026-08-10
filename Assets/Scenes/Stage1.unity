@@ -25043,7 +25043,7 @@ MonoBehaviour:
   autoMoveMode: 1
   autoMoveSpeed: 6
   autoMoveStartAngle: 0
-  rotationMoveDelay: 0.5
+  rotationMoveDelay: 0.2
 --- !u!50 &1033022772
 Rigidbody2D:
   serializedVersion: 5
