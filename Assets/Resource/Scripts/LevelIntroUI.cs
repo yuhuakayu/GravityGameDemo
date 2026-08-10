@@ -328,17 +328,22 @@ namespace Resource.Scripts
             text.text = letters;
         }
 
-        /// <summary>扳机徽标底图：圆角方形（仿手柄按键提示徽标的形状），字母另用 Text 叠在上面，
-        /// 不用贴图画字，换字母不用重新生成贴图。</summary>
+        /// <summary>扳机徽标底图：仿真实扳机键提示的梯形剪影——顶边宽且平直（带小圆角），
+        /// 往下逐渐收窄，底边收成一个整圆弧（不是四角等圆的方形）。字母另用 Text 叠在上面。</summary>
         private static Sprite CreateTriggerBadgeSprite(int size)
         {
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
             tex.wrapMode = TextureWrapMode.Clamp;
             var pixels = new Color32[size * size];
             float r = size * 0.5f;
-            float halfW = r * 0.86f;
-            float halfH = r * 0.86f;
-            float radius = r * 0.4f;
+            float halfH = r * 0.82f;
+            float halfWTop = r * 0.78f;
+            float halfWBottom = r * 0.40f;
+            float topRadius = r * 0.22f;
+
+            float topY = halfH;
+            float bottomY = -halfH;
+            float capCenterY = bottomY + halfWBottom; // 底部圆弧的圆心高度
 
             for (int y = 0; y < size; y++)
             {
@@ -346,11 +351,41 @@ namespace Resource.Scripts
                 {
                     float px = x + 0.5f - r;
                     float py = y + 0.5f - r;
-                    float dx = Mathf.Max(Mathf.Abs(px) - (halfW - radius), 0f);
-                    float dy = Mathf.Max(Mathf.Abs(py) - (halfH - radius), 0f);
-                    float cornerDist = Mathf.Sqrt(dx * dx + dy * dy);
-                    float alpha = Mathf.Clamp01(radius - cornerDist + 1f);
-                    if (Mathf.Abs(px) > halfW || Mathf.Abs(py) > halfH) alpha = 0f;
+                    float alpha = 0f;
+
+                    if (py >= capCenterY)
+                    {
+                        // 梯形主体：按高度线性插值收窄
+                        float t = Mathf.InverseLerp(capCenterY, topY, py);
+                        float halfWAtY = Mathf.Lerp(halfWBottom, halfWTop, t);
+
+                        if (py <= topY - topRadius)
+                        {
+                            if (Mathf.Abs(px) <= halfWAtY) alpha = 1f;
+                        }
+                        else
+                        {
+                            float cornerX = halfWTop - topRadius;
+                            if (Mathf.Abs(px) <= cornerX)
+                            {
+                                alpha = 1f; // 顶边中间的平直段
+                            }
+                            else
+                            {
+                                float dx = Mathf.Abs(px) - cornerX;
+                                float dy = py - (topY - topRadius);
+                                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                                alpha = Mathf.Clamp01(topRadius - dist);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // 底部整圆弧，跟梯形主体在 capCenterY 处半径正好衔接，不会有接缝
+                        float dist = Mathf.Sqrt(px * px + (py - capCenterY) * (py - capCenterY));
+                        alpha = Mathf.Clamp01(halfWBottom - dist);
+                    }
+
                     pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
                 }
             }
