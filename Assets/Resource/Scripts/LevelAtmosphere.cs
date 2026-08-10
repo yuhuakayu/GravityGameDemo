@@ -113,6 +113,8 @@ namespace Resource.Scripts
 
             var rotator = FindObjectOfType<WorldRotator>();
             if (rotator != null) layer.rotationSource = rotator.transform;
+            var player = FindObjectOfType<PlayerController>();
+            if (player != null) layer.rotationPivot = player.transform;
         }
 
         /// <summary>石柱剪影同名的就跳过（位置/大小是随机生成的，场景里已经摆好就不重新随机），

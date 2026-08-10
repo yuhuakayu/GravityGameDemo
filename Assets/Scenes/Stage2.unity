@@ -15568,6 +15568,7 @@ MonoBehaviour:
   parallaxFactor: 1.4
   cameraTransform: {fileID: 492901732}
   rotationSource: {fileID: 0}
+  rotationPivot: {fileID: 0}
 --- !u!212 &677101373
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -18361,6 +18362,7 @@ MonoBehaviour:
   parallaxFactor: 1.4
   cameraTransform: {fileID: 492901732}
   rotationSource: {fileID: 0}
+  rotationPivot: {fileID: 0}
 --- !u!212 &992652782
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -19528,6 +19530,7 @@ MonoBehaviour:
   parallaxFactor: 1
   cameraTransform: {fileID: 492901732}
   rotationSource: {fileID: 59396098}
+  rotationPivot: {fileID: 597675138}
 --- !u!212 &1103334652
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -20590,6 +20593,7 @@ MonoBehaviour:
   parallaxFactor: 1.4
   cameraTransform: {fileID: 492901732}
   rotationSource: {fileID: 0}
+  rotationPivot: {fileID: 0}
 --- !u!212 &1190140466
 SpriteRenderer:
   m_ObjectHideFlags: 0
