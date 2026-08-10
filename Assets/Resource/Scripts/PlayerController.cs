@@ -112,6 +112,9 @@ namespace Resource.Scripts
             if (FindObjectOfType<DebugTuningUI>() == null)
                 new GameObject("DebugTuningUI (Auto)").AddComponent<DebugTuningUI>();
 
+            if (FindObjectOfType<LevelIntroUI>() == null)
+                new GameObject("LevelIntroUI (Auto)").AddComponent<LevelIntroUI>();
+
             if (FindObjectOfType<CandleSpawner>() == null)
                 new GameObject("CandleSpawner (Auto)").AddComponent<CandleSpawner>();
 
