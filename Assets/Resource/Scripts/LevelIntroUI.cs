@@ -182,10 +182,10 @@ namespace Resource.Scripts
             _canvasGO = canvasGO;
             canvasGO.SetActive(true);
 
-            // 操作提示（左上角）：图标 + 文字两行，图标是程序生成的（摇杆=同心圆，扳机=胶囊形），
-            // 跟项目里齿轮图标/箭头贴图同一套做法，不用外部素材
+            // 操作提示（左上角）：图标 + 文字两行，图标是程序生成的（摇杆=同心圆，扳机=仿手柄按键提示的
+            // 圆角方形徽标+字母），跟项目里齿轮图标/箭头贴图同一套做法，不用外部素材
             BuildHintRow(canvasGO.transform, "Row_Stick", CreateStickIconSprite(64), "左摇杆：移动视角", 0);
-            BuildHintRow(canvasGO.transform, "Row_Trigger", CreateTriggerIconSprite(64), "左右扳机：缩放视野", 1);
+            BuildTriggerHintRow(canvasGO.transform, "Row_Trigger", "左右扳机：缩放视野", 1);
 
             // 开始游戏按钮（右下角）
             var startBtn = CreateButton(canvasGO.transform, "开始游戏", new Vector2(280f, 64f), ButtonColor);
@@ -255,6 +255,111 @@ namespace Resource.Scripts
             }
         }
 
+        /// <summary>扳机提示行：跟通用 BuildHintRow 不一样，这一行要并排放 L2/R2 两个徽标图标（仿手柄按键
+        /// 提示样式：圆角方形徽章 + 白底黑字母），再接说明文字，所以单独写一个方法。</summary>
+        private void BuildTriggerHintRow(Transform parent, string rowName, string label, int rowIndex)
+        {
+            var existingRow = parent.Find(rowName);
+            GameObject rowGO;
+            if (existingRow != null)
+            {
+                rowGO = existingRow.gameObject;
+            }
+            else
+            {
+                rowGO = new GameObject(rowName, typeof(RectTransform));
+                rowGO.transform.SetParent(parent, false);
+                var rowRT = rowGO.GetComponent<RectTransform>();
+                rowRT.anchorMin = rowRT.anchorMax = new Vector2(0f, 1f);
+                rowRT.pivot = new Vector2(0f, 1f);
+                rowRT.anchoredPosition = new Vector2(24f, -84f - rowIndex * 52f);
+                rowRT.sizeDelta = new Vector2(360f, 48f);
+            }
+
+            BuildTriggerBadge(rowGO.transform, "Badge_L2", "L2", 0f);
+            BuildTriggerBadge(rowGO.transform, "Badge_R2", "R2", 46f);
+
+            bool labelIsNew = rowGO.transform.Find("Text_Label") == null;
+            var labelGO = CreateText(rowGO.transform, "Text_Label", label,
+                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), TextAnchor.MiddleLeft, 22);
+            if (labelIsNew)
+            {
+                var labelRT = labelGO.GetComponent<RectTransform>();
+                labelRT.pivot = new Vector2(0f, 0.5f);
+                labelRT.anchoredPosition = new Vector2(100f, 0f); // 让开两个徽标的宽度
+                labelRT.sizeDelta = new Vector2(260f, 40f);
+            }
+        }
+
+        /// <summary>单个徽标图标：圆角方形底 + 居中字母，字母用真 Text（不是贴图里画出来的），
+        /// 方便以后换字母复用同一个底图。</summary>
+        private void BuildTriggerBadge(Transform parent, string goName, string letters, float xOffset)
+        {
+            var existing = parent.Find(goName);
+            if (existing != null) return; // 徽标是纯装饰，字母固定不变，复用即可
+
+            var badgeGO = new GameObject(goName, typeof(RectTransform));
+            badgeGO.transform.SetParent(parent, false);
+            var rt = badgeGO.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 0.5f);
+            rt.anchorMax = new Vector2(0f, 0.5f);
+            rt.pivot = new Vector2(0f, 0.5f);
+            rt.anchoredPosition = new Vector2(xOffset, 0f);
+            rt.sizeDelta = new Vector2(40f, 40f);
+
+            var img = badgeGO.AddComponent<Image>();
+            img.sprite = CreateTriggerBadgeSprite(64);
+            img.color = Color.white;
+
+            var textGO = new GameObject("Letters", typeof(RectTransform));
+            textGO.transform.SetParent(badgeGO.transform, false);
+            var textRT = textGO.GetComponent<RectTransform>();
+            textRT.anchorMin = Vector2.zero;
+            textRT.anchorMax = Vector2.one;
+            textRT.offsetMin = Vector2.zero;
+            textRT.offsetMax = Vector2.zero;
+            var text = textGO.AddComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 16;
+            text.fontStyle = FontStyle.Bold;
+            text.color = new Color(0.15f, 0.12f, 0.1f, 1f);
+            text.alignment = TextAnchor.MiddleCenter;
+            text.raycastTarget = false;
+            text.text = letters;
+        }
+
+        /// <summary>扳机徽标底图：圆角方形（仿手柄按键提示徽标的形状），字母另用 Text 叠在上面，
+        /// 不用贴图画字，换字母不用重新生成贴图。</summary>
+        private static Sprite CreateTriggerBadgeSprite(int size)
+        {
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            var pixels = new Color32[size * size];
+            float r = size * 0.5f;
+            float halfW = r * 0.86f;
+            float halfH = r * 0.86f;
+            float radius = r * 0.4f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float px = x + 0.5f - r;
+                    float py = y + 0.5f - r;
+                    float dx = Mathf.Max(Mathf.Abs(px) - (halfW - radius), 0f);
+                    float dy = Mathf.Max(Mathf.Abs(py) - (halfH - radius), 0f);
+                    float cornerDist = Mathf.Sqrt(dx * dx + dy * dy);
+                    float alpha = Mathf.Clamp01(radius - cornerDist + 1f);
+                    if (Mathf.Abs(px) > halfW || Mathf.Abs(py) > halfH) alpha = 0f;
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels32(pixels);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+        }
+
         /// <summary>摇杆图标：外圈圆环（底座）+ 内圈实心圆（偏移一点表示可以往任意方向推）。</summary>
         private static Sprite CreateStickIconSprite(int size)
         {
@@ -293,34 +398,6 @@ namespace Resource.Scripts
             return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
         }
 
-        /// <summary>扳机图标：竖直胶囊形（矩形主体 + 上下两端半圆），当扳机按钮的简化剪影。</summary>
-        private static Sprite CreateTriggerIconSprite(int size)
-        {
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            tex.wrapMode = TextureWrapMode.Clamp;
-            var pixels = new Color32[size * size];
-            float r = size * 0.5f;
-            float halfWidth = r * 0.42f;
-            float halfHeight = r * 0.8f;
-            float capRadius = halfWidth;
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float dx = x + 0.5f - r;
-                    float dy = y + 0.5f - r;
-                    float clampedDy = Mathf.Clamp(dy, -(halfHeight - capRadius), halfHeight - capRadius);
-                    float dist = Mathf.Sqrt(dx * dx + (dy - clampedDy) * (dy - clampedDy));
-                    float alpha = Mathf.Clamp01(capRadius - dist);
-                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
-                }
-            }
-
-            tex.SetPixels32(pixels);
-            tex.Apply();
-            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
-        }
 
         private GameObject CreateText(Transform parent, string goName, string text, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize)
         {
