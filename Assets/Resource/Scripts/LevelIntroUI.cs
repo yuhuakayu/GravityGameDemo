@@ -182,18 +182,10 @@ namespace Resource.Scripts
             _canvasGO = canvasGO;
             canvasGO.SetActive(true);
 
-            // 操作提示（左上角，跟 GameHUD 的关卡名标签同一种点锚点写法，不用拉伸锚点，
-            // 避免 sizeDelta/anchoredPosition 在拉伸轴上语义变化导致位置算错）
-            var hintGO = CreateText(canvasGO.transform, "Text_Hint",
-                "左右扳机：缩放视野\n左摇杆：移动视角",
-                new Vector2(0f, 1f), new Vector2(0f, 1f), TextAnchor.UpperLeft, 26);
-            var hintRT = hintGO.GetComponent<RectTransform>();
-            hintRT.pivot = new Vector2(0f, 1f);
-            if (existingCanvas == null)
-            {
-                hintRT.anchoredPosition = new Vector2(24f, -20f);
-                hintRT.sizeDelta = new Vector2(500f, 80f);
-            }
+            // 操作提示（左上角）：图标 + 文字两行，图标是程序生成的（摇杆=同心圆，扳机=胶囊形），
+            // 跟项目里齿轮图标/箭头贴图同一套做法，不用外部素材
+            BuildHintRow(canvasGO.transform, "Row_Stick", CreateStickIconSprite(64), "左摇杆：移动视角", 0);
+            BuildHintRow(canvasGO.transform, "Row_Trigger", CreateTriggerIconSprite(64), "左右扳机：缩放视野", 1);
 
             // 开始游戏按钮（右下角）
             var startBtn = CreateButton(canvasGO.transform, "开始游戏", new Vector2(280f, 64f), ButtonColor);
@@ -203,6 +195,131 @@ namespace Resource.Scripts
             if (existingCanvas == null) startRT.anchoredPosition = new Vector2(-30f, 30f);
             startBtn.onClick.RemoveAllListeners();
             startBtn.onClick.AddListener(OnStartGameClicked);
+        }
+
+        /// <summary>一行操作提示：左边一个图标，右边文字，rowIndex 决定竖直排布的第几行（0 在最上面）。</summary>
+        private void BuildHintRow(Transform parent, string rowName, Sprite icon, string label, int rowIndex)
+        {
+            var existingRow = parent.Find(rowName);
+            GameObject rowGO;
+            if (existingRow != null)
+            {
+                rowGO = existingRow.gameObject;
+            }
+            else
+            {
+                rowGO = new GameObject(rowName, typeof(RectTransform));
+                rowGO.transform.SetParent(parent, false);
+                var rowRT = rowGO.GetComponent<RectTransform>();
+                rowRT.anchorMin = rowRT.anchorMax = new Vector2(0f, 1f);
+                rowRT.pivot = new Vector2(0f, 1f);
+                // 这一行本身刚新建（走到这个 else 分支就说明场景里原来没有），才需要摆位置；
+                // 之前这里错判成"整个 Canvas 是不是新建的"，导致两行都判定成"不是新建"从而
+                // 都没摆位置，全部叠在 RectTransform 默认的 (0,0) 上，看起来像文字糊在一起。
+                // Y 起点从 -84 开始（不是 -20）：GameHUD 的关卡名标签也在左上角，从 -20 往下
+                // 占了大概 50 高，紧挨着摆会跟它糊在一起，往下让开一段。
+                rowRT.anchoredPosition = new Vector2(24f, -84f - rowIndex * 52f);
+                rowRT.sizeDelta = new Vector2(360f, 48f);
+            }
+
+            var existingIcon = rowGO.transform.Find("Icon");
+            Image iconImg;
+            if (existingIcon != null)
+            {
+                iconImg = existingIcon.GetComponent<Image>();
+            }
+            else
+            {
+                var iconGO = new GameObject("Icon", typeof(RectTransform));
+                iconGO.transform.SetParent(rowGO.transform, false);
+                var iconRT = iconGO.GetComponent<RectTransform>();
+                iconRT.anchorMin = new Vector2(0f, 0.5f);
+                iconRT.anchorMax = new Vector2(0f, 0.5f);
+                iconRT.pivot = new Vector2(0f, 0.5f);
+                iconRT.anchoredPosition = Vector2.zero;
+                iconRT.sizeDelta = new Vector2(40f, 40f);
+                iconImg = iconGO.AddComponent<Image>();
+            }
+            iconImg.sprite = icon;
+            iconImg.color = Color.white;
+
+            bool labelIsNew = rowGO.transform.Find("Text_Label") == null;
+            var labelGO = CreateText(rowGO.transform, "Text_Label", label,
+                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), TextAnchor.MiddleLeft, 22);
+            if (labelIsNew) // 只在刚新建时摆位置，复用现成物体不覆盖（CreateText 内部已经处理了文字内容的复用）
+            {
+                var labelRT = labelGO.GetComponent<RectTransform>();
+                labelRT.pivot = new Vector2(0f, 0.5f);
+                labelRT.anchoredPosition = new Vector2(52f, 0f);
+                labelRT.sizeDelta = new Vector2(300f, 40f);
+            }
+        }
+
+        /// <summary>摇杆图标：外圈圆环（底座）+ 内圈实心圆（偏移一点表示可以往任意方向推）。</summary>
+        private static Sprite CreateStickIconSprite(int size)
+        {
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            var pixels = new Color32[size * size];
+            float r = size * 0.5f;
+            float outerRadius = r * 0.92f;
+            float ringThickness = r * 0.16f;
+            float innerRadius = r * 0.4f;
+            float offset = r * 0.14f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dxOuter = x + 0.5f - r;
+                    float dyOuter = y + 0.5f - r;
+                    float distOuter = Mathf.Sqrt(dxOuter * dxOuter + dyOuter * dyOuter);
+                    float ringAlpha = Mathf.Min(
+                        Mathf.Clamp01(outerRadius - distOuter),
+                        Mathf.Clamp01(distOuter - (outerRadius - ringThickness)));
+
+                    float dxInner = x + 0.5f - r + offset;
+                    float dyInner = y + 0.5f - r - offset;
+                    float distInner = Mathf.Sqrt(dxInner * dxInner + dyInner * dyInner);
+                    float innerAlpha = Mathf.Clamp01(innerRadius - distInner);
+
+                    float alpha = Mathf.Max(ringAlpha, innerAlpha);
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels32(pixels);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+        }
+
+        /// <summary>扳机图标：竖直胶囊形（矩形主体 + 上下两端半圆），当扳机按钮的简化剪影。</summary>
+        private static Sprite CreateTriggerIconSprite(int size)
+        {
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            var pixels = new Color32[size * size];
+            float r = size * 0.5f;
+            float halfWidth = r * 0.42f;
+            float halfHeight = r * 0.8f;
+            float capRadius = halfWidth;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x + 0.5f - r;
+                    float dy = y + 0.5f - r;
+                    float clampedDy = Mathf.Clamp(dy, -(halfHeight - capRadius), halfHeight - capRadius);
+                    float dist = Mathf.Sqrt(dx * dx + (dy - clampedDy) * (dy - clampedDy));
+                    float alpha = Mathf.Clamp01(capRadius - dist);
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            tex.SetPixels32(pixels);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
         }
 
         private GameObject CreateText(Transform parent, string goName, string text, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize)
