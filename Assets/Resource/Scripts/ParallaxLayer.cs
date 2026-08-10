@@ -13,6 +13,10 @@ namespace Resource.Scripts
         public float parallaxFactor = 0.3f;
         public Transform cameraTransform;
 
+        [Tooltip("不为空时，这一层会跟着这个 Transform 的旋转同步转动（比如世界旋转的枢轴）——" +
+                 "背景贴图属于场景本体的一部分，世界转的时候背景不跟着转会显得背景和前景是两个不同步的图层")]
+        public Transform rotationSource;
+
         private Vector3 _startPosition;
         private Vector3 _cameraStartPosition;
 
@@ -34,6 +38,9 @@ namespace Resource.Scripts
                 camDelta.x * parallaxFactor,
                 camDelta.y * parallaxFactor,
                 0f);
+
+            if (rotationSource != null)
+                transform.rotation = rotationSource.rotation;
         }
     }
 }

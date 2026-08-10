@@ -1654,6 +1654,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parallaxFactor: 1.4
   cameraTransform: {fileID: 519420032}
+  rotationSource: {fileID: 0}
 --- !u!212 &167756127
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -2064,6 +2065,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parallaxFactor: 1.4
   cameraTransform: {fileID: 519420032}
+  rotationSource: {fileID: 0}
 --- !u!212 &202830441
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -2709,7 +2711,6 @@ GameObject:
   - component: {fileID: 289817768}
   - component: {fileID: 289817771}
   - component: {fileID: 289817770}
-  - component: {fileID: 289817769}
   m_Layer: 0
   m_Name: anim
   m_TagString: Untagged
@@ -2732,42 +2733,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 518968281}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!58 &289817769
-CircleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 289817767}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0.004600331, y: -0.5750498}
-  m_Radius: 0.22253269
 --- !u!95 &289817770
 Animator:
   serializedVersion: 7
@@ -34533,6 +34498,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parallaxFactor: 1
   cameraTransform: {fileID: 519420032}
+  rotationSource: {fileID: 1887328973}
 --- !u!212 &2044756032
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -34881,6 +34847,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parallaxFactor: 1.4
   cameraTransform: {fileID: 519420032}
+  rotationSource: {fileID: 0}
 --- !u!212 &2064923004
 SpriteRenderer:
   m_ObjectHideFlags: 0

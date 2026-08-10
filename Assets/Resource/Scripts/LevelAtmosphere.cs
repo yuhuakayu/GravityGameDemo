@@ -110,6 +110,9 @@ namespace Resource.Scripts
             var layer = go.AddComponent<ParallaxLayer>();
             layer.parallaxFactor  = backgroundParallax;
             layer.cameraTransform = cam.transform;
+
+            var rotator = FindObjectOfType<WorldRotator>();
+            if (rotator != null) layer.rotationSource = rotator.transform;
         }
 
         /// <summary>石柱剪影同名的就跳过（位置/大小是随机生成的，场景里已经摆好就不重新随机），

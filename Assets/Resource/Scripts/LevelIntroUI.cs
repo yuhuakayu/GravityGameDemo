@@ -131,12 +131,18 @@ namespace Resource.Scripts
             if (player != null) player.enabled = false;
             var rotator = FindObjectOfType<WorldRotator>();
             if (rotator != null) rotator.enabled = false;
+
+            // 光禁用脚本挡不住物理引擎：Rigidbody2D 的重力/惯性还是会照常模拟，
+            // 玩家会在浏览画面里悄悄往下掉。直接把时间冻结，连物理一起停——
+            // 摇杆平移/扳机缩放走的是 Time.unscaledDeltaTime，不受影响。
+            Time.timeScale = 0f;
         }
 
         private void OnStartGameClicked()
         {
             if (!_isPreviewing) return;
             _isPreviewing = false;
+            Time.timeScale = 1f;
             SfxManager.Instance.PlayButtonClick();
 
             var player = FindObjectOfType<PlayerController>();

@@ -29,6 +29,11 @@ namespace Resource.Scripts
             var candle = Instantiate(prefab, spawnPosition, Quaternion.identity, transform);
             candle.name = "Candle (Auto)";
             candle.AddComponent<TorchLight2D>();
+
+            // Torch_01 预制体自带 CircleCollider2D（原本是给可站立的火把用的，挂在子物体 "anim" 上），
+            // 蜡烛只是装饰道具，不应该被玩家撞到/踩到，去掉碰撞体
+            foreach (var col in candle.GetComponentsInChildren<Collider2D>(true))
+                Destroy(col);
         }
     }
 }
