@@ -261,8 +261,12 @@ namespace Resource.Scripts
             }
         }
 
-        /// <summary>扳机提示行：跟通用 BuildHintRow 不一样，这一行要并排放 L2/R2 两个徽标图标（仿手柄按键
-        /// 提示样式：圆角方形徽章 + 白底黑字母），再接说明文字，所以单独写一个方法。</summary>
+        /// <summary>手柄按键美术图（美术自己截图做的，不是程序生成的），放在 Resources 下按名字加载。
+        /// 图本身已经画好了黑底白字的徽标+字母，不用再叠字 Text。</summary>
+        private const string ControllerIconResourceDir = "Icons/ControllerButtons/";
+
+        /// <summary>扳机提示行：跟通用 BuildHintRow 不一样，这一行要并排放 L2/R2 两个徽标图标（美术素材图），
+        /// 再接说明文字，所以单独写一个方法。两个徽标按各自贴图的宽高比顺序排布，不挤成正方形。</summary>
         private void BuildTriggerHintRow(Transform parent, string rowName, string label, int rowIndex)
         {
             var existingRow = parent.Find(rowName);
@@ -282,8 +286,11 @@ namespace Resource.Scripts
                 rowRT.sizeDelta = new Vector2(360f, 48f);
             }
 
-            BuildTriggerBadge(rowGO.transform, "Badge_L2", "L2", 0f);
-            BuildTriggerBadge(rowGO.transform, "Badge_R2", "R2", 46f);
+            const float badgeHeight = 36f;
+            const float badgeGap = 8f;
+            float x = 0f;
+            x += BuildIconBadge(rowGO.transform, "Badge_L2", "L2", x, badgeHeight) + badgeGap;
+            x += BuildIconBadge(rowGO.transform, "Badge_R2", "R2", x, badgeHeight) + badgeGap;
 
             bool labelIsNew = rowGO.transform.Find("Text_Label") == null;
             var labelGO = CreateText(rowGO.transform, "Text_Label", label,
@@ -292,113 +299,51 @@ namespace Resource.Scripts
             {
                 var labelRT = labelGO.GetComponent<RectTransform>();
                 labelRT.pivot = new Vector2(0f, 0.5f);
-                labelRT.anchoredPosition = new Vector2(100f, 0f); // 让开两个徽标的宽度
                 labelRT.sizeDelta = new Vector2(260f, 40f);
             }
+            // 每次都重新摆放到两个徽标算出来的实际宽度之后（徽标宽度是贴图决定的，不是写死的常量）
+            var labelRTAlways = labelGO.GetComponent<RectTransform>();
+            labelRTAlways.anchoredPosition = new Vector2(x + 4f, 0f);
         }
 
-        /// <summary>单个徽标图标：圆角方形底 + 居中字母，字母用真 Text（不是贴图里画出来的），
-        /// 方便以后换字母复用同一个底图。</summary>
-        private void BuildTriggerBadge(Transform parent, string goName, string letters, float xOffset)
+        /// <summary>单个手柄按键徽标：从 Resources/Icons/ControllerButtons/ 下加载同名贴图，
+        /// 按贴图原始宽高比缩放到指定高度。返回这个徽标实际占用的宽度，方便调用方摆下一个的位置。</summary>
+        private float BuildIconBadge(Transform parent, string goName, string iconName, float xOffset, float height)
         {
-            var existing = parent.Find(goName);
-            if (existing != null) return; // 徽标是纯装饰，字母固定不变，复用即可
+            var sprite = Resources.Load<Sprite>(ControllerIconResourceDir + iconName);
+            if (sprite == null)
+            {
+                Debug.LogWarning($"[LevelIntroUI] 找不到手柄按键图标：{ControllerIconResourceDir}{iconName}");
+                return height; // 找不到就退化成方形占位，好歹不会把后面的东西叠一起
+            }
+            float width = height * (sprite.rect.width / sprite.rect.height);
 
-            var badgeGO = new GameObject(goName, typeof(RectTransform));
-            badgeGO.transform.SetParent(parent, false);
+            var existing = parent.Find(goName);
+            GameObject badgeGO;
+            Image img;
+            if (existing != null)
+            {
+                badgeGO = existing.gameObject;
+                img = badgeGO.GetComponent<Image>();
+            }
+            else
+            {
+                badgeGO = new GameObject(goName, typeof(RectTransform));
+                badgeGO.transform.SetParent(parent, false);
+                img = badgeGO.AddComponent<Image>();
+                img.color = Color.white;
+                img.raycastTarget = false;
+            }
+
             var rt = badgeGO.GetComponent<RectTransform>();
             rt.anchorMin = new Vector2(0f, 0.5f);
             rt.anchorMax = new Vector2(0f, 0.5f);
             rt.pivot = new Vector2(0f, 0.5f);
             rt.anchoredPosition = new Vector2(xOffset, 0f);
-            rt.sizeDelta = new Vector2(40f, 40f);
+            rt.sizeDelta = new Vector2(width, height);
+            img.sprite = sprite;
 
-            var img = badgeGO.AddComponent<Image>();
-            img.sprite = CreateTriggerBadgeSprite(64);
-            img.color = Color.white;
-
-            var textGO = new GameObject("Letters", typeof(RectTransform));
-            textGO.transform.SetParent(badgeGO.transform, false);
-            var textRT = textGO.GetComponent<RectTransform>();
-            textRT.anchorMin = Vector2.zero;
-            textRT.anchorMax = Vector2.one;
-            textRT.offsetMin = Vector2.zero;
-            textRT.offsetMax = Vector2.zero;
-            var text = textGO.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 16;
-            text.fontStyle = FontStyle.Bold;
-            text.color = new Color(0.15f, 0.12f, 0.1f, 1f);
-            text.alignment = TextAnchor.MiddleCenter;
-            text.raycastTarget = false;
-            text.text = letters;
-        }
-
-        /// <summary>扳机徽标底图：仿真实扳机键提示的梯形剪影——顶边宽且平直（带小圆角），
-        /// 往下逐渐收窄，底边收成一个整圆弧（不是四角等圆的方形）。字母另用 Text 叠在上面。</summary>
-        private static Sprite CreateTriggerBadgeSprite(int size)
-        {
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            tex.wrapMode = TextureWrapMode.Clamp;
-            var pixels = new Color32[size * size];
-            float r = size * 0.5f;
-            float halfH = r * 0.82f;
-            float halfWTop = r * 0.78f;
-            float halfWBottom = r * 0.40f;
-            float topRadius = r * 0.22f;
-
-            float topY = halfH;
-            float bottomY = -halfH;
-            float capCenterY = bottomY + halfWBottom; // 底部圆弧的圆心高度
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float px = x + 0.5f - r;
-                    float py = y + 0.5f - r;
-                    float alpha = 0f;
-
-                    if (py >= capCenterY)
-                    {
-                        // 梯形主体：按高度线性插值收窄
-                        float t = Mathf.InverseLerp(capCenterY, topY, py);
-                        float halfWAtY = Mathf.Lerp(halfWBottom, halfWTop, t);
-
-                        if (py <= topY - topRadius)
-                        {
-                            if (Mathf.Abs(px) <= halfWAtY) alpha = 1f;
-                        }
-                        else
-                        {
-                            float cornerX = halfWTop - topRadius;
-                            if (Mathf.Abs(px) <= cornerX)
-                            {
-                                alpha = 1f; // 顶边中间的平直段
-                            }
-                            else
-                            {
-                                float dx = Mathf.Abs(px) - cornerX;
-                                float dy = py - (topY - topRadius);
-                                float dist = Mathf.Sqrt(dx * dx + dy * dy);
-                                alpha = Mathf.Clamp01(topRadius - dist);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // 底部整圆弧，跟梯形主体在 capCenterY 处半径正好衔接，不会有接缝
-                        float dist = Mathf.Sqrt(px * px + (py - capCenterY) * (py - capCenterY));
-                        alpha = Mathf.Clamp01(halfWBottom - dist);
-                    }
-
-                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
-                }
-            }
-
-            tex.SetPixels32(pixels);
-            tex.Apply();
-            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+            return width;
         }
 
         /// <summary>摇杆图标：外圈圆环（底座）+ 内圈实心圆（偏移一点表示可以往任意方向推）。</summary>
