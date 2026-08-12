@@ -188,9 +188,10 @@ namespace Resource.Scripts
             _canvasGO = canvasGO;
             canvasGO.SetActive(true);
 
-            // 操作提示（左上角）：图标 + 文字两行，图标是程序生成的（摇杆=同心圆，扳机=仿手柄按键提示的
-            // 圆角方形徽标+字母），跟项目里齿轮图标/箭头贴图同一套做法，不用外部素材
-            BuildHintRow(canvasGO.transform, "Row_Stick", CreateStickIconSprite(64), "左摇杆：移动视角", 0);
+            // 操作提示（左上角）：图标 + 文字两行。摇杆和扳机图标都用美术自己做的手柄按键图
+            // （Resources/Icons/ControllerButtons/ 下），不再是程序生成的占位图形
+            var stickIcon = Resources.Load<Sprite>(ControllerIconResourceDir + "ls_icon_32");
+            BuildHintRow(canvasGO.transform, "Row_Stick", stickIcon, "左摇杆：移动视角", 0);
             BuildTriggerHintRow(canvasGO.transform, "Row_Trigger", "左右扳机：缩放视野", 1);
 
             // 开始游戏按钮（右下角）
@@ -345,45 +346,6 @@ namespace Resource.Scripts
 
             return width;
         }
-
-        /// <summary>摇杆图标：外圈圆环（底座）+ 内圈实心圆（偏移一点表示可以往任意方向推）。</summary>
-        private static Sprite CreateStickIconSprite(int size)
-        {
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            tex.wrapMode = TextureWrapMode.Clamp;
-            var pixels = new Color32[size * size];
-            float r = size * 0.5f;
-            float outerRadius = r * 0.92f;
-            float ringThickness = r * 0.16f;
-            float innerRadius = r * 0.4f;
-            float offset = r * 0.14f;
-
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float dxOuter = x + 0.5f - r;
-                    float dyOuter = y + 0.5f - r;
-                    float distOuter = Mathf.Sqrt(dxOuter * dxOuter + dyOuter * dyOuter);
-                    float ringAlpha = Mathf.Min(
-                        Mathf.Clamp01(outerRadius - distOuter),
-                        Mathf.Clamp01(distOuter - (outerRadius - ringThickness)));
-
-                    float dxInner = x + 0.5f - r + offset;
-                    float dyInner = y + 0.5f - r - offset;
-                    float distInner = Mathf.Sqrt(dxInner * dxInner + dyInner * dyInner);
-                    float innerAlpha = Mathf.Clamp01(innerRadius - distInner);
-
-                    float alpha = Mathf.Max(ringAlpha, innerAlpha);
-                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
-                }
-            }
-
-            tex.SetPixels32(pixels);
-            tex.Apply();
-            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
-        }
-
 
         private GameObject CreateText(Transform parent, string goName, string text, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize)
         {
