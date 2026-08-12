@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
@@ -58,6 +59,15 @@ namespace Resource.Scripts
         private bool _isDead = false;
         private WorldRotator _worldRotator;
         private float _resumeMoveTimer;
+
+        [Header("死亡：红光闪烁")]
+        [Tooltip("红光淡入淡出的总时长（秒）")]
+        public float deathFlashDuration = 0.5f;
+        [Tooltip("闪烁的发光颜色")]
+        public Color deathFlashColor = Color.red;
+        [Tooltip("闪烁最亮的时候有多亮，对应 AllIn1SpriteShader 的 _Glow（0~100）")]
+        public float deathFlashPeakGlow = 40f;
+        private Material _deathFlashMaterial;
 
         private Rigidbody2D rb;
         private bool isGrounded = false;
@@ -206,6 +216,8 @@ namespace Resource.Scripts
 
         void HandleMovement()
         {
+            if (_isDead) return; // 死亡后立刻锁输入，手动移动模式之前没有这个判断，自动移动模式里 HandleAutoMove() 自己也有一份
+
             if (autoMoveMode)
             {
                 HandleAutoMove();
@@ -302,6 +314,7 @@ namespace Resource.Scripts
 
         void HandleJump()
         {
+            if (_isDead) return; // 死亡后立刻锁输入
             if (autoMoveMode) return; // 自动移动模式没有跳跃，方向完全靠撞墙决定
 
             bool jumpPressed = false;
@@ -358,7 +371,13 @@ namespace Resource.Scripts
 
         void OnTriggerEnter2D(Collider2D other)
         {
-            // 同上，自动移动模式下这里不再处理，统一走 CheckAutoMoveFootContact 的脚底检测。
+            // 自动移动模式下这里不处理，统一走 CheckAutoMoveFootContact 的脚底检测——
+            // 那套是刻意做成"只认脚底"的，这里如果也响应会变成身体侧面碰一下就死，跟设计冲突。
+            if (autoMoveMode) return;
+            if (_isDead) return;
+
+            if (other.GetComponent<HazardKill>() != null)
+                Die();
         }
 
         private bool _footTouchingSpecial = false;
@@ -414,14 +433,54 @@ namespace Resource.Scripts
             }
         }
 
-        /// <summary>撞到致命物体：停下、放死亡音效、重新加载当前场景</summary>
+        /// <summary>
+        /// 统一的死亡入口：锁输入+冻结物理 → 播放死亡音效 → 红光闪烁淡入淡出 → 走现成的场景转场重开本关。
+        /// 以后别的死亡原因（比如掉出边界）也直接调这个方法，不用另外写一套流程。
+        /// </summary>
         void Die()
         {
             if (_isDead) return;
             _isDead = true;
+            if (rb == null) rb = GetComponent<Rigidbody2D>(); // 极端情况下 Start() 还没跑到就被外部触发（比如浏览模式切游戏那一帧），做个兜底
             rb.linearVelocity = Vector2.zero;
+            rb.bodyType = RigidbodyType2D.Kinematic; // 光锁输入不够，重力还在算，会让玩家在闪光的时候继续往下掉，干脆把物理也冻住（反正马上要重开关卡，不用管恢复）
             SfxManager.Instance.PlayPlayerDeath();
+            StartCoroutine(DeathSequence());
+        }
+
+        /// <summary>红光淡入淡出，结束后交给 SceneTransition 重开本关——本关的 LevelIntroUI 会在场景重载后
+        /// 自己重新冻结玩法、弹出浏览界面，摄像机大小也会跟着场景重载恢复默认值，这里不用额外处理。</summary>
+        private IEnumerator DeathSequence()
+        {
+            if (_spriteRenderer != null)
+                _spriteRenderer.material = GetOrCreateDeathFlashMaterial();
+
+            float t = 0f;
+            while (t < deathFlashDuration)
+            {
+                t += Time.deltaTime;
+                float glow = Mathf.Sin(Mathf.Clamp01(t / deathFlashDuration) * Mathf.PI) * deathFlashPeakGlow;
+                _deathFlashMaterial.SetFloat("_Glow", glow);
+                yield return null;
+            }
+
             SceneTransition.Instance.LoadScene(SceneManager.GetActiveScene().name);
+        }
+
+        /// <summary>懒加载死亡红光材质。只在死亡那一刻才赋给 SpriteRenderer——这个 shader 没有
+        /// URP 2D 需要的 Universal2D 光照通道，如果一直挂着，玩家身上就会从此收不到 Light2D
+        /// （火把光、玩家自己的点光源、场景整体氛围光）的照明，是个很容易被忽略的视觉倒退。
+        /// 死亡后马上就要重开场景了，不需要再换回原来的材质。</summary>
+        private Material GetOrCreateDeathFlashMaterial()
+        {
+            if (_deathFlashMaterial != null) return _deathFlashMaterial;
+
+            var shader = Shader.Find("AllIn1SpriteShader/AllIn1SpriteShader");
+            _deathFlashMaterial = new Material(shader);
+            _deathFlashMaterial.EnableKeyword("GLOW_ON");
+            _deathFlashMaterial.SetColor("_GlowColor", deathFlashColor);
+            _deathFlashMaterial.SetFloat("_Glow", 0f);
+            return _deathFlashMaterial;
         }
 
         // ── 跑步手感 / 脚步声 / 扬尘（项目里没有现成的沙尘美术资源，用运行时生成的 ParticleSystem）──

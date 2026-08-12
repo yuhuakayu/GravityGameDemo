@@ -36,6 +36,7 @@ namespace Resource.Scripts
 
         private Camera _cam;
         private FollowTarget2D _camFollow;
+        private CameraZoomController _camZoom;
         private bool _isPreviewing;
         private GameObject _canvasGO;
 
@@ -54,6 +55,11 @@ namespace Resource.Scripts
 
             _camFollow = _cam.GetComponent<FollowTarget2D>();
             if (_camFollow != null) _camFollow.enabled = false;
+
+            // 游玩中的镜头缩放组件：浏览模式期间禁用，避免跟这里自己的 ApplyZoom 同时响应同一个扳机输入
+            _camZoom = _cam.GetComponent<CameraZoomController>();
+            if (_camZoom == null) _camZoom = _cam.gameObject.AddComponent<CameraZoomController>();
+            _camZoom.enabled = false;
 
             _cam.transform.position = new Vector3(boundsCenter.x, boundsCenter.y, _cam.transform.position.z);
 
@@ -151,6 +157,7 @@ namespace Resource.Scripts
             if (rotator != null) rotator.enabled = true;
 
             if (_camFollow != null) _camFollow.enabled = true;
+            if (_camZoom != null) _camZoom.enabled = true;
 
             if (_canvasGO != null) _canvasGO.SetActive(false);
         }
