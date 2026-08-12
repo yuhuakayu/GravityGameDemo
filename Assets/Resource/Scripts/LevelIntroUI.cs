@@ -244,7 +244,7 @@ namespace Resource.Scripts
                 iconRT.anchorMax = new Vector2(0f, 0.5f);
                 iconRT.pivot = new Vector2(0f, 0.5f);
                 iconRT.anchoredPosition = Vector2.zero;
-                iconRT.sizeDelta = new Vector2(40f, 40f);
+                iconRT.sizeDelta = new Vector2(80f, 80f); // 摇杆图标先调到 60，又再放大一圈到 80，比扳机徽标（36）明显更醒目
                 iconImg = iconGO.AddComponent<Image>();
             }
             iconImg.sprite = icon;
@@ -257,7 +257,7 @@ namespace Resource.Scripts
             {
                 var labelRT = labelGO.GetComponent<RectTransform>();
                 labelRT.pivot = new Vector2(0f, 0.5f);
-                labelRT.anchoredPosition = new Vector2(52f, 0f);
+                labelRT.anchoredPosition = new Vector2(92f, 0f); // 图标又变宽了（60→80），文字继续让开
                 labelRT.sizeDelta = new Vector2(300f, 40f);
             }
         }
