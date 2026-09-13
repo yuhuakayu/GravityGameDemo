@@ -24671,7 +24671,7 @@ MonoBehaviour:
   rumbleEnabled: 1
   rumbleLowFreq: 0.15
   rumbleHighFreq: 0.05
-  autoMoveMode: 0
+  autoMoveMode: 1
   autoMoveSpeed: 6
   autoMoveStartAngle: 0
   rotationMoveDelay: 0.2
