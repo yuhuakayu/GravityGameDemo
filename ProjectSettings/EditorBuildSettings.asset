@@ -17,6 +17,21 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Test_PillarCrush.unity
     guid: d0987cae146923c4685d552d907472db
+  - enabled: 1
+    path: Assets/Scenes/Maze_01.unity
+    guid: 032eef70c8ea1b74d94210e1653e633e
+  - enabled: 1
+    path: Assets/Scenes/Maze_02.unity
+    guid: b972ca87f349aa040838ccbff43f9e34
+  - enabled: 1
+    path: Assets/Scenes/Maze_03.unity
+    guid: f5f08ce319bd1c64baf6ab36fe912a42
+  - enabled: 1
+    path: Assets/Scenes/Maze_04.unity
+    guid: d24c609e3a65e0d408cd83a078b478d4
+  - enabled: 1
+    path: Assets/Scenes/Maze_05.unity
+    guid: 4ac807d327758e4419240666994a8d86
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 482078e7b7030a548b1de1669e8b6617, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

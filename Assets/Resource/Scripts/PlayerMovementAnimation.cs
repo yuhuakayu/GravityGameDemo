@@ -8,73 +8,58 @@ namespace Resource.Scripts
     {
         [SerializeField] private PlayerController player;
         [SerializeField] private Animator animator;
-        [SerializeField, Min(0f), Tooltip("忽略小于此距离的物理浮点抖动；使用实际位移，不使用按键或速度。")]
-        private float movementThreshold = 0.0001f;
+        [SerializeField, Min(0f), Tooltip("连续离地达到此时长才切换浮空，避免地面小颠簸造成闪动。")]
+        private float airborneDelay = 0.08f;
 
-        private static readonly int IsMovingId = Animator.StringToHash("IsMoving");
-        private Rigidbody2D _body;
-        private Vector2 _lastPosition;
-        private double _lastPhysicsTime;
+        private static readonly int IsFloatingId = Animator.StringToHash("IsFloating");
+        private static readonly int IdleStateId = Animator.StringToHash("Base Layer.Idle");
+        private float _airborneTime;
 
-        public bool IsMoving { get; private set; }
+        public bool IsFloating { get; private set; }
 
         private void Awake()
         {
-            _body = GetComponent<Rigidbody2D>();
             if (player == null) player = GetComponent<PlayerController>();
             if (animator == null) animator = GetComponentInChildren<Animator>();
         }
 
         private void OnEnable()
         {
-            ResetSample(_body.position, Time.fixedTimeAsDouble);
+            _airborneTime = 0f;
+            SetFloating(false, true);
         }
 
         private void LateUpdate()
         {
-            // Read after the physics solver and PlayerController/CrushGuard corrections.
-            // Rigidbody position excludes renderer interpolation and squash/stretch.
-            SamplePosition(_body.position, Time.fixedTimeAsDouble);
+            SampleGrounded(player != null && player.IsGrounded, Time.deltaTime);
         }
 
-        public void SamplePosition(Vector2 position, double physicsTime)
+        public void SampleGrounded(bool grounded, float deltaTime)
         {
-            if (player == null || !player.IsGameplayActive)
+            if (player == null || !player.IsGameplayActive || grounded)
             {
-                ResetSample(position, physicsTime);
+                _airborneTime = 0f;
+                SetFloating(false);
                 return;
             }
 
-            Vector2 displacement = position - _lastPosition;
-            // Several render frames can share one physics step. Keep the last result
-            // until another step is available, instead of flickering Run/Idle at high FPS.
-            if (physicsTime == _lastPhysicsTime && displacement.sqrMagnitude == 0f) return;
-            _lastPosition = position;
-            _lastPhysicsTime = physicsTime;
-            SetMoving(displacement.sqrMagnitude > movementThreshold * movementThreshold);
-
-            float horizontal = Vector2.Dot(displacement, transform.right);
-            if (IsMoving && Mathf.Abs(horizontal) > movementThreshold)
-                player.FaceDirection(Mathf.Sign(horizontal));
+            _airborneTime += Mathf.Max(0f, deltaTime);
+            if (_airborneTime >= airborneDelay) SetFloating(true);
         }
 
-        private void ResetSample(Vector2 position, double physicsTime)
+        private void SetFloating(bool floating, bool reset = false)
         {
-            _lastPosition = position;
-            _lastPhysicsTime = physicsTime;
-            SetMoving(false);
-        }
+            if (IsFloating == floating && !reset) return;
+            IsFloating = floating;
+            if (animator == null || animator.runtimeAnimatorController == null) return;
 
-        private void SetMoving(bool moving)
-        {
-            IsMoving = moving;
-            if (animator != null && animator.runtimeAnimatorController != null)
-                animator.SetBool(IsMovingId, moving);
-        }
-
-        private void OnDisable()
-        {
-            SetMoving(false);
+            animator.SetBool(IsFloatingId, floating);
+            if (!floating && animator.isActiveAndEnabled)
+            {
+                // Landing must display the first breathing frame before this render.
+                animator.Play(IdleStateId, 0, 0f);
+                animator.Update(0f);
+            }
         }
     }
 }

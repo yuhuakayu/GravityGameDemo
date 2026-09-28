@@ -1,6 +1,6 @@
 {
   "name": "GravityGame.Pendulum.PlayModeTests",
-  "references": [],
+  "references": ["Unity.InputSystem"],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

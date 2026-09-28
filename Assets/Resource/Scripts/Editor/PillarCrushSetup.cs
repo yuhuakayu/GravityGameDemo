@@ -29,10 +29,10 @@ namespace Resource.Scripts.Editor
                 Sprite sprite = EnsureSprite();
                 var cameraGo = new GameObject("Main Camera");
                 cameraGo.tag = "MainCamera";
-                cameraGo.transform.position = new Vector3(0f, 1f, -10f);
+                cameraGo.transform.position = new Vector3(0f, 1.21f, -10f);
                 var camera = cameraGo.AddComponent<Camera>();
                 camera.orthographic = true;
-                camera.orthographicSize = 6f;
+                camera.orthographicSize = Mathf.Max(4.71f, 9.5f / camera.aspect);
                 camera.backgroundColor = new Color(.025f, .035f, .055f);
                 camera.clearFlags = CameraClearFlags.SolidColor;
                 cameraGo.AddComponent<AudioListener>();
@@ -92,8 +92,8 @@ namespace Resource.Scripts.Editor
                 guard.drawDepenetrationGizmo = true;
                 // No oxygen component: a stationary collision experiment must not end from oxygen drain.
                 var intro = new GameObject("Level Preview - Enter to begin").AddComponent<LevelIntroUI>();
-                intro.boundsCenter = new Vector2(0f, 1f);
-                intro.boundsSize = new Vector2(18f, 12f);
+                intro.boundsCenter = new Vector2(0f, 1.21f);
+                intro.boundsSize = new Vector2(18f, 8.42f);
                 Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
                 if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new IOException("Cannot save " + ScenePath);
             }

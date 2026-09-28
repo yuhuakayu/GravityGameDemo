@@ -24,7 +24,8 @@
 | `Assets/Resource/Scripts/Gyro/Native/` | JoyShockLibrary 互操作与控制器连接 |
 | `Assets/Resource/Scripts/Gyro/Runtime/` | `GyroRuntime`、`WorldRotationInput`、设置持久化，连接输入与世界旋转 |
 | `Assets/Resource/Scripts/Debug/` | 波浪键调试控制台、窗口拖动/缩放、场景/陀螺仪/玩法/性能分页 |
-| `Assets/Resource/Scripts/Oxygen/` | 氧气、喷气背包、HUD、粒子和氧气瓶拾取 |
+| `Assets/Resource/Scripts/Oxygen/` | 氧气、HUD、拾取粒子和氧气瓶；喷气背包已移除 |
+| `Assets/Resource/Scripts/PlayerMovementAnimation.cs` | 着地呼吸、连续离地 0.08 秒后浮空；落地立即回到 Idle 第一帧 |
 | `Assets/Resource/Scripts/Editor/` | 场景安装工具、资源导入工具和显式验证入口；不能被运行时直接依赖 |
 | `Assets/Resource/Prefabs/`、`Assets/Resource/Art/`、`Assets/Resource/Resources/` | 预制体、美术及运行时资源 |
 | `Assets/Plugins/JoyShockLibrary/` | 原生手柄库及说明 |
@@ -75,7 +76,7 @@ Get-Content -LiteralPath "$env:LOCALAPPDATA/Unity/Editor/Editor.log" -Tail 100
 - 防推动开启时，玩家用 `intendedVelocity` 管理输入和重力速度，不继承运动平台注入的速度。保持 Dynamic、Continuous、Interpolate 和冻结 Z 旋转的配置；预览/死亡状态已有的临时切换除外。
 - `CrushGuard` 的穿透修复是受限的位置修正，保留玩家原来所在的一侧；不能靠关闭碰撞、把玩家碰撞体改 Trigger 或任意传送掩盖穿墙。不要用修改全局 Baumgarte / Max Linear Correction 或柱子摩擦材质替代修复。
 - `pauseAutoMoveWhileRotating` 只暂停自动移动的速度贡献，并保留滞回/恢复延迟。重力、碰撞及防推动仍须工作，不能把世界旋转等同于暂停整个游戏。
-- `PlayerController.IsGameplayActive` 是玩法状态的重要入口。氧气消耗、冲刺、拾取等要尊重预览、暂停和死亡；死亡统一调用 `PlayerController.Die()`，沿用红光 → `SceneTransition` → 重开并回到预览的流程。
+- `PlayerController.IsGameplayActive` 是玩法状态的重要入口。氧气消耗、动画、拾取等要尊重预览、暂停和死亡；死亡统一调用 `PlayerController.Die()`，沿用红光 → `SceneTransition` → 重开并回到预览的流程。
 - Mode A 使用角速度映射后的传感器采样时间积分，不能再乘一遍渲染帧时间；Mode B 使用角度映射。累计世界角不能直接与包裹到 ±180° 的角度相减；输入侧还要保留侧立时的方向连续性。
 - `WorldRotator.useGeometrySafetyClamp` 默认关闭，旋转手感优先；不要为修穿墙重新打开它或加新的全局限速，穿墙优先查碰撞层和 `CrushGuard`。
 - 保持现有手感和 Inspector/场景参数，除非当前任务明确要求调整。不要用改灵敏度、阻尼或限速掩盖算法错误。

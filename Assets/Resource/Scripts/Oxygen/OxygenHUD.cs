@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,18 +11,80 @@ namespace Resource.Scripts
         [Header("引用")]
         [SerializeField] private PlayerOxygen oxygen;
         [SerializeField] private Image fillImage;
-        [SerializeField] private Text valueText;
+        [SerializeField, HideInInspector] private Text valueText;
+        [SerializeField] private TextMeshProUGUI valueLabel;
         [SerializeField] private string label = "O2";
 
         [Header("颜色与低氧警告")]
-        [SerializeField] private Color normalColor = new Color(0.2f, 0.85f, 0.95f, 1f);
-        [SerializeField] private Color lowOxygenColor = new Color(1f, 0.18f, 0.15f, 1f);
+        [SerializeField, HideInInspector] private Color normalColor = new Color32(0x3F, 0xD6, 0xE0, 0xFF);
+        [SerializeField, HideInInspector] private Color lowOxygenColor = new Color32(0xF4, 0xA8, 0xB8, 0xFF);
         [SerializeField, Range(0f, 1f)] private float lowOxygenThreshold = 0.25f;
         [SerializeField, Min(0f)] private float blinkFrequency = 2f;
         [SerializeField, Range(0f, 1f)] private float minBlinkAlpha = 0.3f;
 
         private PlayerOxygen _subscribedOxygen;
         private bool _isLow;
+
+        private void Awake()
+        {
+            ApplyPixelStyle();
+        }
+
+        public void ApplyPixelStyle()
+        {
+            normalColor = PixelUI.OxygenNormal;
+            lowOxygenColor = PixelUI.OxygenLow;
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas != null) PixelUI.ConfigureCanvas(canvas);
+
+            var panelRect = GetComponent<RectTransform>();
+            panelRect.anchorMin = panelRect.anchorMax = panelRect.pivot = Vector2.zero;
+            panelRect.anchoredPosition = new Vector2(24f, 24f);
+            panelRect.sizeDelta = new Vector2(300f, 84f);
+            var panel = GetComponent<Image>();
+            if (panel != null)
+            {
+                panel.sprite = PixelUI.Theme.panel;
+                panel.type = Image.Type.Sliced;
+                panel.color = Color.white;
+                panel.raycastTarget = false;
+            }
+
+            var labelTransform = valueLabel != null ? valueLabel.transform
+                : valueText != null ? valueText.transform : transform.Find("OxygenValue");
+            if (labelTransform != null)
+            {
+                valueLabel = PixelUI.EnsureText(labelTransform.gameObject, 18, false, TextAnchor.MiddleLeft, PixelUI.TextLight);
+                valueText = null;
+                var labelRect = valueLabel.rectTransform;
+                labelRect.anchorMin = labelRect.anchorMax = labelRect.pivot = Vector2.zero;
+                labelRect.anchoredPosition = new Vector2(18f, 45f);
+                labelRect.sizeDelta = new Vector2(264f, 27f);
+            }
+
+            if (fillImage == null) return;
+            var track = fillImage.transform.parent.GetComponent<Image>();
+            track.sprite = PixelUI.Theme.barFrame;
+            track.type = Image.Type.Sliced;
+            track.color = Color.white;
+            track.raycastTarget = false;
+            var trackRect = track.rectTransform;
+            trackRect.anchorMin = trackRect.anchorMax = trackRect.pivot = Vector2.zero;
+            trackRect.anchoredPosition = new Vector2(18f, 18f);
+            trackRect.sizeDelta = new Vector2(264f, 24f);
+
+            fillImage.sprite = PixelUI.Theme.barFill;
+            fillImage.type = Image.Type.Filled;
+            fillImage.fillMethod = Image.FillMethod.Horizontal;
+            fillImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+            fillImage.raycastTarget = false;
+            var fillRect = fillImage.rectTransform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = new Vector2(6f, 6f);
+            fillRect.offsetMax = new Vector2(-6f, -6f);
+            UpdateWarningColor();
+        }
 
         private void OnEnable()
         {
@@ -69,8 +132,8 @@ namespace Resource.Scripts
                 fillImage.fillAmount = normalized;
                 UpdateWarningColor();
             }
-            if (valueText != null)
-                valueText.text = $"{label}  {Mathf.CeilToInt(current)} / {Mathf.CeilToInt(maximum)}";
+            if (valueLabel != null)
+                valueLabel.text = $"{label}  {Mathf.CeilToInt(current)} / {Mathf.CeilToInt(maximum)}";
         }
 
         private void Update()

@@ -10,7 +10,6 @@ namespace Resource.Scripts.Debugging
         private int _sceneHandle = int.MinValue;
         private PlayerController _player;
         private PlayerOxygen _oxygen;
-        private PlayerJetpack _jetpack;
         private CrushGuard _crushGuard;
         private GUIStyle _descriptionStyle;
         private readonly List<OxygenTank> _tanks = new List<OxygenTank>();
@@ -33,8 +32,8 @@ namespace Resource.Scripts.Debugging
 
             if (_player == null || _oxygen == null)
             {
-                GUILayout.Label("（当前场景没有氧气 / 喷气参数）");
-                GUILayout.Label("未找到玩家氧气组件。进入关卡后可调节氧气与喷气背包参数。", _descriptionStyle);
+                GUILayout.Label("（当前场景没有氧气参数）");
+                GUILayout.Label("未找到玩家氧气组件。进入关卡后可调节氧气参数。", _descriptionStyle);
                 return;
             }
 
@@ -46,30 +45,6 @@ namespace Resource.Scripts.Debugging
             float drain = ConsoleUi.Slider("每秒消耗", _oxygen.DrainPerSecond, 0f,
                 Mathf.Max(20f, _oxygen.DrainPerSecond), "F2", " / 秒");
             if (drain != _oxygen.DrainPerSecond) _oxygen.DrainPerSecond = drain;
-            float dashCost = ConsoleUi.Slider("每次喷射消耗", _oxygen.DashCost, 0f,
-                Mathf.Max(100f, _oxygen.DashCost), "F1");
-            if (dashCost != _oxygen.DashCost) _oxygen.DashCost = dashCost;
-            GUILayout.EndVertical();
-
-            GUILayout.Space(8f);
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label("喷气背包");
-            if (_jetpack == null)
-            {
-                GUILayout.Label("（当前玩家没有喷气背包组件）");
-            }
-            else
-            {
-                float speed = ConsoleUi.Slider("喷射速度", _jetpack.DashSpeed, 0.01f,
-                    Mathf.Max(60f, _jetpack.DashSpeed), "F2", " 单位 / 秒");
-                if (speed != _jetpack.DashSpeed) _jetpack.DashSpeed = speed;
-                float duration = ConsoleUi.Slider("喷射时长", _jetpack.DashDuration, 0.01f,
-                    Mathf.Max(2f, _jetpack.DashDuration), "F2", " 秒");
-                if (duration != _jetpack.DashDuration) _jetpack.DashDuration = duration;
-                float cooldown = ConsoleUi.Slider("喷射冷却", _jetpack.DashCooldown, 0f,
-                    Mathf.Max(5f, _jetpack.DashCooldown), "F2", " 秒");
-                if (cooldown != _jetpack.DashCooldown) _jetpack.DashCooldown = cooldown;
-            }
             GUILayout.EndVertical();
 
             GUILayout.Space(8f);
@@ -147,7 +122,6 @@ namespace Resource.Scripts.Debugging
             _sceneHandle = scene.handle;
             _player = null;
             _oxygen = null;
-            _jetpack = null;
             _crushGuard = null;
             _tanks.Clear();
             foreach (PlayerController candidate in Object.FindObjectsByType<PlayerController>(
@@ -160,7 +134,6 @@ namespace Resource.Scripts.Debugging
             if (_player != null)
             {
                 _oxygen = _player.GetComponent<PlayerOxygen>();
-                _jetpack = _player.GetComponent<PlayerJetpack>();
                 _crushGuard = _player.GetComponent<CrushGuard>();
             }
             foreach (OxygenTank tank in Object.FindObjectsByType<OxygenTank>(

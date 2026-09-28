@@ -53,6 +53,12 @@ namespace Resource.Scripts
             { "settings.close",      new[] { "关闭", "閉じる", "Close" } },
             { "settings.back",       new[] { "返回", "戻る", "Back" } },
             { "menu.options",        new[] { "设置", "設定", "Options" } },
+            { "menu.start",          new[] { "开始游戏", "ゲーム開始", "Start Game" } },
+            { "menu.quit",           new[] { "退出", "終了", "Quit Game" } },
+            { "menu.levels",         new[] { "选择关卡", "ステージ選択", "Select Level" } },
+            { "settings.group.audio",    new[] { "音频", "オーディオ", "Audio" } },
+            { "settings.group.display",  new[] { "显示", "画面", "Display" } },
+            { "settings.group.language", new[] { "语言", "言語", "Language" } },
         };
 
         void Awake()

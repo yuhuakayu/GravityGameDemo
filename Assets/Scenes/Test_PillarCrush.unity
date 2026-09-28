@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 63284241}
   - component: {fileID: 63284240}
   - component: {fileID: 63284239}
+  - component: {fileID: 63284244}
   m_Layer: 3
   m_Name: Player
   m_TagString: Untagged
@@ -161,6 +162,8 @@ MonoBehaviour:
   crushResponse: 0
   ignoreCollisionTimeout: 0.5
   drawDepenetrationGizmo: 1
+  preventiveCastSkin: 0.001
+  preventiveDirectionHoldSteps: 12
 --- !u!114 &63284240
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -177,6 +180,7 @@ MonoBehaviour:
   isDebugGizmos: 0
   maxMoveSpeed: 4.5
   jumpForce: 12
+  jumpEnabled: 1
   antiPushEnabled: 1
   logVelocityDelta: 1
   intendedVelocity: {x: 0, y: 0}
@@ -191,10 +195,6 @@ MonoBehaviour:
   wallLayer:
     serializedVersion: 2
     m_Bits: 64
-  runStretchAmount: 0.08
-  runSquashAmount: 0.06
-  landStretchAmount: 0.15
-  landSquashAmount: 0.25
   maxLandImpactSpeed: 15
   footstepInterval: 1.4
   rumbleEnabled: 0
@@ -203,6 +203,9 @@ MonoBehaviour:
   autoMoveMode: 0
   autoMoveSpeed: 6
   autoMoveStartAngle: 0
+  pauseAutoMoveWhileRotating: 1
+  autoMoveResumeDelay: 0.15
+  autoMoveRotationSource: {fileID: 0}
   deathFlashDuration: 0.5
   deathFlashColor: {r: 1, g: 0, b: 0, a: 1}
   deathFlashPeakGlow: 40
@@ -298,6 +301,21 @@ Transform:
   - {fileID: 1839540095}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &63284244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 63284238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cb4973efaff4db4a6aadaf2927650eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 63284240}
+  animator: {fileID: 699921431}
+  airborneDelay: 0.08
 --- !u!1 &134010161
 GameObject:
   m_ObjectHideFlags: 0
@@ -339,6 +357,7 @@ GameObject:
   m_Component:
   - component: {fileID: 699921429}
   - component: {fileID: 699921430}
+  - component: {fileID: 699921431}
   m_Layer: 0
   m_Name: PlayerIM
   m_TagString: Untagged
@@ -355,8 +374,8 @@ Transform:
   m_GameObject: {fileID: 699921428}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.6, y: 0.9, z: 1}
+  m_LocalPosition: {x: 0, y: -0.45, z: 0}
+  m_LocalScale: {x: 0.15824175, y: 0.15824175, z: 0.15824175}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 63284243}
@@ -405,7 +424,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 10
-  m_Sprite: {fileID: 21300000, guid: c28ed25227242924c8253d96a2bad76b, type: 3}
+  m_Sprite: {fileID: 251359962, guid: ccd647175d888ee4ca49a09c6ba4ffe9, type: 3}
   m_Color: {r: 0.3, g: 0.85, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -416,6 +435,28 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!95 &699921431
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 699921428}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: ef5805c8041aef04a959d2c5f50c25da, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &910882867
 GameObject:
   m_ObjectHideFlags: 0
@@ -445,8 +486,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 165c7821d4a0ae14cbe974c3ae324e02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boundsCenter: {x: 0, y: 1}
-  boundsSize: {x: 18, y: 12}
+  boundsCenter: {x: 0, y: 1.21}
+  boundsSize: {x: 18, y: 8.42}
   panSpeed: 8
   zoomSpeed: 6
   minOrthoSize: 3
@@ -704,7 +745,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 6
+  orthographic size: 5.34375
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
@@ -729,7 +770,7 @@ Transform:
   m_GameObject: {fileID: 1062184640}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalPosition: {x: 0, y: 1.21, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

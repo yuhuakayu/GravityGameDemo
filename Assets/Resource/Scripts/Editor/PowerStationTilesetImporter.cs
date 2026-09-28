@@ -17,10 +17,24 @@ namespace Resource.Scripts.Editor
     {
         public const string Root = "Assets/Resource/Mode/Power Station Tileset";
         public const string CaveRoot = "Assets/Resource/Mode/Cave Tileset";
-        private static readonly Dictionary<string, int> RootPixelsPerUnit = new Dictionary<string, int>
+        public const string UiRoot = "Assets/Resource/Art/UI/Pixel";
+        // UI: 100/3 so one art pixel = 3 canvas units at the 1280x720 reference resolution.
+        private static readonly Dictionary<string, float> RootPixelsPerUnit = new Dictionary<string, float>
         {
-            { Root, 32 },
-            { CaveRoot, 16 },
+            { Root, 32f },
+            { CaveRoot, 16f },
+            { UiRoot, 100f / 3f },
+        };
+
+        // 9-slice borders (left, bottom, right, top) in art pixels.
+        private static readonly Dictionary<string, Vector4> Borders = new Dictionary<string, Vector4>
+        {
+            { UiRoot + "/ui_button_normal.png", new Vector4(3, 5, 3, 3) },
+            { UiRoot + "/ui_button_selected.png", new Vector4(3, 5, 3, 3) },
+            { UiRoot + "/ui_button_disabled.png", new Vector4(3, 5, 3, 3) },
+            { UiRoot + "/ui_panel.png", new Vector4(2, 2, 2, 2) },
+            { UiRoot + "/ui_bar_frame.png", new Vector4(2, 2, 2, 2) },
+            { UiRoot + "/ui_bar_fill.png", new Vector4(1, 1, 1, 1) },
         };
 
         private static string FindRoot(string path)
@@ -99,6 +113,7 @@ namespace Resource.Scripts.Editor
             importer.wrapMode = TextureWrapMode.Clamp;
             importer.alphaIsTransparency = true;
             importer.maxTextureSize = 2048;
+            if (Borders.TryGetValue(path, out Vector4 border)) importer.spriteBorder = border;
         }
 
         private static void SliceAndAnimate(string path, bool force)

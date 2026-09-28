@@ -65,7 +65,8 @@ namespace Resource.Scripts.Editor
             var cam = new GameObject("Main Camera").AddComponent<Camera>();
             cam.tag = "MainCamera";
             cam.orthographic = true;
-            cam.orthographicSize = h / 2f;
+            cam.orthographicSize = Mathf.Max(Room.Length * 0.5f + 0.5f,
+                (Room[0].Length * 0.5f + 0.5f) / cam.aspect);
             cam.transform.position = new Vector3(w / 2f, -h / 2f, -10f);
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color32(19, 18, 31, 255); // cave air
@@ -94,6 +95,7 @@ namespace Resource.Scripts.Editor
             }
             foreach (var (c, r, v) in Plants) deco.SetTile(Pos(c + Margin, r + Margin), TileFor(veg, v));
 
+            ExteriorTilePadding.Apply(rock, TileFor(ts, 8), cam, new Vector2(Room[0].Length, Room.Length), cam.orthographicSize);
             EditorSceneManager.SaveScene(scene, ScenePath);
             Debug.Log("[CaveReplica] 已生成 " + ScenePath);
         }
@@ -101,7 +103,7 @@ namespace Resource.Scripts.Editor
         private static Vector3Int Pos(int x, int y) => new Vector3Int(x, -y - 1, 0);
 
         // Picks a tileset index (row-major, 5 per row) from which neighbours are solid.
-        private static int AutoIndex(int x, int y, System.Func<int, int, bool> solid)
+        internal static int AutoIndex(int x, int y, System.Func<int, int, bool> solid)
         {
             bool n = solid(x, y - 1), s = solid(x, y + 1), wl = solid(x - 1, y), e = solid(x + 1, y);
             int col = !wl ? 2 : !e ? 4 : 3;

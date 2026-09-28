@@ -1,0 +1,79 @@
+UI 仕样书：像素简约风（全套 UI 替换）
+
+====================================
+一、目标
+====================================
+
+把游戏里所有玩家可见的 UI 换成统一的像素简约风，参考图：
+  Docs/UISpec/images/ref_menu.png       主菜单
+  Docs/UISpec/images/ref_settings.png   设置页
+
+风格要点：扁平、没有花纹；按钮、箭头、勾选框是像素画法；中文用平滑的衬线字体；当前选中项用粉色。
+
+不包含：~ 调试控制台（IMGUI，保持原样）。
+
+====================================
+二、已准备好的素材（不需要再画）
+====================================
+
+图片：Assets/Resource/Art/UI/Pixel/
+  ui_button_normal.png      普通按钮（九宫格）
+  ui_button_selected.png    选中 / 高亮按钮（粉色，九宫格）
+  ui_button_disabled.png    不可用按钮（九宫格）
+  ui_panel.png              面板底（九宫格）
+  ui_arrow_left.png / ui_arrow_right.png                   左右切换箭头
+  ui_arrow_left_disabled.png / ui_arrow_right_disabled.png 到头时的灰色箭头
+  ui_check_off.png / ui_check_on.png                       勾选框
+  ui_divider_dot.png        分隔虚线（Image Type 用 Tiled，横向平铺）
+  ui_bar_frame.png          进度条外框（九宫格）
+  ui_bar_fill.png           进度条填充（白色，代码里改颜色）
+  ui_logo_gravity.png       标题 LOGO（占位，游戏名定了再换）
+
+导入设置已由 Assets/Resource/Scripts/Editor/PowerStationTilesetImporter.cs 自动处理：
+  Point 过滤、不压缩、九宫格边界已设好。
+  Pixels Per Unit = 33.33，即在 1280x720 参考分辨率下，1 个美术像素 = 3 个画布单位。
+  不要改这些导入设置。
+
+字体：Assets/Resource/Fonts/
+  NotoSerifSC-Regular-GB2312.otf、NotoSerifSC-Bold-GB2312.otf
+  （思源宋体，OFL 授权，已裁剪为 GB2312 常用字。）
+  用 TextMeshPro 生成 Font Asset。如果项目有日文或其他语言文本，缺字时用 Dynamic 模式或者告诉我。
+
+====================================
+三、配色
+====================================
+
+  背景渐变       #23223A（上）→ #15141F（下），左右边缘稍暗
+  面板           #3A395A
+  按钮文字       #25243A
+  浅色文字       #CFCCE3（面板上的标题、分组名）
+  分组线         #6E6C97
+  选中 / 警告    粉色按钮，文字颜色不变
+  氧气条填充     正常 #3FD6E0，低于 25% 时 #F4A8B8 并闪烁
+
+====================================
+四、规则
+====================================
+
+1. Canvas Scaler：Scale With Screen Size，参考分辨率 1280x720，Match 0.5。
+2. 按钮、面板用 Image Type = Sliced；不要拉伸成模糊，所有 UI 图片保持 Point 过滤。
+3. 按钮文字：Bold，约 24；设置项名称：Bold，约 21；数值和分组名：Regular，约 18。
+4. 手柄 / 键盘选中的按钮显示 ui_button_selected，其余显示 ui_button_normal。用 Selectable 的 Sprite Swap 实现。
+5. 左右切换项到头时，对应箭头换成 _disabled 版本。
+6. 只换外观和布局，不改菜单逻辑、按钮功能、存档和设置的读写。
+7. 已有的自制手柄按键提示图标（扳机、摇杆提示）保留，不替换。
+
+====================================
+五、需要替换的界面
+====================================
+
+请先找出所有玩家可见的 UI（主菜单、设置、暂停、关卡预览提示和开始按钮、HUD、氧气条、过关 / 死亡相关界面等），全部按上面的规则换掉。
+布局参考 ref_menu.png 和 ref_settings.png：按钮居中竖排，设置页是中间一列面板，分组名加虚线分隔。
+
+====================================
+六、验证和汇报（只做这些）
+====================================
+
+1. 编译无错误。
+2. 打开 MainMenu、Stage1 各进一次 Play，截一张主菜单和一张设置页，确认和参考图风格一致、文字没有缺字。
+3. 汇报 3 到 5 行：改了哪些界面、哪些文件，有没有没处理的地方。不要写报告文件。

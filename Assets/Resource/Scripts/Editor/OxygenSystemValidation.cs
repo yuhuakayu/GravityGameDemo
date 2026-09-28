@@ -21,11 +21,10 @@ namespace Resource.Scripts.Editor
             var player = Object.FindFirstObjectByType<PlayerController>();
             Require(player != null, "Scene player is missing.");
             var oxygen = player.GetComponent<PlayerOxygen>();
-            var dash = player.GetComponent<PlayerJetpack>();
             var body = player.GetComponent<Rigidbody2D>();
             var hud = Object.FindFirstObjectByType<OxygenHUD>();
-            Require(oxygen != null && dash != null && body != null && hud != null, "Install the oxygen system first.");
-            Require(!player.IsDead && !dash.IsDashing, "Start checks with a living player outside a dash.");
+            Require(oxygen != null && body != null && hud != null, "Install the oxygen system first.");
+            Require(!player.IsDead, "Start checks with a living player.");
             Require(Get<PlayerOxygen>(hud, "oxygen") == oxygen, "HUD must reference the scene player.");
             var fill = Get<Image>(hud, "fillImage");
             Require(fill != null && fill.type == Image.Type.Filled, "HUD must use a filled Image.");
@@ -54,10 +53,6 @@ namespace Resource.Scripts.Editor
             bool savedGameplay = Get<bool>(player, "_gameplayStarted");
             bool savedGrounded = Get<bool>(player, "isGrounded");
             float savedCurrent = oxygen.CurrentOxygen;
-            float savedCooldown = dash.CooldownRemaining;
-            var nozzle = player.transform.Find("JetpackNozzle");
-            Vector3 savedNozzlePosition = nozzle != null ? nozzle.localPosition : Vector3.zero;
-            Quaternion savedNozzleRotation = nozzle != null ? nozzle.localRotation : Quaternion.identity;
             int eventCount = 0;
             Action<float, float> listener = (_, __) => eventCount++;
 
@@ -76,8 +71,6 @@ namespace Resource.Scripts.Editor
                 body.angularVelocity = 0f;
                 oxygen.OxygenChanged += listener;
                 oxygen.AddOxygen(oxygen.MaxOxygen);
-                Require(oxygen.MaxOxygen > oxygen.DashCost * 2f && oxygen.DashCost > 0f,
-                    "Checks require capacity for at least two dashes and a positive dash cost.");
 
                 var tankObject = Object.Instantiate(prefab);
                 temporary.Add(tankObject);
@@ -89,10 +82,10 @@ namespace Resource.Scripts.Editor
                 player.enabled = false;
                 Time.timeScale = 1f; // Preview must remain safe even if a menu restores time.
                 float before = oxygen.CurrentOxygen;
-                Require(!oxygen.TryConsume(1f) && !dash.TryDash(Vector2.right) && !tank.TryCollect(oxygen),
-                    "Preview accepted consume, dash, or pickup.");
+                Require(!oxygen.TryConsume(1f) && !tank.TryCollect(oxygen),
+                    "Preview accepted consumption or pickup.");
                 Near(oxygen.CurrentOxygen, before, "Preview changed oxygen.");
-                Pass(report, "Preview rejects consumption, dash and pickup even when timeScale is 1.");
+                Pass(report, "Preview rejects consumption and pickup even when timeScale is 1.");
 
                 player.enabled = true;
                 player.BeginGameplay();
@@ -138,78 +131,10 @@ namespace Resource.Scripts.Editor
                 foreach (var collider in tankObject.GetComponents<Collider2D>())
                     Require(!collider.enabled, "Collected tank still has an active trigger.");
                 Pass(report, "Real tank prefab restores oxygen once and disables its trigger during pickup animation.");
-
-                oxygen.AddOxygen(oxygen.MaxOxygen);
-                Set(dash, "_cooldownRemaining", 0f);
-                // Check the controller-owned gravity, not the deliberately zero engine gravity.
-                // Use nonzero gravity even if this particular scene was configured weightless.
-                float gravityBefore = player.SimulatedGravityScale;
-                if (gravityBefore <= 0f) player.SimulatedGravityScale = gravityBefore = 1f;
-                var collisionBefore = body.collisionDetectionMode;
-                before = oxygen.CurrentOxygen;
-                Require(dash.TryDash(Vector2.right), "Dash did not start.");
-                Near(oxygen.CurrentOxygen, before - oxygen.DashCost, "Dash oxygen charge is incorrect.");
-                Near(player.SimulatedGravityScale, gravityBefore * Get<float>(dash, "gravityMultiplier"), "Dash gravity multiplier is incorrect.");
-                dash.CancelDash();
-                Near(player.SimulatedGravityScale, gravityBefore, "Cancel did not restore gravity.");
-                Require(body.collisionDetectionMode == collisionBefore, "Cancel did not restore collision mode.");
-                before = oxygen.CurrentOxygen;
-                Require(!dash.TryDash(Vector2.right), "Cooldown accepted another dash.");
-                Near(oxygen.CurrentOxygen, before, "Rejected cooldown dash consumed oxygen.");
-                Pass(report, "Dash charges once, rejects cooldown input and restores gravity/collision mode on cancel.");
-
-                Set(dash, "_cooldownRemaining", 0f);
-                player.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
-                body.rotation = 90f;
-                Physics2D.SyncTransforms();
-                Require(dash.TryDash(Vector2.right), "Rotated local-direction dash failed.");
-                Require(Vector2.Dot(dash.DashDirection, Vector2.up) > .999f,
-                    "Player-local right at 90 degrees did not produce world-up dash.");
-                Time.timeScale = 0f;
-                dash.TickDash(.02f);
-                Require(!dash.IsDashing, "Paused gameplay did not cancel dash.");
-                Near(player.SimulatedGravityScale, gravityBefore, "Pause cancellation did not restore gravity.");
-                Time.timeScale = 1f;
-                Pass(report, "Direction follows player-local rotation; pausing cancels dash and restores gravity.");
-
-                // Exercise the real collider and Physics2D solver, isolated far from the level.
-                Vector2 testOrigin = new Vector2(10000f, 10000f);
-                Teleport(player, body, testOrigin);
-                Bounds bounds = SolidBounds(body);
-                int groundLayer = CollidableLayer(body);
-                var floor = MakeBox("Oxygen Validation Floor", groundLayer,
-                    new Vector2(bounds.center.x, bounds.min.y - .503f), new Vector2(100f, 1f), temporary);
-                Physics2D.SyncTransforms();
-                for (int i = 0; i < 25; i++) Physics2D.Simulate(.02f);
-                Vector2 restingPosition = body.position;
-                oxygen.AddOxygen(oxygen.MaxOxygen);
-                Set(dash, "_cooldownRemaining", 0f);
-                Require(dash.TryDash(Vector2.right), "Grounded horizontal dash did not start.");
-                StepDash(dash);
-                float travel = body.position.x - restingPosition.x;
-                Require(travel > .2f, "Ground contact cancelled horizontal dash; travel=" + travel);
-                Require(SolidBounds(body).min.y >= floor.bounds.max.y - .08f, "Dash penetrated the supporting floor.");
-                Pass(report, "Physics: grounded horizontal dash advances " + travel.ToString("F3") + " units without floor penetration.");
-
-                Teleport(player, body, restingPosition);
-                bounds = SolidBounds(body);
-                var wall = MakeBox("Oxygen Validation Thin Wall", groundLayer,
-                    new Vector2(bounds.max.x + .48f, bounds.center.y), new Vector2(.06f, bounds.size.y + 10f), temporary);
-                Physics2D.SyncTransforms();
-                oxygen.AddOxygen(oxygen.MaxOxygen);
-                Set(dash, "_cooldownRemaining", 0f);
-                Require(dash.TryDash(Vector2.right), "Wall-check dash did not start.");
-                StepDash(dash);
-                bounds = SolidBounds(body);
-                Require(body.position.x > restingPosition.x + .1f, "Wall check never approached the wall.");
-                Require(bounds.max.x <= wall.bounds.min.x + .025f, "Dash tunneled through or penetrated the thin wall.");
-                Require(!dash.IsDashing, "Wall impact failed to end the dash.");
-                Pass(report, "Physics: dash stops before a 0.06-unit solid wall using the existing player colliders.");
             }
             finally
             {
                 oxygen.OxygenChanged -= listener;
-                dash.CancelDash();
                 foreach (var go in temporary)
                     if (go != null) Object.DestroyImmediate(go);
                 body.bodyType = savedBodyType;
@@ -230,16 +155,6 @@ namespace Resource.Scripts.Editor
                 Set(player, "_gameplayStarted", savedGameplay);
                 Set(player, "isGrounded", savedGrounded);
                 Set(oxygen, "_currentOxygen", savedCurrent);
-                Set(dash, "_cooldownRemaining", savedCooldown);
-                if (nozzle != null)
-                {
-                    nozzle.localPosition = savedNozzlePosition;
-                    nozzle.localRotation = savedNozzleRotation;
-                    var particles = nozzle.GetComponent<ParticleSystem>();
-                    if (particles != null) particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                    var trail = nozzle.GetComponent<TrailRenderer>();
-                    if (trail != null) trail.Clear();
-                }
                 foreach (var pair in otherBodies)
                     if (pair.Key != null) pair.Key.simulated = pair.Value;
                 hud.Bind(oxygen);
@@ -248,63 +163,6 @@ namespace Resource.Scripts.Editor
                 Time.timeScale = savedTimeScale;
             }
             return report.ToString().TrimEnd();
-        }
-
-        private static void StepDash(PlayerJetpack dash)
-        {
-            for (int i = 0; i < 100 && dash.IsDashing; i++)
-            {
-                dash.TickDash(.02f);
-                Physics2D.Simulate(.02f);
-            }
-            Require(!dash.IsDashing, "Dash failed to end within 2 seconds of manual physics.");
-        }
-
-        private static void Teleport(PlayerController player, Rigidbody2D body, Vector2 position)
-        {
-            player.transform.SetPositionAndRotation(new Vector3(position.x, position.y, player.transform.position.z), Quaternion.identity);
-            body.position = position;
-            body.rotation = 0f;
-            body.linearVelocity = Vector2.zero;
-            body.angularVelocity = 0f;
-            body.WakeUp();
-            Physics2D.SyncTransforms();
-        }
-
-        private static Bounds SolidBounds(Rigidbody2D body)
-        {
-            bool found = false;
-            Bounds result = default;
-            foreach (var collider in body.GetComponentsInChildren<Collider2D>())
-            {
-                if (!collider.enabled || collider.isTrigger || collider.attachedRigidbody != body) continue;
-                if (!found) { result = collider.bounds; found = true; }
-                else result.Encapsulate(collider.bounds);
-            }
-            Require(found, "Player has no enabled solid collider.");
-            return result;
-        }
-
-        private static int CollidableLayer(Rigidbody2D body)
-        {
-            foreach (var collider in body.GetComponentsInChildren<Collider2D>())
-            {
-                if (!collider.enabled || collider.isTrigger || collider.attachedRigidbody != body) continue;
-                int mask = Physics2D.GetLayerCollisionMask(collider.gameObject.layer);
-                for (int layer = 0; layer < 32; layer++)
-                    if ((mask & (1 << layer)) != 0) return layer;
-            }
-            throw new InvalidOperationException("[Oxygen validation] Player has no collidable layer.");
-        }
-
-        private static BoxCollider2D MakeBox(string name, int layer, Vector2 position, Vector2 size, List<GameObject> temporary)
-        {
-            var go = new GameObject(name) { layer = layer };
-            temporary.Add(go);
-            go.transform.position = position;
-            var collider = go.AddComponent<BoxCollider2D>();
-            collider.size = size;
-            return collider;
         }
 
         private static T Get<T>(object target, string name) => (T)target.GetType().GetField(name, Fields).GetValue(target);

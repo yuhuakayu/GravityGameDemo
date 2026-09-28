@@ -36,7 +36,8 @@ namespace Resource.Scripts
         public float openDuration  = 0.4f;
 
         private const float BaseCircleSize = 100f;
-        private readonly Vector2 _refResolution = new Vector2(1920f, 1080f);
+        private readonly Vector2 _refResolution = new Vector2(1280f, 720f);
+        private static readonly Color IrisColor = new Color32(0x15, 0x14, 0x1F, 0xFF);
 
         private RectTransform _iris;
         private float _maxScale;
@@ -112,7 +113,9 @@ namespace Resource.Scripts
             var existingCanvas = transform.Find("TransitionCanvas");
             if (existingCanvas != null)
             {
+                PixelUI.ConfigureCanvas(existingCanvas.GetComponent<Canvas>());
                 _iris = existingCanvas.Find("Iris").GetComponent<RectTransform>();
+                _iris.GetComponent<Image>().color = IrisColor;
                 _iris.localScale = Vector3.zero; // 默认全开，不挡屏幕
                 return;
             }
@@ -123,10 +126,7 @@ namespace Resource.Scripts
             canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 1000; // 盖在 HUD / 暂停菜单之上
 
-            var scaler = canvasGO.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = _refResolution;
-            scaler.matchWidthOrHeight  = 0.5f;
+            PixelUI.ConfigureCanvas(canvas);
             canvasGO.AddComponent<GraphicRaycaster>();
 
             var irisGO = new GameObject("Iris");
@@ -139,7 +139,7 @@ namespace Resource.Scripts
 
             var img = irisGO.AddComponent<Image>();
             img.sprite = CreateCircleSprite(128);
-            img.color = Color.black;
+            img.color = IrisColor;
 
             _iris.localScale = Vector3.zero; // 默认全开，不挡屏幕
         }

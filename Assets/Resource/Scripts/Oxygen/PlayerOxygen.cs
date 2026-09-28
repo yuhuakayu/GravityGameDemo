@@ -11,7 +11,6 @@ namespace Resource.Scripts
         [Header("氧气")]
         [SerializeField, Min(0.01f)] private float maxOxygen = 100f;
         [SerializeField, Min(0f)] private float drainPerSecond = 2f;
-        [SerializeField, Min(0f)] private float dashCost = 10f;
 
         private PlayerController _player;
         private float _currentOxygen;
@@ -29,7 +28,6 @@ namespace Resource.Scripts
             }
         }
         public float DrainPerSecond { get => drainPerSecond; set { if (IsFinite(value)) drainPerSecond = Mathf.Max(0f, value); } }
-        public float DashCost { get => dashCost; set { if (IsFinite(value)) dashCost = Mathf.Max(0f, value); } }
         public float NormalizedOxygen => maxOxygen > 0f ? Mathf.Clamp01(_currentOxygen / maxOxygen) : 0f;
         public bool IsGameplayActive => isActiveAndEnabled && _player != null && _player.IsGameplayActive;
 
@@ -88,7 +86,6 @@ namespace Resource.Scripts
         {
             maxOxygen = IsFinite(maxOxygen) ? Mathf.Max(0.01f, maxOxygen) : 100f;
             drainPerSecond = IsFinite(drainPerSecond) ? Mathf.Max(0f, drainPerSecond) : 2f;
-            dashCost = IsFinite(dashCost) ? Mathf.Max(0f, dashCost) : 10f;
         }
 
         private static bool IsFinite(float value)

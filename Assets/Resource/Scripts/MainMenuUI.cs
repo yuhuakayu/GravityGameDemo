@@ -2,11 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Resource.Scripts.Gyro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Resource.Scripts
@@ -15,9 +15,11 @@ namespace Resource.Scripts
     public class LevelEntry
     {
         public string displayName = "Level 1";
-        [Tooltip("要跳转到的场景名（Build Settings 里的场景名，不是路径）。锁住的占位卡选不中，可以留空。")]
+        [Tooltip("要跳转到的场景名（Build Settings 里的场景名，不是路径）。锁住的占位卡不能进入，可以留空。")]
         public string sceneName = "";
         public bool unlocked = true;
+        [Tooltip("仅控制选关卡片的通关标记；不负责解锁或写入存档。")]
+        public bool cleared;
     }
 
     /// <summary>
@@ -40,10 +42,6 @@ namespace Resource.Scripts
             new LevelEntry { displayName = "Level 3", sceneName = "", unlocked = false }
         };
 
-        private static readonly Color ButtonColor = new Color(0.3f, 0.22f, 0.15f, 1f);
-        private static readonly Color PanelBg     = new Color(0.35f, 0.28f, 0.4f, 0.95f);
-        private static readonly Color LockedBg    = new Color(0.15f, 0.15f, 0.15f, 0.9f);
-
         private RectTransform _titlePanelRoot;
         private CanvasGroup   _titleGroup;
         private RectTransform _levelSelectRoot;
@@ -51,24 +49,24 @@ namespace Resource.Scripts
         private RectTransform _optionsRoot;
         private CanvasGroup   _optionsGroup;
 
+        private static readonly Color LockedLevelText = new Color32(0x5A, 0x58, 0x7C, 255);
         private readonly List<RectTransform> _levelCards = new List<RectTransform>();
-        private readonly List<Vector2> _levelCardBasePositions = new List<Vector2>();
-        private readonly List<Image[]> _levelCardBorders = new List<Image[]>();
+        private ScrollRect _levelScroll;
         private int  _selectedLevelIndex;
         private bool _navLocked;
 
         private readonly List<Button> _titleButtons = new List<Button>();
         private int _titleSelectedIndex;
-        private readonly Dictionary<Button, Image[]> _buttonBorders = new Dictionary<Button, Image[]>();
 
         private LocalizationManager _loc;
-        private readonly List<(Text text, string key)> _localizedTexts = new List<(Text, string)>();
-        private Text _optionsLanguageLabel;
+        private readonly List<(TextMeshProUGUI text, string key)> _localizedTexts = new List<(TextMeshProUGUI, string)>();
+        private TextMeshProUGUI _optionsLanguageLabel;
 
-        private readonly List<Image> _optionsRowBg = new List<Image>();
+        private readonly List<Button> _optionsRows = new List<Button>();
         private int _optionsSelectedIndex;
         private DebugSliderDrag _optionsMasterDrag, _optionsMusicDrag, _optionsSfxDrag;
-        private Text _optionsResolutionLabel;
+        private TextMeshProUGUI _optionsResolutionLabel;
+        private Button _optionsResolutionPrev, _optionsResolutionNext;
         private Toggle _optionsFullscreenToggle;
 
         void Start()
@@ -118,7 +116,7 @@ namespace Resource.Scripts
         private GameObject CreateLocalizedText(Transform parent, string key, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize, string goName = "Text")
         {
             var go = CreateText(parent, LocalizationManager.Instance.Get(key), anchorMin, anchorMax, align, fontSize, goName);
-            _localizedTexts.Add((go.GetComponent<Text>(), key));
+            _localizedTexts.Add((go.GetComponent<TextMeshProUGUI>(), key));
             return go;
         }
 
@@ -161,220 +159,58 @@ namespace Resource.Scripts
         }
 
         // ── 搭建整体结构 ─────────────────────────────────────────
-        /// <summary>
-        /// 场景里已经摆好 MainMenuCanvas 就直接复用（编辑期调过的位置/颜色/布局都不会被
-        /// 覆盖），没有才照代码里的默认值新建。不管哪种情况，事件监听器/协程这些没法存进
-        /// 场景文件的运行时绑定，都会在这里重新走一遍。
-        /// </summary>
         private void BuildUI()
         {
             _localizedTexts.Clear();
+            var canvasRT = GetRect(transform, "MainMenuCanvas (Auto)");
+            var canvas = canvasRT.GetComponent<Canvas>();
+            if (canvas == null) canvas = canvasRT.gameObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 2000;
+            PixelUI.ConfigureCanvas(canvas);
+            if (canvasRT.GetComponent<GraphicRaycaster>() == null)
+                canvasRT.gameObject.AddComponent<GraphicRaycaster>();
 
-            var existingCanvas = transform.Find("MainMenuCanvas (Auto)");
-            GameObject canvasGO;
-            if (existingCanvas != null)
-            {
-                canvasGO = existingCanvas.gameObject;
-            }
-            else
-            {
-                canvasGO = new GameObject("MainMenuCanvas (Auto)");
-                canvasGO.transform.SetParent(transform, false);
-                var canvas = canvasGO.AddComponent<Canvas>();
-                canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
-                canvas.sortingOrder = 2000; // 盖住游戏内其他所有 UI
-                var scaler = canvasGO.AddComponent<CanvasScaler>();
-                scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1920f, 1080f);
-                scaler.matchWidthOrHeight  = 0.5f;
-                canvasGO.AddComponent<GraphicRaycaster>();
-            }
-
-            BuildAtmosphere(canvasGO.transform);
-            BuildTitlePanel(canvasGO.transform);
-            BuildLevelSelectPanel(canvasGO.transform);
-            BuildOptionsPanel(canvasGO.transform);
-        }
-
-        // ── 氛围背景：地牢背景图 + 火把光晕闪烁 + 缓慢飘的雾气 ─────
-        /// <summary>纯装饰，找现成的就复用位置/贴图，没有才新建；动画协程不管哪种情况都要重启。</summary>
-        private void BuildAtmosphere(Transform parent)
-        {
-            var sprite = Resources.Load<Sprite>("Backgrounds/DungeonA");
-            if (sprite != null)
-            {
-                var existingBg = parent.Find("Background");
-                RectTransform bgRT;
-                if (existingBg != null)
-                {
-                    bgRT = existingBg.GetComponent<RectTransform>();
-                }
-                else
-                {
-                    var bgGO = new GameObject("Background");
-                    bgGO.transform.SetParent(parent, false);
-                    bgRT = bgGO.AddComponent<RectTransform>();
-                    bgRT.anchorMin = Vector2.zero;
-                    bgRT.anchorMax = Vector2.one;
-                    bgRT.offsetMin = Vector2.zero;
-                    bgRT.offsetMax = Vector2.zero;
-                    var bgImg = bgGO.AddComponent<Image>();
-                    bgImg.sprite = sprite;
-                    bgImg.color  = new Color(0.5f, 0.45f, 0.65f, 1f);
-                }
-                if (Application.isPlaying) StartCoroutine(BreatheScale(bgRT, 1f, 1.04f, 6f));
-            }
-
-            var glowSprite = CreateCircleSprite(64);
-
-            // 顶部中间原本还有一个火把光晕，跟设置面板标题文字挤在一起会重叠，去掉只留两侧
-            Vector2[] torchPositions = { new Vector2(0.15f, 0.75f), new Vector2(0.85f, 0.75f) };
-            for (int i = 0; i < torchPositions.Length; i++)
-            {
-                string glowName = $"TorchGlow{i}";
-                var existingGlow = parent.Find(glowName);
-                Image glowImg;
-                if (existingGlow != null)
-                {
-                    glowImg = existingGlow.GetComponent<Image>();
-                }
-                else
-                {
-                    var glowGO = new GameObject(glowName);
-                    glowGO.transform.SetParent(parent, false);
-                    var glowRT = glowGO.AddComponent<RectTransform>();
-                    glowRT.anchorMin = glowRT.anchorMax = torchPositions[i];
-                    glowRT.sizeDelta = new Vector2(220f, 220f);
-                    glowImg = glowGO.AddComponent<Image>();
-                    glowImg.sprite = glowSprite;
-                    glowImg.color  = new Color(1f, 0.6f, 0.25f, 0.35f);
-                }
-                if (Application.isPlaying) StartCoroutine(Flicker(glowImg, 0.25f, 0.45f));
-            }
-
-            for (int i = 0; i < 3; i++)
-            {
-                string fogName = $"Fog{i}";
-                var existingFog = parent.Find(fogName);
-                RectTransform fogRT;
-                Image fogImg;
-                if (existingFog != null)
-                {
-                    fogRT = existingFog.GetComponent<RectTransform>();
-                    fogImg = existingFog.GetComponent<Image>();
-                }
-                else
-                {
-                    var fogGO = new GameObject(fogName);
-                    fogGO.transform.SetParent(parent, false);
-                    fogRT = fogGO.AddComponent<RectTransform>();
-                    fogRT.anchorMin = fogRT.anchorMax = new Vector2(0.5f, 0.15f + i * 0.15f);
-                    fogRT.sizeDelta = new Vector2(900f, 260f);
-                    fogImg = fogGO.AddComponent<Image>();
-                    fogImg.sprite = glowSprite;
-                    fogImg.color  = new Color(0.5f, 0.5f, 0.7f, 0.06f);
-                }
-                if (Application.isPlaying) StartCoroutine(DriftFog(fogRT, fogImg, i));
-            }
-        }
-
-        private IEnumerator BreatheScale(RectTransform rt, float min, float max, float period)
-        {
-            float t = 0f;
-            while (true)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = (Mathf.Sin(t / period * Mathf.PI * 2f) + 1f) * 0.5f;
-                float s = Mathf.Lerp(min, max, k);
-                rt.localScale = new Vector3(s, s, 1f);
-                yield return null;
-            }
-        }
-
-        private IEnumerator Flicker(Image img, float minA, float maxA)
-        {
-            Color baseColor = img.color;
-            float seed = UnityEngine.Random.Range(0f, 100f);
-            while (true)
-            {
-                float n = Mathf.PerlinNoise(seed, Time.unscaledTime * 3f);
-                float a = Mathf.Lerp(minA, maxA, n);
-                img.color = new Color(baseColor.r, baseColor.g, baseColor.b, a);
-                yield return null;
-            }
-        }
-
-        private IEnumerator DriftFog(RectTransform rt, Image img, int seedOffset)
-        {
-            Vector2 baseAnchor = rt.anchorMin;
-            float t = seedOffset * 3f;
-            while (true)
-            {
-                t += Time.unscaledDeltaTime * 0.1f;
-                float dx = Mathf.Sin(t) * 0.15f;
-                float a  = Mathf.Lerp(0.03f, 0.08f, (Mathf.Sin(t * 0.7f) + 1f) * 0.5f);
-                rt.anchorMin = rt.anchorMax = new Vector2(baseAnchor.x + dx, baseAnchor.y);
-                var c = img.color;
-                img.color = new Color(c.r, c.g, c.b, a);
-                yield return null;
-            }
+            foreach (string name in new[] { "Background", "TorchGlow0", "TorchGlow1", "Fog0", "Fog1", "Fog2" })
+                RemoveChild(canvasRT, name);
+            PixelUI.Backdrop(canvasRT);
+            BuildTitlePanel(canvasRT);
+            BuildLevelSelectPanel(canvasRT);
+            BuildOptionsPanel(canvasRT);
         }
 
         // ── 标题面板 ─────────────────────────────────────────────
         private void BuildTitlePanel(Transform parent)
         {
-            var existingPanel = parent.Find("TitlePanel");
-            GameObject panelGO;
-            if (existingPanel != null)
-            {
-                panelGO = existingPanel.gameObject;
-                _titlePanelRoot = panelGO.GetComponent<RectTransform>();
-                _titleGroup = panelGO.GetComponent<CanvasGroup>();
-            }
-            else
-            {
-                panelGO = new GameObject("TitlePanel", typeof(RectTransform));
-                panelGO.transform.SetParent(parent, false);
-                _titlePanelRoot = panelGO.GetComponent<RectTransform>();
-                _titlePanelRoot.anchorMin = Vector2.zero;
-                _titlePanelRoot.anchorMax = Vector2.one;
-                _titlePanelRoot.offsetMin = Vector2.zero;
-                _titlePanelRoot.offsetMax = Vector2.zero;
-                _titleGroup = panelGO.AddComponent<CanvasGroup>();
-            }
+            _titlePanelRoot = GetRect(parent, "TitlePanel");
+            Stretch(_titlePanelRoot);
+            _titleGroup = GetGroup(_titlePanelRoot);
+            _titleGroup.alpha = 1f;
+            _titlePanelRoot.gameObject.SetActive(true);
+            RemoveChild(_titlePanelRoot, "Logo");
 
-            var titleGO = CreateText(panelGO.transform, "UpSide Down", new Vector2(0f, 0.68f), new Vector2(1f, 0.85f), TextAnchor.MiddleCenter, 60, "Text_Title");
-            titleGO.GetComponent<Text>().fontStyle = FontStyle.Bold;
+            var titleRT = GetRect(_titlePanelRoot, "Text_Title");
+            Place(titleRT, new Vector2(0.5f, 0.79f), Vector2.zero, new Vector2(600f, 108f));
+            var title = PixelUI.EnsureText(titleRT.gameObject, 72, false, TextAnchor.MiddleCenter, PixelUI.TextLight);
+            title.font = PixelUI.Theme.titleFont;
+            title.text = "Upside Down";
 
-            var existingButtons = panelGO.transform.Find("Buttons");
-            GameObject buttonsGO;
-            RectTransform buttonsRT;
-            if (existingButtons != null)
-            {
-                buttonsGO = existingButtons.gameObject;
-                buttonsRT = buttonsGO.GetComponent<RectTransform>();
-            }
-            else
-            {
-                buttonsGO = new GameObject("Buttons", typeof(RectTransform));
-                buttonsGO.transform.SetParent(panelGO.transform, false);
-                buttonsRT = buttonsGO.GetComponent<RectTransform>();
-                buttonsRT.anchorMin = buttonsRT.anchorMax = new Vector2(0.5f, 0.45f);
-                buttonsRT.sizeDelta = new Vector2(360f, 260f);
-            }
-
-            var startBtn = CreateButton(buttonsRT, "Start Game", new Vector2(320f, 64f), ButtonColor);
-            PositionVerticalStack(startBtn.GetComponent<RectTransform>(), 0, 3, 84f);
+            var buttonsRT = GetRect(_titlePanelRoot, "Buttons");
+            Place(buttonsRT, new Vector2(0.5f, 0.43f), Vector2.zero, new Vector2(300f, 204f));
+            var startBtn = CreateButton(buttonsRT, LocalizationManager.Instance.Get("menu.start"), new Vector2(300f, 54f), "Button_Start Game");
+            PositionVerticalStack(startBtn.GetComponent<RectTransform>(), 0, 3, 72f);
             startBtn.onClick.AddListener(OnStartGameClicked);
+            _localizedTexts.Add((startBtn.GetComponentInChildren<TextMeshProUGUI>(true), "menu.start"));
 
-            var optionsBtn = CreateButton(buttonsRT, LocalizationManager.Instance.Get("menu.options"), new Vector2(320f, 64f), ButtonColor, "Button_Options");
-            PositionVerticalStack(optionsBtn.GetComponent<RectTransform>(), 1, 3, 84f);
+            var optionsBtn = CreateButton(buttonsRT, LocalizationManager.Instance.Get("menu.options"), new Vector2(300f, 54f), "Button_Options");
+            PositionVerticalStack(optionsBtn.GetComponent<RectTransform>(), 1, 3, 72f);
             optionsBtn.onClick.AddListener(OnOptionsClicked);
-            _localizedTexts.Add((optionsBtn.GetComponentInChildren<Text>(), "menu.options"));
+            _localizedTexts.Add((optionsBtn.GetComponentInChildren<TextMeshProUGUI>(true), "menu.options"));
 
-            var quitBtn = CreateButton(buttonsRT, "Quit Game", new Vector2(320f, 64f), ButtonColor);
-            PositionVerticalStack(quitBtn.GetComponent<RectTransform>(), 2, 3, 84f);
+            var quitBtn = CreateButton(buttonsRT, LocalizationManager.Instance.Get("menu.quit"), new Vector2(300f, 54f), "Button_Quit Game");
+            PositionVerticalStack(quitBtn.GetComponent<RectTransform>(), 2, 3, 72f);
             quitBtn.onClick.AddListener(OnQuitClicked);
+            _localizedTexts.Add((quitBtn.GetComponentInChildren<TextMeshProUGUI>(true), "menu.quit"));
 
             _titleButtons.Clear();
             _titleButtons.Add(startBtn);
@@ -475,6 +311,11 @@ namespace Resource.Scripts
         {
             yield return SlidePanel(outRoot, outGroup, Vector2.zero, outOffset, 1f, 0f, 0.5f, true);
             yield return SlidePanel(inRoot, inGroup, inOffset, Vector2.zero, 0f, 1f, 0.5f, false);
+            if (inRoot == _optionsRoot) UpdateOptionsRowHighlight();
+            else if (inRoot == _levelSelectRoot) UpdateCardHighlight();
+            else
+                for (int i = 0; i < _titleButtons.Count; i++)
+                    SetButtonFocused(_titleButtons[i], i == _titleSelectedIndex);
             _navLocked = false;
         }
 
@@ -501,68 +342,69 @@ namespace Resource.Scripts
         // ── 关卡选择面板 ─────────────────────────────────────────
         private void BuildLevelSelectPanel(Transform parent)
         {
-            var existingPanel = parent.Find("LevelSelectPanel");
-            GameObject panelGO;
-            if (existingPanel != null)
-            {
-                panelGO = existingPanel.gameObject;
-                _levelSelectRoot = panelGO.GetComponent<RectTransform>();
-                _levelSelectGroup = panelGO.GetComponent<CanvasGroup>();
-            }
-            else
-            {
-                panelGO = new GameObject("LevelSelectPanel", typeof(RectTransform));
-                panelGO.transform.SetParent(parent, false);
-                _levelSelectRoot = panelGO.GetComponent<RectTransform>();
-                _levelSelectRoot.anchorMin = Vector2.zero;
-                _levelSelectRoot.anchorMax = Vector2.one;
-                _levelSelectRoot.offsetMin = Vector2.zero;
-                _levelSelectRoot.offsetMax = Vector2.zero;
-                _levelSelectGroup = panelGO.AddComponent<CanvasGroup>();
-                _levelSelectGroup.alpha = 0f;
-                panelGO.SetActive(false);
-            }
+            _levelSelectRoot = GetRect(parent, "LevelSelectPanel");
+            Stretch(_levelSelectRoot);
+            _levelSelectGroup = GetGroup(_levelSelectRoot);
+            _levelSelectGroup.alpha = 0f;
+            _levelSelectRoot.gameObject.SetActive(false);
+            RemoveChild(_levelSelectRoot, "Cards");
 
-            var backBtn = CreateButton(panelGO.transform, "Back", new Vector2(140f, 50f), ButtonColor);
-            var backRT = backBtn.GetComponent<RectTransform>();
-            backRT.anchorMin = backRT.anchorMax = new Vector2(0f, 1f);
-            backRT.pivot = new Vector2(0f, 1f);
-            backBtn.onClick.RemoveAllListeners();
-            backBtn.onClick.AddListener(() => BackToTitle(_levelSelectRoot, _levelSelectGroup, new Vector2(400f, 0f)));
-            if (existingPanel == null) backRT.anchoredPosition = new Vector2(30f, -30f);
+            var title = GetRect(_levelSelectRoot, "Title");
+            Place(title, new Vector2(0.5f, 1f), new Vector2(0f, -100.5f), new Vector2(372f, 69f));
+            var titleImage = GetImage(title);
+            titleImage.sprite = PixelUI.Theme.levelTitle;
+            titleImage.color = Color.white;
+            titleImage.raycastTarget = false;
 
-            var existingCardsRow = panelGO.transform.Find("Cards");
-            GameObject cardsRowGO;
-            if (existingCardsRow != null)
-            {
-                cardsRowGO = existingCardsRow.gameObject;
-            }
-            else
-            {
-                cardsRowGO = new GameObject("Cards", typeof(RectTransform));
-                cardsRowGO.transform.SetParent(panelGO.transform, false);
-                var cardsRowRT = cardsRowGO.GetComponent<RectTransform>();
-                cardsRowRT.anchorMin = cardsRowRT.anchorMax = new Vector2(0.5f, 0.5f);
-                cardsRowRT.sizeDelta = new Vector2(1600f, 500f);
-            }
+            var back = CreateButton(_levelSelectRoot, LocalizationManager.Instance.Get("settings.back"), new Vector2(138f, 54f), "Button_Back");
+            Place(back.GetComponent<RectTransform>(), Vector2.zero, new Vector2(102f, 66f), new Vector2(138f, 54f));
+            back.onClick.AddListener(() => BackToTitle(_levelSelectRoot, _levelSelectGroup, new Vector2(400f, 0f)));
+            _localizedTexts.Add((back.GetComponentInChildren<TextMeshProUGUI>(true), "settings.back"));
 
+            var viewport = GetRect(_levelSelectRoot, "CardsViewport");
+            viewport.anchorMin = new Vector2(0f, 0.5f);
+            viewport.anchorMax = new Vector2(1f, 0.5f);
+            viewport.pivot = new Vector2(0.5f, 0.5f);
+            viewport.offsetMin = new Vector2(72f, -162f);
+            viewport.offsetMax = new Vector2(-72f, 162f);
+            GetImage(viewport).color = Color.clear;
+            if (viewport.GetComponent<RectMask2D>() == null) viewport.gameObject.AddComponent<RectMask2D>();
+            _levelScroll = viewport.GetComponent<ScrollRect>();
+            if (_levelScroll == null) _levelScroll = viewport.gameObject.AddComponent<ScrollRect>();
+            _levelScroll.viewport = viewport;
+            _levelScroll.horizontal = true;
+            _levelScroll.vertical = false;
+            _levelScroll.movementType = ScrollRect.MovementType.Clamped;
+            _levelScroll.inertia = false;
+            _levelScroll.scrollSensitivity = 30f;
+
+            var cards = GetRect(viewport, "Cards");
+            float rowWidth = Mathf.Max(0f, levels.Count * 198f - 12f);
+            Place(cards, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(rowWidth, 288f));
+            _levelScroll.content = cards;
             _levelCards.Clear();
-            _levelCardBasePositions.Clear();
-            _levelCardBorders.Clear();
-
-            float cardWidth = 220f;
-            float spacing = 40f;
-            int count = Mathf.Max(1, levels.Count);
             for (int i = 0; i < levels.Count; i++)
             {
-                bool cardExisted = cardsRowGO.transform.Find($"Card_{levels[i].displayName}") != null;
-                var card = BuildLevelCard(cardsRowGO.transform, levels[i], i);
-                float x = (i - (count - 1) * 0.5f) * (cardWidth + spacing);
-                var basePos = new Vector2(x, 0f);
-                if (!cardExisted) card.anchoredPosition = basePos;
+                var card = BuildLevelCard(cards, levels[i], i);
+                card.anchoredPosition = new Vector2((i - (levels.Count - 1) * 0.5f) * 198f, 12f);
                 _levelCards.Add(card);
-                _levelCardBasePositions.Add(card.anchoredPosition);
             }
+
+            // The supplied font subset lacks the triangle glyphs; use the shared pixel arrows.
+            var hint = GetRect(_levelSelectRoot, "ControlsHint");
+            Place(hint, new Vector2(0.5f, 0f), new Vector2(0f, 54f), new Vector2(312f, 30f));
+            for (int i = 0; i < 2; i++)
+            {
+                var arrow = GetRect(hint, i == 0 ? "Left" : "Right");
+                Place(arrow, new Vector2(0f, 0.5f), new Vector2(12f + i * 21f, 0f), new Vector2(12f, 18f));
+                var image = GetImage(arrow);
+                image.sprite = i == 0 ? PixelUI.Theme.arrowLeftDisabled : PixelUI.Theme.arrowRightDisabled;
+                image.preserveAspect = true;
+                image.raycastTarget = false;
+            }
+            var hintText = CreateText(hint, "Select   × Start   ○ Back", Vector2.zero, Vector2.one, TextAnchor.MiddleLeft, 18, "Text");
+            hintText.GetComponent<RectTransform>().offsetMin = new Vector2(51f, 0f);
+            hintText.GetComponent<TextMeshProUGUI>().color = new Color32(0x96, 0x94, 0xBA, 255);
 
             _selectedLevelIndex = 0;
             UpdateCardHighlight();
@@ -570,78 +412,58 @@ namespace Resource.Scripts
 
         private RectTransform BuildLevelCard(Transform parent, LevelEntry level, int index)
         {
-            string cardName = $"Card_{level.displayName}";
-            var existing = parent.Find(cardName);
-            GameObject cardGO;
-            RectTransform cardRT;
-            Image bgImg;
+            var card = GetRect(parent, $"Card_{index + 1:00}");
+            Place(card, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(186f, 252f));
+            var background = GetImage(card);
+            background.type = Image.Type.Simple;
+            background.color = Color.white;
 
-            if (existing != null)
-            {
-                cardGO = existing.gameObject;
-                cardRT = cardGO.GetComponent<RectTransform>();
-                bgImg = cardGO.GetComponent<Image>();
-                bgImg.color = level.unlocked ? PanelBg : LockedBg;
-            }
-            else
-            {
-                cardGO = new GameObject(cardName, typeof(RectTransform));
-                cardGO.transform.SetParent(parent, false);
-                cardRT = cardGO.GetComponent<RectTransform>();
-                cardRT.anchorMin = cardRT.anchorMax = new Vector2(0.5f, 0.5f);
-                cardRT.pivot = new Vector2(0.5f, 0.5f);
-                cardRT.sizeDelta = new Vector2(220f, 320f);
+            var content = GetRect(card, "Content");
+            Stretch(content);
+            var thumb = GetRect(content, "Thumbnail");
+            Place(thumb, new Vector2(0f, 1f), new Vector2(93f, -78f), new Vector2(144f, 102f));
+            var thumbImage = GetImage(thumb);
+            thumbImage.sprite = level.unlocked ? PixelUI.Theme.levelThumbnail : null;
+            thumbImage.color = level.unlocked ? Color.white : new Color32(0x17, 0x16, 0x22, 255);
+            thumbImage.raycastTarget = false;
 
-                bgImg = cardGO.AddComponent<Image>();
-                bgImg.color = level.unlocked ? PanelBg : LockedBg;
-            }
+            var lockIcon = GetRect(thumb, "Lock");
+            Place(lockIcon, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(24f, 33f));
+            GetImage(lockIcon).sprite = PixelUI.Theme.levelLock;
+            GetImage(lockIcon).raycastTarget = false;
+            lockIcon.gameObject.SetActive(!level.unlocked);
+            var check = GetRect(thumb, "Cleared");
+            Place(check, Vector2.one, new Vector2(-7.5f, -13.5f), new Vector2(21f, 15f));
+            GetImage(check).sprite = PixelUI.Theme.levelCheck;
+            GetImage(check).raycastTarget = false;
+            check.gameObject.SetActive(level.unlocked && level.cleared);
 
-            // 高亮边框：4 根贴边的细条，不是一整块实心矩形——实心矩形当子物体会盖住 bgImg
-            var borderImages = new Image[4];
-            const float borderThickness = 6f;
-            borderImages[0] = CreateBorderBar(cardGO.transform, "Border_Top",    new Vector2(0f, 1f), new Vector2(1f, 1f), borderThickness);
-            borderImages[1] = CreateBorderBar(cardGO.transform, "Border_Bottom", new Vector2(0f, 0f), new Vector2(1f, 0f), borderThickness);
-            borderImages[2] = CreateBorderBar(cardGO.transform, "Border_Left",   new Vector2(0f, 0f), new Vector2(0f, 1f), borderThickness);
-            borderImages[3] = CreateBorderBar(cardGO.transform, "Border_Right",  new Vector2(1f, 0f), new Vector2(1f, 1f), borderThickness);
-            _levelCardBorders.Add(borderImages);
+            var number = CreateText(content, (index + 1).ToString("00"), Vector2.zero, Vector2.one, TextAnchor.MiddleCenter, 34, "Number");
+            Place(number.GetComponent<RectTransform>(), new Vector2(0.5f, 1f), new Vector2(0f, -174f), new Vector2(150f, 42f));
+            number.GetComponent<TextMeshProUGUI>().color = level.unlocked ? PixelUI.TextLight : LockedLevelText;
+            var name = CreateText(content, level.unlocked ? level.displayName : "???", Vector2.zero, Vector2.one, TextAnchor.MiddleCenter, 17, "Name");
+            Place(name.GetComponent<RectTransform>(), new Vector2(0.5f, 1f), new Vector2(0f, -201f), new Vector2(150f, 36f));
+            var nameText = name.GetComponent<TextMeshProUGUI>();
+            nameText.color = level.unlocked ? PixelUI.TextLight : LockedLevelText;
+            nameText.overflowMode = TextOverflowModes.Ellipsis;
+            var status = CreateText(content, !level.unlocked ? "LOCKED" : level.cleared ? "CLEARED" : "", Vector2.zero, Vector2.one, TextAnchor.MiddleCenter, 12, "Status");
+            Place(status.GetComponent<RectTransform>(), new Vector2(0.5f, 1f), new Vector2(0f, -220f), new Vector2(150f, 18f));
+            status.GetComponent<TextMeshProUGUI>().color = level.unlocked ? PixelUI.OxygenNormal : LockedLevelText;
 
-            if (cardGO.transform.Find("Thumb") == null)
-            {
-                var thumbGO = new GameObject("Thumb", typeof(RectTransform));
-                thumbGO.transform.SetParent(cardGO.transform, false);
-                var thumbRT = thumbGO.GetComponent<RectTransform>();
-                thumbRT.anchorMin = new Vector2(0.5f, 1f);
-                thumbRT.anchorMax = new Vector2(0.5f, 1f);
-                thumbRT.pivot = new Vector2(0.5f, 1f);
-                thumbRT.anchoredPosition = new Vector2(0f, -20f);
-                thumbRT.sizeDelta = new Vector2(160f, 160f);
-                var thumbImg = thumbGO.AddComponent<Image>();
-                thumbImg.sprite = CreateCircleSprite(96);
-                thumbImg.color  = level.unlocked ? new Color(0.55f, 0.75f, 0.6f, 1f) : new Color(0.3f, 0.3f, 0.3f, 1f);
-            }
-
-            CreateText(cardGO.transform, level.displayName, new Vector2(0f, 0f), new Vector2(1f, 0.28f), TextAnchor.MiddleCenter, 20, "Text_Name");
-
-            if (!level.unlocked)
-            {
-                var lockGO = CreateText(cardGO.transform, "LOCKED", new Vector2(0f, 0.55f), new Vector2(1f, 0.75f), TextAnchor.MiddleCenter, 16, "Text_Locked");
-                lockGO.GetComponent<Text>().color = new Color(1f, 0.4f, 0.4f);
-            }
-
-            var button = cardGO.GetComponent<Button>();
-            if (button == null) button = cardGO.AddComponent<Button>();
-            button.targetGraphic = bgImg;
+            var button = card.GetComponent<Button>();
+            if (button == null) button = card.gameObject.AddComponent<Button>();
+            button.targetGraphic = background;
+            button.transition = Selectable.Transition.None;
+            button.navigation = new Navigation { mode = Navigation.Mode.None };
             button.onClick.RemoveAllListeners();
-            int capturedIndex = index;
             button.onClick.AddListener(() =>
             {
-                if (GyroRuntime.ConsoleCapturesInput) return;
-                _selectedLevelIndex = capturedIndex;
+                if (GyroRuntime.ConsoleCapturesInput || _navLocked) return;
+                _selectedLevelIndex = index;
                 UpdateCardHighlight();
                 ConfirmLevelSelection();
             });
-
-            return cardRT;
+            return card;
         }
 
         private void UpdateCardHighlight()
@@ -649,37 +471,29 @@ namespace Resource.Scripts
             for (int i = 0; i < _levelCards.Count; i++)
             {
                 bool selected = i == _selectedLevelIndex;
-                var rt = _levelCards[i];
-                rt.localScale = Vector3.one * (selected ? 1.15f : 0.9f);
-
-                var borders = _levelCardBorders[i];
-                Color borderColor = selected ? new Color(1f, 0.85f, 0.3f, 0.9f) : new Color(1f, 0.85f, 0.3f, 0f);
-                for (int b = 0; b < borders.Length; b++)
-                    borders[b].color = borderColor;
-
-                var cg = rt.GetComponent<CanvasGroup>();
-                if (cg == null) cg = rt.gameObject.AddComponent<CanvasGroup>();
-                cg.alpha = selected ? 1f : 0.6f;
+                var card = _levelCards[i];
+                var image = card.GetComponent<Image>();
+                image.sprite = selected ? PixelUI.Theme.levelCardSelected
+                    : levels[i].unlocked ? PixelUI.Theme.levelCardNormal : PixelUI.Theme.levelCardLocked;
+                image.color = selected && !levels[i].unlocked ? new Color(0.65f, 0.65f, 0.65f, 1f) : Color.white;
+                // Selected artwork is already raised by 3 pixels; only its contents need the same offset.
+                card.Find("Content").GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, selected ? 9f : 0f);
             }
+            if (_levelCards.Count == 0) return;
+            Canvas.ForceUpdateCanvases();
+            float halfView = _levelScroll.viewport.rect.width * 0.5f;
+            var selectedCard = _levelCards[_selectedLevelIndex];
+            float offset = _levelScroll.content.anchoredPosition.x;
+            float left = selectedCard.anchoredPosition.x - selectedCard.rect.width * 0.5f + offset;
+            float right = left + selectedCard.rect.width;
+            if (left < -halfView) offset += -halfView - left;
+            else if (right > halfView) offset -= right - halfView;
+            float limit = Mathf.Max(0f, (_levelScroll.content.rect.width - _levelScroll.viewport.rect.width) * 0.5f);
+            _levelScroll.StopMovement();
+            _levelScroll.content.anchoredPosition = new Vector2(Mathf.Clamp(offset, -limit, limit), 0f);
         }
-
         private void HandleLevelSelectInput()
         {
-            // 选中的卡片缓慢上下浮动，其它卡片保持在基准位置
-            for (int i = 0; i < _levelCards.Count; i++)
-            {
-                Vector2 basePos = _levelCardBasePositions[i];
-                if (i == _selectedLevelIndex)
-                {
-                    float bob = Mathf.Sin(Time.unscaledTime * 2.5f) * 10f;
-                    _levelCards[i].anchoredPosition = basePos + new Vector2(0f, bob);
-                }
-                else
-                {
-                    _levelCards[i].anchoredPosition = basePos;
-                }
-            }
-
             if (_navLocked) return;
 
             float navAxis = 0f;
@@ -746,10 +560,8 @@ namespace Resource.Scripts
 
         private void UpdateOptionsRowHighlight()
         {
-            for (int i = 0; i < _optionsRowBg.Count; i++)
-                _optionsRowBg[i].color = i == _optionsSelectedIndex
-                    ? new Color(1f, 0.85f, 0.3f, 0.22f)
-                    : new Color(0f, 0f, 0f, 0f);
+            for (int i = 0; i < _optionsRows.Count; i++)
+                PixelUI.SetFocused(_optionsRows[i], i == _optionsSelectedIndex);
         }
 
         /// <summary>Options 面板的十字键/摇杆/键盘导航：上下选行，左右改值，跟关卡选择/游戏内设置面板同一套写法</summary>
@@ -774,9 +586,9 @@ namespace Resource.Scripts
                 if (gamepad.leftStick.up.wasPressedThisFrame   || gamepad.dpad.up.wasPressedThisFrame)   navAxis = -1f;
                 if (gamepad.leftStick.down.wasPressedThisFrame || gamepad.dpad.down.wasPressedThisFrame) navAxis = 1f;
             }
-            if (navAxis != 0f && _optionsRowBg.Count > 0)
+            if (navAxis != 0f && _optionsRows.Count > 0)
             {
-                int newIndex = Mathf.Clamp(_optionsSelectedIndex + (int)navAxis, 0, _optionsRowBg.Count - 1);
+                int newIndex = Mathf.Clamp(_optionsSelectedIndex + (int)navAxis, 0, _optionsRows.Count - 1);
                 if (newIndex != _optionsSelectedIndex)
                 {
                     _optionsSelectedIndex = newIndex;
@@ -822,8 +634,8 @@ namespace Resource.Scripts
                     if (adjustPressed)
                     {
                         int dir = adjustAxis > 0f ? 1 : -1;
-                        settings.SetResolutionIndex((settings.resolutionIndex + dir + settings.CommonResolutions.Length) % settings.CommonResolutions.Length);
-                        _optionsResolutionLabel.text = ResolutionLabel(settings);
+                        settings.SetResolutionIndex(Mathf.Clamp(settings.resolutionIndex + dir, 0, settings.CommonResolutions.Length - 1));
+                        RefreshResolutionRow(settings);
                         SfxManager.Instance.PlayButtonHover();
                     }
                     break;
@@ -848,452 +660,339 @@ namespace Resource.Scripts
         // ── 设置面板 ─────────────────────────────────────────────
         private void BuildOptionsPanel(Transform parent)
         {
-            var existingPanel = parent.Find("OptionsPanel");
-            GameObject panelGO;
-            if (existingPanel != null)
-            {
-                panelGO = existingPanel.gameObject;
-                _optionsRoot = panelGO.GetComponent<RectTransform>();
-                _optionsGroup = panelGO.GetComponent<CanvasGroup>();
-            }
-            else
-            {
-                panelGO = new GameObject("OptionsPanel", typeof(RectTransform));
-                panelGO.transform.SetParent(parent, false);
-                _optionsRoot = panelGO.GetComponent<RectTransform>();
-                _optionsRoot.anchorMin = Vector2.zero;
-                _optionsRoot.anchorMax = Vector2.one;
-                _optionsRoot.offsetMin = Vector2.zero;
-                _optionsRoot.offsetMax = Vector2.zero;
-                _optionsGroup = panelGO.AddComponent<CanvasGroup>();
-                _optionsGroup.alpha = 0f;
-                panelGO.SetActive(false);
-            }
+            _optionsRoot = GetRect(parent, "OptionsPanel");
+            Stretch(_optionsRoot);
+            _optionsGroup = GetGroup(_optionsRoot);
+            _optionsGroup.alpha = 0f;
+            _optionsRoot.gameObject.SetActive(false);
 
-            var backBtn = CreateButton(panelGO.transform, LocalizationManager.Instance.Get("settings.back"), new Vector2(140f, 50f), ButtonColor, "Button_Back");
-            var backRT = backBtn.GetComponent<RectTransform>();
-            backRT.anchorMin = backRT.anchorMax = new Vector2(0f, 1f);
-            backRT.pivot = new Vector2(0f, 1f);
-            if (existingPanel == null) backRT.anchoredPosition = new Vector2(30f, -30f);
+            var panelRT = GetRect(_optionsRoot, "PixelPanel");
+            Place(panelRT, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(540f, 720f));
+            panelRT.SetAsFirstSibling();
+            var panelImage = GetImage(panelRT);
+            panelImage.sprite = PixelUI.Theme.panel;
+            panelImage.type = Image.Type.Sliced;
+            panelImage.color = Color.white;
+            panelImage.raycastTarget = false;
+
+            var titleGO = CreateLocalizedText(_optionsRoot, "settings.title", new Vector2(0f, 0.86f), new Vector2(1f, 0.97f), TextAnchor.MiddleCenter, 36, "Text_Title");
+            PixelUI.EnsureText(titleGO, 36, true, TextAnchor.MiddleCenter, PixelUI.TextLight);
+            var backBtn = CreateButton(_optionsRoot, LocalizationManager.Instance.Get("settings.back"), new Vector2(240f, 54f), "Button_Back");
+            Place(backBtn.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0f, 48f), new Vector2(240f, 54f));
             backBtn.onClick.AddListener(() => BackToTitle(_optionsRoot, _optionsGroup, new Vector2(400f, 0f)));
-            _localizedTexts.Add((backBtn.GetComponentInChildren<Text>(), "settings.back"));
+            _localizedTexts.Add((backBtn.GetComponentInChildren<TextMeshProUGUI>(true), "settings.back"));
 
-            CreateLocalizedText(panelGO.transform, "settings.title", new Vector2(0f, 0.85f), new Vector2(1f, 0.98f), TextAnchor.MiddleCenter, 32, "Text_Title");
-
-            var existingContent = panelGO.transform.Find("Content");
-            GameObject contentGO;
-            if (existingContent != null)
-            {
-                contentGO = existingContent.gameObject;
-            }
-            else
-            {
-                contentGO = new GameObject("Content", typeof(RectTransform));
-                contentGO.transform.SetParent(panelGO.transform, false);
-                var contentRT = contentGO.GetComponent<RectTransform>();
-                contentRT.anchorMin = contentRT.anchorMax = new Vector2(0.5f, 0.5f);
-                contentRT.sizeDelta = new Vector2(520f, 420f);
-                var layout = contentGO.AddComponent<VerticalLayoutGroup>();
-                layout.spacing = 18f;
-                layout.childControlWidth = true;
-                layout.childForceExpandWidth = true;
-                layout.childControlHeight = false;
-                layout.childForceExpandHeight = false;
-            }
+            var contentRT = GetRect(_optionsRoot, "Content");
+            Place(contentRT, new Vector2(0.5f, 0.5f), new Vector2(0f, -8f), new Vector2(492f, 508f));
+            var layout = contentRT.GetComponent<VerticalLayoutGroup>();
+            if (layout == null) layout = contentRT.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 8f;
+            layout.padding = new RectOffset();
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childControlWidth = true;
+            layout.childForceExpandWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandHeight = false;
 
             var settings = SettingsManager.Instance;
-
-            _optionsRowBg.Clear();
-            _optionsMasterDrag = AddOptionsSlider(contentGO.transform, "Row_Master", "settings.master", settings.masterVolume, settings.SetMasterVolume);
-            _optionsMusicDrag  = AddOptionsSlider(contentGO.transform, "Row_Music",  "settings.music",  settings.musicVolume,  settings.SetMusicVolume);
-            _optionsSfxDrag    = AddOptionsSlider(contentGO.transform, "Row_Sfx",    "settings.sfx",    settings.sfxVolume,    settings.SetSfxVolume);
-            AddOptionsResolutionRow(contentGO.transform, settings);
-            AddOptionsToggleRow(contentGO.transform, "Row_Fullscreen", "settings.fullscreen", settings.fullscreen, settings.SetFullscreen);
-            AddOptionsLanguageRow(contentGO.transform);
-
+            _optionsRows.Clear();
+            AddOptionsGroup(contentRT, "Group_Audio", "settings.group.audio");
+            _optionsMasterDrag = AddOptionsSlider(contentRT, "Row_Master", "settings.master", settings.masterVolume, settings.SetMasterVolume);
+            _optionsMusicDrag = AddOptionsSlider(contentRT, "Row_Music", "settings.music", settings.musicVolume, settings.SetMusicVolume);
+            _optionsSfxDrag = AddOptionsSlider(contentRT, "Row_Sfx", "settings.sfx", settings.sfxVolume, settings.SetSfxVolume);
+            AddOptionsGroup(contentRT, "Group_Display", "settings.group.display");
+            AddOptionsResolutionRow(contentRT, settings);
+            AddOptionsToggleRow(contentRT, "Row_Fullscreen", "settings.fullscreen", settings.fullscreen, settings.SetFullscreen);
+            AddOptionsGroup(contentRT, "Group_Language", "settings.group.language");
+            AddOptionsLanguageRow(contentRT);
             _optionsSelectedIndex = 0;
             UpdateOptionsRowHighlight();
         }
 
-        /// <summary>Options 面板里的一行，自带可高亮的背景，供十字键/摇杆选中时染黄。
-        /// rowName 必须在同一个 Content 父物体下互不相同，不然找现成物体时会找错。</summary>
+        private void AddOptionsGroup(Transform parent, string name, string key)
+        {
+            var group = GetRect(parent, name);
+            group.SetAsLastSibling();
+            SetLayoutHeight(group, 32f);
+            var label = CreateLocalizedText(group, key, new Vector2(0.02f, 0.16f), new Vector2(0.98f, 1f), TextAnchor.MiddleLeft, 18);
+            PixelUI.EnsureText(label, 18, false, TextAnchor.MiddleLeft, PixelUI.TextLight);
+            var lineRT = GetRect(group, "Divider");
+            lineRT.anchorMin = new Vector2(0.02f, 0f);
+            lineRT.anchorMax = new Vector2(0.98f, 0f);
+            lineRT.pivot = new Vector2(0.5f, 0f);
+            lineRT.offsetMin = Vector2.zero;
+            lineRT.offsetMax = new Vector2(0f, 3f);
+            var line = GetImage(lineRT);
+            line.sprite = PixelUI.Theme.dividerDot;
+            line.type = Image.Type.Tiled;
+            line.color = Color.white;
+            line.raycastTarget = false;
+        }
+
         private RectTransform CreateOptionsRow(Transform parent, string rowName, float height)
         {
-            var existing = parent.Find(rowName);
-            if (existing != null)
+            var row = GetRect(parent, rowName);
+            row.SetAsLastSibling();
+            SetLayoutHeight(row, height);
+            var button = row.GetComponent<Button>();
+            if (button == null) button = row.gameObject.AddComponent<Button>();
+            button.targetGraphic = GetImage(row);
+            button.targetGraphic.raycastTarget = true;
+            PixelUI.StyleButton(button);
+            var navigation = button.navigation;
+            navigation.mode = Navigation.Mode.None;
+            button.navigation = navigation;
+            int rowIndex = _optionsRows.Count;
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() =>
             {
-                var existingBg = existing.GetComponent<Image>();
-                if (existingBg != null) _optionsRowBg.Add(existingBg);
-                return existing.GetComponent<RectTransform>();
-            }
+                _optionsSelectedIndex = rowIndex;
+                UpdateOptionsRowHighlight();
+            });
+            _optionsRows.Add(button);
+            return row;
+        }
 
-            var row = new GameObject(rowName, typeof(RectTransform));
-            row.transform.SetParent(parent, false);
-            var rt = row.GetComponent<RectTransform>();
-            var le = row.AddComponent<LayoutElement>();
-            le.preferredHeight = height;
-            le.minHeight = height;
-
-            var bg = row.AddComponent<Image>();
-            bg.color = new Color(0f, 0f, 0f, 0f);
-            bg.raycastTarget = false; // 高亮用的背景，不能挡住同一行里拉杆/按钮的点击
-            _optionsRowBg.Add(bg);
-            return rt;
+        private void AddOptionsLabel(RectTransform row, string key)
+        {
+            var label = CreateLocalizedText(row, key, new Vector2(0.04f, 0.08f), new Vector2(0.52f, 0.95f), TextAnchor.MiddleLeft, 21);
+            PixelUI.EnsureText(label, 21, true, TextAnchor.MiddleLeft, PixelUI.TextDark);
         }
 
         private DebugSliderDrag AddOptionsSlider(Transform parent, string rowName, string labelKey, float initial, Action<float> setter)
         {
-            var row = CreateOptionsRow(parent, rowName, 60f);
+            var row = CreateOptionsRow(parent, rowName, 54f);
+            AddOptionsLabel(row, labelKey);
+            var barRT = GetRect(row, "Bar");
+            barRT.anchorMin = new Vector2(0.57f, 0.31f);
+            barRT.anchorMax = new Vector2(0.85f, 0.67f);
+            barRT.offsetMin = barRT.offsetMax = Vector2.zero;
+            var barImage = GetImage(barRT);
+            barImage.sprite = PixelUI.Theme.barFrame;
+            barImage.type = Image.Type.Sliced;
+            barImage.color = Color.white;
 
-            CreateLocalizedText(row.transform, labelKey, new Vector2(0f, 0.5f), new Vector2(1f, 1f), TextAnchor.LowerCenter, 18);
+            var fillArea = GetRect(barRT, "FillArea");
+            Stretch(fillArea);
+            fillArea.offsetMin = new Vector2(3f, 3f);
+            fillArea.offsetMax = new Vector2(-3f, -3f);
+            var existingFill = barRT.Find("Fill");
+            if (existingFill != null) existingFill.SetParent(fillArea, false);
+            var fillRT = GetRect(fillArea, "Fill");
+            fillRT.anchorMin = Vector2.zero;
+            fillRT.anchorMax = new Vector2(Mathf.Clamp01(initial), 1f);
+            fillRT.offsetMin = fillRT.offsetMax = Vector2.zero;
+            var fillImage = GetImage(fillRT);
+            fillImage.sprite = PixelUI.Theme.barFill;
+            fillImage.type = Image.Type.Sliced;
+            fillImage.color = PixelUI.Accent;
+            fillImage.raycastTarget = false;
 
-            var existingBar = row.Find("Bar");
-            GameObject barGO;
-            RectTransform barRT, fillRT;
-            if (existingBar != null)
+            var valueGO = CreateText(row, Mathf.RoundToInt(initial * 100f).ToString(), new Vector2(0.86f, 0f), new Vector2(0.98f, 1f), TextAnchor.MiddleCenter, 18, "Text_Value");
+            var valueText = PixelUI.EnsureText(valueGO, 18, false, TextAnchor.MiddleCenter, PixelUI.TextDark);
+            var dragger = barRT.GetComponent<DebugSliderDrag>();
+            if (dragger == null) dragger = barRT.gameObject.AddComponent<DebugSliderDrag>();
+            fillImage.enabled = initial > 0f;
+            dragger.Init(barRT, fillRT, 0f, 1f, value =>
             {
-                barGO = existingBar.gameObject;
-                barRT = barGO.GetComponent<RectTransform>();
-                fillRT = barGO.transform.Find("Fill").GetComponent<RectTransform>();
-            }
-            else
-            {
-                barGO = new GameObject("Bar", typeof(RectTransform));
-                barGO.transform.SetParent(row.transform, false);
-                barRT = barGO.GetComponent<RectTransform>();
-                barRT.anchorMin = new Vector2(0f, 0f);
-                barRT.anchorMax = new Vector2(1f, 0.45f);
-                barRT.offsetMin = Vector2.zero;
-                barRT.offsetMax = Vector2.zero;
-                var barImg = barGO.AddComponent<Image>();
-                barImg.color = new Color(0.16f, 0.16f, 0.2f, 1f);
-
-                var fillGO = new GameObject("Fill", typeof(RectTransform));
-                fillGO.transform.SetParent(barGO.transform, false);
-                fillRT = fillGO.GetComponent<RectTransform>();
-                fillRT.anchorMin = Vector2.zero;
-                fillRT.anchorMax = new Vector2(Mathf.Clamp01(initial), 1f);
-                fillRT.offsetMin = Vector2.zero;
-                fillRT.offsetMax = Vector2.zero;
-                var fillImg = fillGO.AddComponent<Image>();
-                fillImg.color = new Color(0.3f, 0.62f, 0.95f, 1f);
-            }
-
-            var dragger = barGO.GetComponent<DebugSliderDrag>();
-            if (dragger == null) dragger = barGO.AddComponent<DebugSliderDrag>();
-            dragger.Init(barRT, fillRT, 0f, 1f, setter);
+                setter(value);
+                fillImage.enabled = value > 0f;
+                valueText.text = Mathf.RoundToInt(value * 100f).ToString();
+            });
             return dragger;
         }
 
         private void AddOptionsResolutionRow(Transform parent, SettingsManager settings)
         {
-            var row = CreateOptionsRow(parent, "Row_Resolution", 50f);
-
-            CreateLocalizedText(row.transform, "settings.display", new Vector2(0f, 0f), new Vector2(0.4f, 1f), TextAnchor.MiddleLeft, 18);
-
-            var prevBtn = CreateButton(row.transform, "<", new Vector2(50f, 40f), ButtonColor, "Button_Prev");
-            var prevRT = prevBtn.GetComponent<RectTransform>();
-            prevRT.anchorMin = prevRT.anchorMax = new Vector2(0.45f, 0.5f);
-
-            var labelGO = CreateText(row.transform, ResolutionLabel(settings), new Vector2(0.53f, 0f), new Vector2(0.82f, 1f), TextAnchor.MiddleCenter, 16, "Text_Value");
-            _optionsResolutionLabel = labelGO.GetComponent<Text>();
-
-            var nextBtn = CreateButton(row.transform, ">", new Vector2(50f, 40f), ButtonColor, "Button_Next");
-            var nextRT = nextBtn.GetComponent<RectTransform>();
-            nextRT.anchorMin = nextRT.anchorMax = new Vector2(0.9f, 0.5f);
-
-            prevBtn.onClick.AddListener(() =>
+            var row = CreateOptionsRow(parent, "Row_Resolution", 54f);
+            AddOptionsLabel(row, "settings.display");
+            _optionsResolutionPrev = CreateArrow(row, false);
+            _optionsResolutionNext = CreateArrow(row, true);
+            var labelGO = CreateText(row, ResolutionLabel(settings), new Vector2(0.62f, 0f), new Vector2(0.90f, 1f), TextAnchor.MiddleCenter, 18, "Text_Value");
+            _optionsResolutionLabel = PixelUI.EnsureText(labelGO, 18, false, TextAnchor.MiddleCenter, PixelUI.TextDark);
+            _optionsResolutionPrev.onClick.AddListener(() =>
             {
-                settings.SetResolutionIndex((settings.resolutionIndex - 1 + settings.CommonResolutions.Length) % settings.CommonResolutions.Length);
-                _optionsResolutionLabel.text = ResolutionLabel(settings);
+                settings.SetResolutionIndex(Mathf.Max(0, settings.resolutionIndex - 1));
+                RefreshResolutionRow(settings);
             });
-            nextBtn.onClick.AddListener(() =>
+            _optionsResolutionNext.onClick.AddListener(() =>
             {
-                settings.SetResolutionIndex((settings.resolutionIndex + 1) % settings.CommonResolutions.Length);
-                _optionsResolutionLabel.text = ResolutionLabel(settings);
+                settings.SetResolutionIndex(Mathf.Min(settings.CommonResolutions.Length - 1, settings.resolutionIndex + 1));
+                RefreshResolutionRow(settings);
             });
+            RefreshResolutionRow(settings);
+        }
+
+        private void RefreshResolutionRow(SettingsManager settings)
+        {
+            _optionsResolutionLabel.text = ResolutionLabel(settings);
+            _optionsResolutionPrev.interactable = settings.resolutionIndex > 0;
+            _optionsResolutionNext.interactable = settings.resolutionIndex < settings.CommonResolutions.Length - 1;
         }
 
         private static string ResolutionLabel(SettingsManager settings)
         {
             var res = settings.CommonResolutions[settings.resolutionIndex];
-            return $"{res.x} x {res.y}";
+            return $"{res.x} × {res.y}";
         }
 
         private void AddOptionsLanguageRow(Transform parent)
         {
-            var row = CreateOptionsRow(parent, "Row_Language", 50f);
-
-            CreateLocalizedText(row.transform, "settings.language", new Vector2(0f, 0f), new Vector2(0.4f, 1f), TextAnchor.MiddleLeft, 18);
-
-            var prevBtn = CreateButton(row.transform, "<", new Vector2(50f, 40f), ButtonColor, "Button_Prev");
-            var prevRT = prevBtn.GetComponent<RectTransform>();
-            prevRT.anchorMin = prevRT.anchorMax = new Vector2(0.45f, 0.5f);
-
+            var row = CreateOptionsRow(parent, "Row_Language", 54f);
+            AddOptionsLabel(row, "settings.language");
+            var prevBtn = CreateArrow(row, false);
+            var nextBtn = CreateArrow(row, true);
             var loc = LocalizationManager.Instance;
-            var labelGO = CreateText(row.transform, loc.LanguageName(loc.CurrentLanguage), new Vector2(0.53f, 0f), new Vector2(0.82f, 1f), TextAnchor.MiddleCenter, 16, "Text_Value");
-            _optionsLanguageLabel = labelGO.GetComponent<Text>();
-
-            var nextBtn = CreateButton(row.transform, ">", new Vector2(50f, 40f), ButtonColor, "Button_Next");
-            var nextRT = nextBtn.GetComponent<RectTransform>();
-            nextRT.anchorMin = nextRT.anchorMax = new Vector2(0.9f, 0.5f);
-
+            var labelGO = CreateText(row, loc.LanguageName(loc.CurrentLanguage), new Vector2(0.62f, 0f), new Vector2(0.90f, 1f), TextAnchor.MiddleCenter, 18, "Text_Value");
+            _optionsLanguageLabel = PixelUI.EnsureText(labelGO, 18, false, TextAnchor.MiddleCenter, PixelUI.TextDark);
             prevBtn.onClick.AddListener(() => loc.CycleLanguage(-1));
             nextBtn.onClick.AddListener(() => loc.CycleLanguage(1));
         }
 
+        private Button CreateArrow(RectTransform row, bool right)
+        {
+            var button = CreateButton(row, "", new Vector2(27f, 36f), right ? "Button_Next" : "Button_Prev");
+            Place(button.GetComponent<RectTransform>(), new Vector2(right ? 0.94f : 0.57f, 0.5f), Vector2.zero, new Vector2(27f, 36f));
+            PixelUI.StyleArrow(button, right);
+            return button;
+        }
+
         private void AddOptionsToggleRow(Transform parent, string rowName, string labelKey, bool initial, Action<bool> setter)
         {
-            var row = CreateOptionsRow(parent, rowName, 44f);
-
-            CreateLocalizedText(row.transform, labelKey, new Vector2(0f, 0f), new Vector2(0.6f, 1f), TextAnchor.MiddleLeft, 18);
-
-            var existingToggle = row.Find("Toggle");
-            GameObject toggleGO;
-            Image bgImg, checkImg;
-            if (existingToggle != null)
-            {
-                toggleGO = existingToggle.gameObject;
-                bgImg = toggleGO.GetComponent<Image>();
-                checkImg = toggleGO.transform.Find("Checkmark").GetComponent<Image>();
-            }
-            else
-            {
-                toggleGO = new GameObject("Toggle", typeof(RectTransform));
-                toggleGO.transform.SetParent(row.transform, false);
-                var toggleRT = toggleGO.GetComponent<RectTransform>();
-                toggleRT.anchorMin = new Vector2(0.75f, 0.15f);
-                toggleRT.anchorMax = new Vector2(0.95f, 0.85f);
-                toggleRT.offsetMin = Vector2.zero;
-                toggleRT.offsetMax = Vector2.zero;
-
-                bgImg = toggleGO.AddComponent<Image>();
-                bgImg.color = new Color(0.16f, 0.16f, 0.2f, 1f);
-
-                var checkGO = new GameObject("Checkmark", typeof(RectTransform));
-                checkGO.transform.SetParent(toggleGO.transform, false);
-                var checkRT = checkGO.GetComponent<RectTransform>();
-                checkRT.anchorMin = new Vector2(0.15f, 0.15f);
-                checkRT.anchorMax = new Vector2(0.85f, 0.85f);
-                checkRT.offsetMin = Vector2.zero;
-                checkRT.offsetMax = Vector2.zero;
-                checkImg = checkGO.AddComponent<Image>();
-                checkImg.color = new Color(0.35f, 0.85f, 0.45f, 1f);
-            }
-
-            _optionsFullscreenToggle = toggleGO.GetComponent<Toggle>();
-            if (_optionsFullscreenToggle == null) _optionsFullscreenToggle = toggleGO.AddComponent<Toggle>();
-            _optionsFullscreenToggle.targetGraphic = bgImg;
-            _optionsFullscreenToggle.graphic = checkImg;
+            var row = CreateOptionsRow(parent, rowName, 54f);
+            AddOptionsLabel(row, labelKey);
+            var toggleRT = GetRect(row, "Toggle");
+            Place(toggleRT, new Vector2(0.94f, 0.5f), Vector2.zero, new Vector2(30f, 30f));
+            var bgImage = GetImage(toggleRT);
+            var checkRT = GetRect(toggleRT, "Checkmark");
+            Stretch(checkRT);
+            var checkImage = GetImage(checkRT);
+            _optionsFullscreenToggle = toggleRT.GetComponent<Toggle>();
+            if (_optionsFullscreenToggle == null) _optionsFullscreenToggle = toggleRT.gameObject.AddComponent<Toggle>();
+            _optionsFullscreenToggle.targetGraphic = bgImage;
+            _optionsFullscreenToggle.graphic = checkImage;
+            PixelUI.StyleToggle(_optionsFullscreenToggle);
             _optionsFullscreenToggle.onValueChanged.RemoveAllListeners();
-            _optionsFullscreenToggle.isOn = initial;
+            _optionsFullscreenToggle.SetIsOnWithoutNotify(initial);
             _optionsFullscreenToggle.onValueChanged.AddListener(v => setter(v));
         }
 
-        // ── 通用按钮 / 文字 / 圆形贴图 ────────────────────────────
-        /// <summary>
-        /// 找场景里已经摆好的同名按钮就直接复用（位置/大小/颜色这些编辑期调过的值不会被覆盖），
-        /// 没有才照默认参数新建。不管哪种情况，事件监听器（闭包，没法存进场景文件）都要重新挂一遍。
-        /// </summary>
-        private Button CreateButton(Transform parent, string label, Vector2 size, Color color, string goName = null)
+        // ── 通用按钮 / 文字 / 布局 ───────────────────────────────
+        private Button CreateButton(Transform parent, string label, Vector2 size, string goName = null)
         {
-            // goName 留空时用 label 拼名字——注意调用方如果传的是本地化文字（会随语言变），
-            // 必须显式传一个稳定的 goName，不然切语言/换语言环境时会找不到场景里已经摆好的按钮。
             goName ??= $"Button_{label}";
-            var existing = parent.Find(goName);
-            GameObject go;
-            RectTransform rt;
-            Image img;
-            Button btn;
+            var rt = GetRect(parent, goName);
+            rt.sizeDelta = size;
+            rt.localScale = Vector3.one;
+            RemoveBorders(rt);
+            var button = rt.GetComponent<Button>();
+            if (button == null) button = rt.gameObject.AddComponent<Button>();
+            button.targetGraphic = GetImage(rt);
+            PixelUI.StyleButton(button);
+            var navigation = button.navigation;
+            navigation.mode = Navigation.Mode.None;
+            button.navigation = navigation;
+            var labelGO = CreateText(rt, label, Vector2.zero, Vector2.one, TextAnchor.MiddleCenter, 24, "Label");
+            PixelUI.EnsureText(labelGO, 24, true, TextAnchor.MiddleCenter, PixelUI.TextDark);
+            button.onClick.RemoveAllListeners();
 
-            if (existing != null)
-            {
-                go = existing.gameObject;
-                rt = go.GetComponent<RectTransform>();
-                img = go.GetComponent<Image>();
-                btn = go.GetComponent<Button>();
-                var existingLabel = go.GetComponentInChildren<Text>();
-                if (existingLabel != null) existingLabel.text = label;
-            }
-            else
-            {
-                go = new GameObject(goName, typeof(RectTransform));
-                go.transform.SetParent(parent, false);
-                rt = go.GetComponent<RectTransform>();
-                rt.sizeDelta = size;
-
-                img = go.AddComponent<Image>();
-                img.color = color;
-
-                btn = go.AddComponent<Button>();
-                btn.targetGraphic = img;
-                var colors = btn.colors;
-                colors.normalColor      = Color.white;
-                colors.highlightedColor = new Color(1.05f, 1.05f, 1.05f, 1f);
-                colors.pressedColor     = new Color(0.8f, 0.8f, 0.8f, 1f);
-                colors.fadeDuration     = 0.08f;
-                btn.colors = colors;
-
-                var textGO = new GameObject("Label", typeof(RectTransform));
-                textGO.transform.SetParent(go.transform, false);
-                var textRT = textGO.GetComponent<RectTransform>();
-                textRT.anchorMin = Vector2.zero;
-                textRT.anchorMax = Vector2.one;
-                textRT.offsetMin = Vector2.zero;
-                textRT.offsetMax = Vector2.zero;
-                var text = textGO.AddComponent<Text>();
-                text.text = label;
-                text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                text.fontSize = 22;
-                text.color = Color.white;
-                text.alignment = TextAnchor.MiddleCenter;
-                text.raycastTarget = false;
-            }
-
-            // 选中/悬停时外围包一圈黄线，跟关卡选择卡片同一套边框——找现成的就复用，没有才建
-            var borders = new Image[4];
-            const float borderThickness = 5f;
-            borders[0] = CreateBorderBar(go.transform, "Border_Top",    new Vector2(0f, 1f), new Vector2(1f, 1f), borderThickness);
-            borders[1] = CreateBorderBar(go.transform, "Border_Bottom", new Vector2(0f, 0f), new Vector2(1f, 0f), borderThickness);
-            borders[2] = CreateBorderBar(go.transform, "Border_Left",   new Vector2(0f, 0f), new Vector2(0f, 1f), borderThickness);
-            borders[3] = CreateBorderBar(go.transform, "Border_Right",  new Vector2(1f, 0f), new Vector2(1f, 1f), borderThickness);
-            _buttonBorders[btn] = borders;
-
-            btn.onClick.RemoveAllListeners();
-            btn.onClick.AddListener(() => StartCoroutine(PunchScale(rt)));
-
-            var trigger = go.GetComponent<EventTrigger>();
-            if (trigger == null) trigger = go.AddComponent<EventTrigger>();
+            var trigger = rt.GetComponent<EventTrigger>();
+            if (trigger == null) trigger = rt.gameObject.AddComponent<EventTrigger>();
             trigger.triggers.Clear();
-            var enterEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
-            enterEntry.callback.AddListener(_ =>
+            var enter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enter.callback.AddListener(_ =>
             {
+                if (!button.interactable) return;
                 SfxManager.Instance.PlayButtonHover();
-                SetButtonFocused(btn, true);
+                SetButtonFocused(button, true);
             });
-            trigger.triggers.Add(enterEntry);
-
-            var exitEntry = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
-            exitEntry.callback.AddListener(_ => SetButtonFocused(btn, false));
-            trigger.triggers.Add(exitEntry);
-
-            return btn;
+            trigger.triggers.Add(enter);
+            var exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exit.callback.AddListener(_ => SetButtonFocused(button, _titleButtons.Count > _titleSelectedIndex && _titleButtons[_titleSelectedIndex] == button));
+            trigger.triggers.Add(exit);
+            return button;
         }
 
-        /// <summary>统一的按钮"聚焦"视觉：放大 + 黄色描边，鼠标悬停和手柄/键盘选中都走这一个方法</summary>
-        private void SetButtonFocused(Button btn, bool focused)
+        private void SetButtonFocused(Button button, bool focused)
         {
-            var rt = btn.GetComponent<RectTransform>();
-            StartCoroutine(HoverScale(rt, focused ? 1.05f : 1f));
-            if (_buttonBorders.TryGetValue(btn, out var borders))
-            {
-                Color c = focused ? new Color(1f, 0.85f, 0.3f, 0.9f) : new Color(1f, 0.85f, 0.3f, 0f);
-                foreach (var b in borders) b.color = c;
-            }
+            PixelUI.SetFocused(button, focused);
         }
 
-        private IEnumerator PunchScale(RectTransform rt)
-        {
-            const float duration = 0.12f;
-            Vector3 baseScale = Vector3.one;
-            float t = 0f;
-            while (t < duration)
-            {
-                t += Time.unscaledDeltaTime;
-                float k = Mathf.Clamp01(t / duration);
-                rt.localScale = Vector3.Lerp(baseScale * 0.9f, baseScale, k);
-                yield return null;
-            }
-            rt.localScale = baseScale;
-        }
-
-        private IEnumerator HoverScale(RectTransform rt, float targetMul)
-        {
-            Vector3 start = rt.localScale;
-            Vector3 target = Vector3.one * targetMul;
-            const float duration = 0.1f;
-            float t = 0f;
-            while (t < duration)
-            {
-                t += Time.unscaledDeltaTime;
-                rt.localScale = Vector3.Lerp(start, target, t / duration);
-                yield return null;
-            }
-            rt.localScale = target;
-        }
-
-        /// <summary>找同名文字物体就复用（位置/字号这些编辑期调过的值不覆盖，只更新文字内容），
-        /// 没有才新建。goName 留空时默认用 "Text"——调用方如果在同一个父物体下建多个文字，
-        /// 必须传不同的 goName，不然会互相顶掉。</summary>
         private GameObject CreateText(Transform parent, string text, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize, string goName = "Text")
         {
-            var existing = parent.Find(goName);
-            if (existing != null)
-            {
-                var existingText = existing.GetComponent<Text>();
-                if (existingText != null) existingText.text = text;
-                return existing.gameObject;
-            }
-
-            var go = new GameObject(goName, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var rt = go.GetComponent<RectTransform>();
+            var rt = GetRect(parent, goName);
             rt.anchorMin = anchorMin;
             rt.anchorMax = anchorMax;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            var t = go.AddComponent<Text>();
-            t.text = text;
-            t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            t.fontSize = fontSize;
-            t.color = Color.white;
-            t.alignment = align;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-            t.verticalOverflow   = VerticalWrapMode.Overflow;
-            t.raycastTarget = false; // 纯文字标签不需要挡点击，之前设置面板标题就因为这个盖住了 Back 按钮
-            return go;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            var label = PixelUI.EnsureText(rt.gameObject, fontSize, fontSize >= 21, align, PixelUI.TextLight);
+            label.text = text;
+            label.raycastTarget = false;
+            return rt.gameObject;
         }
 
-        /// <summary>贴在 anchorMin~anchorMax 那条边上的细条，用于拼出一圈高亮边框（不挡住中间内容）。
-        /// 找同名的就复用，没有才新建——borderName 必须在同一父物体下互不相同。</summary>
-        private Image CreateBorderBar(Transform parent, string borderName, Vector2 anchorMin, Vector2 anchorMax, float thickness)
+        private static RectTransform GetRect(Transform parent, string name)
         {
-            var existing = parent.Find(borderName);
-            if (existing != null) return existing.GetComponent<Image>();
-
-            var go = new GameObject(borderName, typeof(RectTransform));
+            var existing = parent.Find(name);
+            if (existing != null) return existing.GetComponent<RectTransform>();
+            var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
-            var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = anchorMin;
-            rt.anchorMax = anchorMax;
-            rt.offsetMin = new Vector2(-thickness, -thickness);
-            rt.offsetMax = new Vector2(thickness, thickness);
-            var img = go.AddComponent<Image>();
-            img.color = new Color(1f, 0.85f, 0.3f, 0f);
-            img.raycastTarget = false; // 纯装饰用的描边，不能挡住按钮/卡片自己的点击
-            return img;
+            return go.GetComponent<RectTransform>();
         }
 
-        private static Sprite CreateCircleSprite(int size)
+        private static Image GetImage(RectTransform rt)
         {
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            tex.wrapMode = TextureWrapMode.Clamp;
-            float r = size * 0.5f;
-            var pixels = new Color32[size * size];
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float dx = x + 0.5f - r;
-                    float dy = y + 0.5f - r;
-                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
-                    float alpha = Mathf.Clamp01(r - dist);
-                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
-                }
-            }
-            tex.SetPixels32(pixels);
-            tex.Apply();
-            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+            var image = rt.GetComponent<Image>();
+            return image != null ? image : rt.gameObject.AddComponent<Image>();
         }
+
+        private static CanvasGroup GetGroup(RectTransform rt)
+        {
+            var group = rt.GetComponent<CanvasGroup>();
+            return group != null ? group : rt.gameObject.AddComponent<CanvasGroup>();
+        }
+
+        private static void Stretch(RectTransform rt)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            rt.localScale = Vector3.one;
+        }
+
+        private static void Place(RectTransform rt, Vector2 anchor, Vector2 position, Vector2 size)
+        {
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = position;
+            rt.sizeDelta = size;
+            rt.localScale = Vector3.one;
+        }
+
+        private static void SetLayoutHeight(RectTransform rt, float height)
+        {
+            var element = rt.GetComponent<LayoutElement>();
+            if (element == null) element = rt.gameObject.AddComponent<LayoutElement>();
+            element.minHeight = element.preferredHeight = height;
+            element.flexibleHeight = 0f;
+            rt.localScale = Vector3.one;
+        }
+
+        private static void RemoveBorders(Transform parent)
+        {
+            RemoveChild(parent, "Border_Top");
+            RemoveChild(parent, "Border_Bottom");
+            RemoveChild(parent, "Border_Left");
+            RemoveChild(parent, "Border_Right");
+        }
+
+        private static void RemoveChild(Transform parent, string name)
+        {
+            var child = parent.Find(name);
+            if (child == null) return;
+            child.gameObject.SetActive(false);
+            if (Application.isPlaying) Destroy(child.gameObject);
+            else DestroyImmediate(child.gameObject);
+        }
+
     }
 }

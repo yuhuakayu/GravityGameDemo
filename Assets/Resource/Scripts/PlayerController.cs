@@ -18,6 +18,8 @@ namespace Resource.Scripts
         [Header("移动设置")]
         public float maxMoveSpeed = 6f;
         public float jumpForce = 12f;
+        [Tooltip("关闭后禁用键盘和手柄跳跃，保留正常移动与重力。")]
+        public bool jumpEnabled = true;
 
         [Header("防止世界几何推动玩家")]
         public bool antiPushEnabled = true;
@@ -60,11 +62,7 @@ namespace Resource.Scripts
         public float wallCheckRadius = 0.2f;
         public LayerMask wallLayer;
 
-        [Header("跑步/落地手感（挤压拉伸）")]
-        public float runStretchAmount = 0.08f;
-        public float runSquashAmount = 0.06f;
-        public float landStretchAmount = 0.15f;
-        public float landSquashAmount = 0.25f;
+        [Header("落地音效")]
         public float maxLandImpactSpeed = 15f;
 
         [Header("脚步声 / 扬尘")]
@@ -86,7 +84,7 @@ namespace Resource.Scripts
         public float autoMoveSpeed = 6f;
         [Tooltip("自动移动模式下的初始移动方向（角度，0=右，90=上，180=左，270=下）")]
         public float autoMoveStartAngle = 0f;
-        [Tooltip("世界旋转时暂停自动横向输入；重力、冲刺与防穿透仍运行。")]
+        [Tooltip("世界旋转时暂停自动横向输入；重力与防穿透仍运行。")]
         public bool pauseAutoMoveWhileRotating = true;
         [Min(0f), Tooltip("IsRotating 连续为 false 达到此时长后恢复自动移动，过滤单帧抖动。")]
         public float autoMoveResumeDelay = 0.15f;
@@ -98,20 +96,8 @@ namespace Resource.Scripts
         private Vector2 _autoMoveDir = Vector2.right;
         private bool _isDead = false;
         private bool _gameplayStarted;
-        private PlayerJetpack _jetpack;
         public bool IsDead => _isDead;
         public bool IsGameplayActive => _gameplayStarted && isActiveAndEnabled && !_isDead && Time.timeScale > 0f;
-        [Header("角色外观")]
-        [SerializeField, Tooltip("原始图片朝右时打开；未更换美术的旧角色保持关闭。")]
-        private bool spriteFacesRight;
-        public float FacingSign => (spriteFacesRight ? 1f : -1f) *
-            (_spriteRenderer != null && _spriteRenderer.flipX ? -1f : 1f);
-
-        public void FaceDirection(float horizontalDirection)
-        {
-            if (_spriteRenderer == null || Mathf.Abs(horizontalDirection) <= 0.001f) return;
-            _spriteRenderer.flipX = spriteFacesRight ? horizontalDirection < 0f : horizontalDirection > 0f;
-        }
 
         public void BeginGameplay()
         {
@@ -129,7 +115,6 @@ namespace Resource.Scripts
         public void EnterPreview()
         {
             _gameplayStarted = false;
-            if (_jetpack != null) _jetpack.CancelDash();
             intendedVelocity = Vector2.zero;
             _jumpQueued = false;
             _physicsStepPending = false;
@@ -153,10 +138,6 @@ namespace Resource.Scripts
         private float debugTimer = 0f;
         private SpriteRenderer _spriteRenderer;
 
-        private Vector3 _spriteBaseScale = Vector3.one;
-        private float _runStretch;
-        private float _landImpact01;
-        private float _landImpactTimer;
         private float _footstepDistance;
         private ParticleSystem _dustTrail;
 
@@ -171,7 +152,6 @@ namespace Resource.Scripts
         private void InitializeMotion()
         {
             if (rb == null) rb = GetComponent<Rigidbody2D>();
-            if (_jetpack == null) _jetpack = GetComponent<PlayerJetpack>();
             if (_crushGuard == null) _crushGuard = GetComponent<CrushGuard>();
             if (_crushGuard == null) _crushGuard = gameObject.AddComponent<CrushGuard>();
             if (_motionInitialized) return;
@@ -218,16 +198,12 @@ namespace Resource.Scripts
             _ = SettingsManager.Instance;
 
             rb = GetComponent<Rigidbody2D>();
-            _jetpack = GetComponent<PlayerJetpack>();
             // 在子级 PlayerIM 上查找 SpriteRenderer
             Transform playerIM = transform.Find("PlayerIM");
             if (playerIM != null)
                 _spriteRenderer = playerIM.GetComponent<SpriteRenderer>();
             if (_spriteRenderer == null)
                 _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-
-            if (_spriteRenderer != null)
-                _spriteBaseScale = _spriteRenderer.transform.localScale;
 
             if (autoMoveMode)
             {
@@ -295,12 +271,11 @@ namespace Resource.Scripts
             _stepStartPosition = rb.position;
             if (_selfVelocityActive)
             {
-                if (_jetpack == null || !_jetpack.TickDash(deltaTime))
-                    BuildIntendedVelocity(deltaTime);
+                BuildIntendedVelocity(deltaTime);
                 intendedVelocity = ProjectAgainstContacts(intendedVelocity);
                 rb.linearVelocity = intendedVelocity;
             }
-            else if (_jetpack == null || !_jetpack.TickDash(deltaTime))
+            else
                 HandleMovement();
             _submittedVelocity = _selfVelocityActive ? intendedVelocity : rb.linearVelocity;
             if (_selfVelocityActive) _crushGuard.CaptureBeforePhysics(deltaTime);
@@ -317,12 +292,10 @@ namespace Resource.Scripts
             if (!autoMoveMode && ((input < 0f && isTouchingWallLeft) || (input > 0f && isTouchingWallRight))) input = 0f;
             intendedVelocity.x = input * (autoMoveMode ? autoMoveSpeed : maxMoveSpeed);
             if (autoMoveMode) AutoMoveVelocityContribution = intendedVelocity.x;
-            if (_jumpQueued && isGrounded && !autoMoveMode) intendedVelocity.y = jumpForce;
+            if (jumpEnabled && _jumpQueued && isGrounded && !autoMoveMode) intendedVelocity.y = jumpForce;
             _jumpQueued = false;
             intendedVelocity += Physics2D.gravity * (_ownedGravityScale * dt);
-            FaceDirection(input);
             UpdateFootsteps(input);
-            UpdateSquashStretch(Mathf.Abs(input));
             UpdateRumble(input);
         }
 
@@ -347,7 +320,7 @@ namespace Resource.Scripts
             }
         }
 
-        private float ReadMoveInput()
+        public float ReadMoveInput()
         {
             if (Gyro.GyroRuntime.ConsoleCapturesInput) return 0f;
             float input = 0f;
@@ -549,10 +522,7 @@ namespace Resource.Scripts
                 rb.linearVelocity.y
             );
 
-            FaceDirection(moveInput);
-
             UpdateFootsteps(moveInput);
-            UpdateSquashStretch(Mathf.Abs(moveInput));
             UpdateRumble(moveInput);
         }
 
@@ -577,17 +547,14 @@ namespace Resource.Scripts
             AutoMoveVelocityContribution = targetX;
             rb.linearVelocity = new Vector2(targetX, rb.linearVelocity.y);
 
-            if (Mathf.Abs(_autoMoveDir.x) > 0.01f) FaceDirection(_autoMoveDir.x);
-
             UpdateFootsteps(targetX);
-            UpdateSquashStretch(1f);
         }
 
         void HandleJump()
         {
+            if (!jumpEnabled) return;
             if (Gyro.GyroRuntime.ConsoleCapturesInput) return;
             if (_isDead) return; // 死亡后立刻锁输入
-            if (_jetpack != null && _jetpack.IsDashing) return;
             if (autoMoveMode) return; // 自动移动模式没有跳跃，方向完全靠撞墙决定
 
             bool jumpPressed = false;
@@ -632,7 +599,6 @@ namespace Resource.Scripts
                 float impact01 = Mathf.Clamp01(Mathf.Abs(col.relativeVelocity.y) / maxLandImpactSpeed);
                 SfxManager.Instance.PlayLand(impact01);
                 EmitDust(3);
-                TriggerLandSquash(impact01);
             }
         }
 
@@ -717,7 +683,6 @@ namespace Resource.Scripts
             intendedVelocity = Vector2.zero;
             _jumpQueued = false;
             _physicsStepPending = false;
-            if (_jetpack != null) _jetpack.CancelDash();
             if (rb == null) rb = GetComponent<Rigidbody2D>(); // 极端情况下 Start() 还没跑到就被外部触发（比如浏览模式切游戏那一帧），做个兜底
             rb.linearVelocity = Vector2.zero;
             rb.bodyType = RigidbodyType2D.Kinematic; // 光锁输入不够，重力还在算，会让玩家在闪光的时候继续往下掉，干脆把物理也冻住（反正马上要重开关卡，不用管恢复）
@@ -875,30 +840,6 @@ namespace Resource.Scripts
             }
         }
 
-        void UpdateSquashStretch(float targetStretch01)
-        {
-            if (_spriteRenderer == null) return;
-
-            _runStretch = Mathf.Lerp(_runStretch, targetStretch01, Time.fixedDeltaTime * 10f);
-
-            _landImpactTimer += Time.fixedDeltaTime;
-            float landFactor = _landImpact01 * Mathf.Exp(-_landImpactTimer * 12f);
-
-            float stretchX = 1f + _runStretch * runStretchAmount + landFactor * landStretchAmount;
-            float squashY  = 1f - _runStretch * runSquashAmount  - landFactor * landSquashAmount;
-
-            Vector3 s = _spriteBaseScale;
-            s.x *= stretchX;
-            s.y *= squashY;
-            _spriteRenderer.transform.localScale = s;
-        }
-
-        void TriggerLandSquash(float impact01)
-        {
-            _landImpact01    = impact01;
-            _landImpactTimer = 0f;
-        }
-
         void UpdateRumble(float moveInput)
         {
             var gamepad = Gamepad.current;
@@ -919,7 +860,6 @@ namespace Resource.Scripts
             if (_afterPhysics != null) StopCoroutine(_afterPhysics);
             _afterPhysics = null;
             _physicsStepPending = false;
-            if (_jetpack != null) _jetpack.CancelDash();
             if (_crushGuard != null) _crushGuard.ResolveAfterPhysics(0f);
             Gamepad.current?.SetMotorSpeeds(0f, 0f);
         }

@@ -53,6 +53,7 @@ namespace Resource.Scripts
         {
             SfxManager.Instance.PlayStageComplete();
             yield return new WaitForSecondsRealtime(0.6f);
+            if (nextSceneName == "MainMenu") GameFlowState.HasEnteredGame = false;
             SceneTransition.Instance.LoadScene(nextSceneName);
         }
     }

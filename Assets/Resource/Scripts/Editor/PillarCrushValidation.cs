@@ -77,8 +77,6 @@ namespace Resource.Scripts.Editor
             Run(report, "Static floor preserves diagonal motion up to first impact", StaticLanding);
             Run(report, "Static wall preserves approach up to first impact", StaticWall);
             Run(report, "Static slope walking without hovering", StaticSlope);
-            Run(report, "Jetpack expiration restores owned gravity and consumes oxygen once", DashGravity);
-            Run(report, "Jetpack stops before a wall with anti-push enabled", DashWall);
             }
             finally { Time.timeScale = previousTimeScale; }
             report.passed = report.results.TrueForAll(r => r.passed);
@@ -176,58 +174,6 @@ namespace Resource.Scripts.Editor
                     result.maxContactVelocityChange + ", gravity allowance=" + gravityContribution + ", raw solver change=" + result.maxSolverVelocityDelta;
                 return result;
             }
-        }
-
-        private static Result DashGravity()
-        {
-            using (var f = new Fixture(new Vector2(0f, 100f), true, 2f))
-            {
-                var dash = AttachDash(f);
-                var oxygen = f.Player.GetComponent<PlayerOxygen>();
-                float beforeOxygen = oxygen.CurrentOxygen;
-                bool started = dash.TryDash(Vector2.right);
-                float reducedGravity = f.Player.SimulatedGravityScale;
-                var result = new Result();
-                for (int i = 0; i < 20; ++i) Step(f, result, i, null);
-                float restored = f.Player.SimulatedGravityScale;
-                Vector2 before = f.Body.linearVelocity;
-                Step(f, result, 20, null);
-                float gravityError = Mathf.Abs((f.Body.linearVelocity - before).y - Physics2D.gravity.y * 2f * Dt);
-                result.passed = started && reducedGravity > 0f && reducedGravity < 2f && !dash.IsDashing &&
-                    Mathf.Abs(restored - 2f) < .0001f && Mathf.Abs(f.Body.gravityScale) < .0001f &&
-                    Mathf.Abs(beforeOxygen - oxygen.CurrentOxygen - oxygen.DashCost) < .001f && gravityError < .001f;
-                result.detail = "Dash started=" + started + ", reduced owned gravity=" + reducedGravity + ", restored=" + restored +
-                    ", engine gravity=" + f.Body.gravityScale + ", post-dash gravity integration error=" + gravityError +
-                    ", oxygen spent=" + (beforeOxygen - oxygen.CurrentOxygen);
-                return result;
-            }
-        }
-
-        private static Result DashWall()
-        {
-            using (var f = new Fixture(new Vector2(0f, 4f), true, 1f))
-            {
-                var wall = f.Box("Dash wall", new Vector2(2f, 4f), new Vector2(.4f, 8f));
-                var dash = AttachDash(f);
-                bool started = dash.TryDash(Vector2.right);
-                var result = new Result();
-                for (int i = 0; i < 20; ++i) Step(f, result, i, null);
-                float gap = f.Collider.Distance(wall).distance;
-                result.passed = started && !dash.IsDashing && f.Body.position.x > .5f && f.Body.position.x <= 1.501f &&
-                    gap >= -.001f && Mathf.Abs(f.Player.SimulatedGravityScale - 1f) < .0001f &&
-                    Mathf.Abs(f.Body.linearVelocity.x) < .001f && dash.CooldownRemaining > 0f;
-                result.detail = "After dash into wall, x=" + f.Body.position.x + ", wall's near face=1.8, player half-width=.3, gap=" +
-                    gap + ", dashing=" + dash.IsDashing + ", gravity restored=" + f.Player.SimulatedGravityScale +
-                    ", cooldown=" + dash.CooldownRemaining;
-                return result;
-            }
-        }
-
-        private static PlayerJetpack AttachDash(Fixture f)
-        {
-            var oxygen = f.Player.gameObject.AddComponent<PlayerOxygen>();
-            oxygen.DrainPerSecond = 0f;
-            return f.Player.gameObject.AddComponent<PlayerJetpack>();
         }
 
         private static Result Correction(float side)

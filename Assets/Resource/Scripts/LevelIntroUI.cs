@@ -33,8 +33,6 @@ namespace Resource.Scripts
         public float minOrthoSize = 3f;
         public float maxOrthoSize = 15f;
 
-        private static readonly Color ButtonColor = new Color(0.3f, 0.22f, 0.15f, 1f);
-
         private Camera _cam;
         private FollowTarget2D _camFollow;
         private CameraZoomController _camZoom;
@@ -207,14 +205,28 @@ namespace Resource.Scripts
                 var canvas = canvasGO.AddComponent<Canvas>();
                 canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
                 canvas.sortingOrder = 700; // 盖在 HUD(10)/暂停(500) 之上，压在设置面板(600)之上一点，但在转场虹膜(1000)之下
-                var scaler = canvasGO.AddComponent<CanvasScaler>();
-                scaler.uiScaleMode         = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1920f, 1080f);
-                scaler.matchWidthOrHeight  = 0.5f;
                 canvasGO.AddComponent<GraphicRaycaster>();
             }
+            PixelUI.ConfigureCanvas(canvasGO.GetComponent<Canvas>());
             _canvasGO = canvasGO;
             canvasGO.SetActive(true);
+
+            var hintPanel = canvasGO.transform.Find("HintPanel");
+            if (hintPanel == null)
+            {
+                hintPanel = new GameObject("HintPanel", typeof(RectTransform), typeof(Image)).transform;
+                hintPanel.SetParent(canvasGO.transform, false);
+            }
+            var hintRT = hintPanel.GetComponent<RectTransform>();
+            hintRT.anchorMin = hintRT.anchorMax = hintRT.pivot = new Vector2(0f, 1f);
+            hintRT.anchoredPosition = new Vector2(24f, -78f);
+            hintRT.sizeDelta = new Vector2(426f, 132f);
+            var hintImage = hintPanel.GetComponent<Image>();
+            hintImage.sprite = PixelUI.Theme.panel;
+            hintImage.type = Image.Type.Sliced;
+            hintImage.color = Color.white;
+            hintImage.raycastTarget = false;
+            hintPanel.SetAsFirstSibling();
 
             // 操作提示（左上角）：图标 + 文字两行。摇杆和扳机图标都用美术自己做的手柄按键图
             // （Resources/Icons/ControllerButtons/ 下），不再是程序生成的占位图形
@@ -223,13 +235,15 @@ namespace Resource.Scripts
             BuildTriggerHintRow(canvasGO.transform, "Row_Trigger", "左右扳机：缩放视野", 1);
 
             // 开始游戏按钮（右下角）
-            var startBtn = CreateButton(canvasGO.transform, "开始游戏", new Vector2(280f, 64f), ButtonColor);
+            var startBtn = CreateButton(canvasGO.transform, "开始游戏", new Vector2(300f, 54f));
             var startRT = startBtn.GetComponent<RectTransform>();
             startRT.anchorMin = startRT.anchorMax = new Vector2(1f, 0f);
             startRT.pivot = new Vector2(1f, 0f);
-            if (existingCanvas == null) startRT.anchoredPosition = new Vector2(-30f, 30f);
+            startRT.anchoredPosition = new Vector2(-24f, 24f);
             startBtn.onClick.RemoveAllListeners();
             startBtn.onClick.AddListener(OnStartGameClicked);
+            if (EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(startBtn.gameObject);
         }
 
         /// <summary>一行操作提示：左边一个图标，右边文字，rowIndex 决定竖直排布的第几行（0 在最上面）。</summary>
@@ -245,17 +259,8 @@ namespace Resource.Scripts
             {
                 rowGO = new GameObject(rowName, typeof(RectTransform));
                 rowGO.transform.SetParent(parent, false);
-                var rowRT = rowGO.GetComponent<RectTransform>();
-                rowRT.anchorMin = rowRT.anchorMax = new Vector2(0f, 1f);
-                rowRT.pivot = new Vector2(0f, 1f);
-                // 这一行本身刚新建（走到这个 else 分支就说明场景里原来没有），才需要摆位置；
-                // 之前这里错判成"整个 Canvas 是不是新建的"，导致两行都判定成"不是新建"从而
-                // 都没摆位置，全部叠在 RectTransform 默认的 (0,0) 上，看起来像文字糊在一起。
-                // Y 起点从 -84 开始（不是 -20）：GameHUD 的关卡名标签也在左上角，从 -20 往下
-                // 占了大概 50 高，紧挨着摆会跟它糊在一起，往下让开一段。
-                rowRT.anchoredPosition = new Vector2(24f, -84f - rowIndex * 52f);
-                rowRT.sizeDelta = new Vector2(360f, 48f);
             }
+            LayoutHintRow(rowGO.GetComponent<RectTransform>(), rowIndex);
 
             var existingIcon = rowGO.transform.Find("Icon");
             Image iconImg;
@@ -267,27 +272,30 @@ namespace Resource.Scripts
             {
                 var iconGO = new GameObject("Icon", typeof(RectTransform));
                 iconGO.transform.SetParent(rowGO.transform, false);
-                var iconRT = iconGO.GetComponent<RectTransform>();
-                iconRT.anchorMin = new Vector2(0f, 0.5f);
-                iconRT.anchorMax = new Vector2(0f, 0.5f);
-                iconRT.pivot = new Vector2(0f, 0.5f);
-                iconRT.anchoredPosition = Vector2.zero;
-                iconRT.sizeDelta = new Vector2(80f, 80f); // 摇杆图标先调到 60，又再放大一圈到 80，比扳机徽标（36）明显更醒目
                 iconImg = iconGO.AddComponent<Image>();
             }
+            var iconRT = iconImg.rectTransform;
+            iconRT.anchorMin = iconRT.anchorMax = iconRT.pivot = new Vector2(0f, 0.5f);
+            iconRT.anchoredPosition = Vector2.zero;
+            iconRT.sizeDelta = new Vector2(56f, 56f);
             iconImg.sprite = icon;
             iconImg.color = Color.white;
+            iconImg.preserveAspect = true;
+            iconImg.raycastTarget = false;
 
-            bool labelIsNew = rowGO.transform.Find("Text_Label") == null;
             var labelGO = CreateText(rowGO.transform, "Text_Label", label,
-                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), TextAnchor.MiddleLeft, 22);
-            if (labelIsNew) // 只在刚新建时摆位置，复用现成物体不覆盖（CreateText 内部已经处理了文字内容的复用）
-            {
-                var labelRT = labelGO.GetComponent<RectTransform>();
-                labelRT.pivot = new Vector2(0f, 0.5f);
-                labelRT.anchoredPosition = new Vector2(92f, 0f); // 图标又变宽了（60→80），文字继续让开
-                labelRT.sizeDelta = new Vector2(300f, 40f);
-            }
+                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), TextAnchor.MiddleLeft, 18);
+            var labelRT = labelGO.GetComponent<RectTransform>();
+            labelRT.pivot = new Vector2(0f, 0.5f);
+            labelRT.anchoredPosition = new Vector2(72f, 0f);
+            labelRT.sizeDelta = new Vector2(300f, 36f);
+        }
+
+        private static void LayoutHintRow(RectTransform row, int rowIndex)
+        {
+            row.anchorMin = row.anchorMax = row.pivot = new Vector2(0f, 1f);
+            row.anchoredPosition = new Vector2(42f, -90f - rowIndex * 54f);
+            row.sizeDelta = new Vector2(390f, 54f);
         }
 
         /// <summary>手柄按键美术图（美术自己截图做的，不是程序生成的），放在 Resources 下按名字加载。
@@ -308,30 +316,21 @@ namespace Resource.Scripts
             {
                 rowGO = new GameObject(rowName, typeof(RectTransform));
                 rowGO.transform.SetParent(parent, false);
-                var rowRT = rowGO.GetComponent<RectTransform>();
-                rowRT.anchorMin = rowRT.anchorMax = new Vector2(0f, 1f);
-                rowRT.pivot = new Vector2(0f, 1f);
-                rowRT.anchoredPosition = new Vector2(24f, -84f - rowIndex * 52f);
-                rowRT.sizeDelta = new Vector2(360f, 48f);
             }
+            LayoutHintRow(rowGO.GetComponent<RectTransform>(), rowIndex);
 
-            const float badgeHeight = 36f;
+            const float badgeHeight = 30f;
             const float badgeGap = 8f;
             float x = 0f;
             x += BuildIconBadge(rowGO.transform, "Badge_L2", "L2", x, badgeHeight) + badgeGap;
             x += BuildIconBadge(rowGO.transform, "Badge_R2", "R2", x, badgeHeight) + badgeGap;
 
-            bool labelIsNew = rowGO.transform.Find("Text_Label") == null;
             var labelGO = CreateText(rowGO.transform, "Text_Label", label,
-                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), TextAnchor.MiddleLeft, 22);
-            if (labelIsNew)
-            {
-                var labelRT = labelGO.GetComponent<RectTransform>();
-                labelRT.pivot = new Vector2(0f, 0.5f);
-                labelRT.sizeDelta = new Vector2(260f, 40f);
-            }
+                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), TextAnchor.MiddleLeft, 18);
             // 每次都重新摆放到两个徽标算出来的实际宽度之后（徽标宽度是贴图决定的，不是写死的常量）
             var labelRTAlways = labelGO.GetComponent<RectTransform>();
+            labelRTAlways.pivot = new Vector2(0f, 0.5f);
+            labelRTAlways.sizeDelta = new Vector2(390f - x - 4f, 36f);
             labelRTAlways.anchoredPosition = new Vector2(x + 4f, 0f);
         }
 
@@ -378,32 +377,19 @@ namespace Resource.Scripts
         private GameObject CreateText(Transform parent, string goName, string text, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize)
         {
             var existing = parent.Find(goName);
-            if (existing != null)
-            {
-                var existingText = existing.GetComponent<Text>();
-                if (existingText != null) existingText.text = text;
-                return existing.gameObject;
-            }
-
-            var go = new GameObject(goName, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
+            var go = existing != null ? existing.gameObject : new GameObject(goName, typeof(RectTransform));
+            if (existing == null) go.transform.SetParent(parent, false);
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = anchorMin;
             rt.anchorMax = anchorMax;
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
-            var t = go.AddComponent<Text>();
+            var t = PixelUI.EnsureText(go, fontSize, false, align, PixelUI.TextLight);
             t.text = text;
-            t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            t.fontSize = fontSize;
-            t.color = Color.white;
-            t.alignment = align;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-            t.verticalOverflow = VerticalWrapMode.Overflow;
             return go;
         }
 
-        private Button CreateButton(Transform parent, string label, Vector2 size, Color color)
+        private Button CreateButton(Transform parent, string label, Vector2 size)
         {
             string goName = $"Button_{label}";
             var existing = parent.Find(goName);
@@ -416,38 +402,19 @@ namespace Resource.Scripts
                 go = existing.gameObject;
                 img = go.GetComponent<Image>();
                 btn = go.GetComponent<Button>();
-                var existingLabel = go.GetComponentInChildren<Text>();
-                if (existingLabel != null) existingLabel.text = label;
             }
             else
             {
                 go = new GameObject(goName, typeof(RectTransform));
                 go.transform.SetParent(parent, false);
-                var rt = go.GetComponent<RectTransform>();
-                rt.sizeDelta = size;
-
                 img = go.AddComponent<Image>();
-                img.color = color;
-
                 btn = go.AddComponent<Button>();
                 btn.targetGraphic = img;
-
-                var textGO = new GameObject("Label", typeof(RectTransform));
-                textGO.transform.SetParent(go.transform, false);
-                var textRT = textGO.GetComponent<RectTransform>();
-                textRT.anchorMin = Vector2.zero;
-                textRT.anchorMax = Vector2.one;
-                textRT.offsetMin = Vector2.zero;
-                textRT.offsetMax = Vector2.zero;
-                var text = textGO.AddComponent<Text>();
-                text.text = label;
-                text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                text.fontSize = 24;
-                text.color = Color.white;
-                text.alignment = TextAnchor.MiddleCenter;
-                text.raycastTarget = false;
             }
-
+            go.GetComponent<RectTransform>().sizeDelta = size;
+            PixelUI.StyleButton(btn);
+            var textGO = CreateText(go.transform, "Label", label, Vector2.zero, Vector2.one, TextAnchor.MiddleCenter, 24);
+            PixelUI.EnsureText(textGO, 24, true, TextAnchor.MiddleCenter, PixelUI.TextDark);
             return btn;
         }
     }
