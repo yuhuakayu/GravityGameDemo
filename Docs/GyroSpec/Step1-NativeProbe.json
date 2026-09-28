@@ -1,0 +1,28 @@
+{
+    "seconds": 10.038557052612305,
+    "samplesPerSecond": 249.99765014648438,
+    "output": 0.0,
+    "connected": true,
+    "calibrated": true,
+    "model": "DualSense",
+    "transport": "未知（同型号 USB / 蓝牙设备并存）",
+    "nativeStatus": "传感器运行中",
+    "processedSamples": 1296,
+    "unityInputReports": 180,
+    "dropped": 0,
+    "gyro": {
+        "x": 0.12207403779029846,
+        "y": 0.9765923023223877,
+        "z": -0.1831110566854477
+    },
+    "gravity": {
+        "x": 0.0029997392557561399,
+        "y": -0.9864815473556519,
+        "z": -0.16085144877433778
+    },
+    "calibrationBias": {
+        "x": 0.13327299058437348,
+        "y": 0.8868651390075684,
+        "z": -0.21905012428760529
+    }
+}

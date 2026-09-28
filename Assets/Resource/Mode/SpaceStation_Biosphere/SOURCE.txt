@@ -1,9 +1,0 @@
-FREE: Space Station - Biosphere 0.5
-by lukyaforge
-https://lukyaforge.itch.io/free-modern-pack-space-station-biosphere
-
-Downloaded 2026-09-14. Free asset, itch.io page states it is usable for
-commercial and non-commercial projects. Only the environment-relevant files
-(Tiles, Props, Trees, Backgrounds, Planets, animated door) were imported here;
-the pack's Character sprites and Soundtrack were left out since this project
-uses its own player character and audio.

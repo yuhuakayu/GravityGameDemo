@@ -1,0 +1,16 @@
+{
+  "environment": "Unity 6000.1.3f1 Editor, Stage1 Play Mode",
+  "checks": [
+    { "name": "Console does not unpause level preview", "passed": true },
+    { "name": "Closing console preserves preview pause", "passed": true },
+    { "name": "Selected time scale applies when gameplay starts", "passed": true },
+    { "name": "Console pauses 2x gameplay and disables UGUI input", "passed": true },
+    { "name": "Closing restores exact 2x and original input module enabled states", "passed": true },
+    { "name": "Time scale change under HUD pause does not resume gameplay", "passed": true },
+    { "name": "Pending 4x applies after HUD releases pause", "passed": true },
+    { "name": "Stage1 to Stage2 uses existing transition and defaults to preview", "passed": true },
+    { "name": "Stage2 to Stage1 skip-preview option starts gameplay", "passed": true },
+    { "name": "4K scaled IMGUI curves, axes, circle and needles visually inspected", "passed": true }
+  ],
+  "method": "In-editor C# assertions against actual scene components; settings and paused state restored afterwards."
+}

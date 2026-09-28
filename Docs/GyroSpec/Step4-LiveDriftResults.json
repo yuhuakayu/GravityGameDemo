@@ -1,0 +1,15 @@
+{
+  "method": "Real DualSense callback samples, real 300-second wall-clock test through the console diagnostic service. Gameplay timeScale 0, Unity Game view focused. This is a live sensor observation; physical placement and individual USB/Bluetooth transport were not independently confirmed.",
+  "running": false,
+  "completed": true,
+  "passed": true,
+  "elapsed": 300,
+  "sampleSeconds": 299.9662508155161,
+  "samples": 75000,
+  "degrees": 0.31094299363339356,
+  "status": "通过：300 秒累计 0.3109°，要求绝对值小于 2°；样本覆盖 299.97 秒。",
+  "model": "DualSense",
+  "transport": "未知（同型号 USB / 蓝牙设备并存）",
+  "rate": 249.99852,
+  "utc": "2026-09-23T14:17:50.129994Z"
+}

@@ -1,3 +1,4 @@
+using Resource.Scripts.Gyro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -40,12 +41,16 @@ namespace Resource.Scripts
         private bool _isPreviewing;
         private GameObject _canvasGO;
 
+        public bool IsPreviewing => _isPreviewing;
+
         void Start()
         {
             _cam = Camera.main;
             if (_cam == null)
             {
                 Debug.LogWarning("[LevelIntroUI] 找不到 Main Camera，跳过开局浏览过场。");
+                var activePlayer = FindObjectOfType<PlayerController>();
+                if (activePlayer != null) activePlayer.BeginGameplay();
                 return;
             }
 
@@ -68,6 +73,7 @@ namespace Resource.Scripts
 
         void Update()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             if (!_isPreviewing || _cam == null) return;
 
             var gamepad = Gamepad.current;
@@ -134,7 +140,11 @@ namespace Resource.Scripts
         private void FreezeGameplay()
         {
             var player = FindObjectOfType<PlayerController>();
-            if (player != null) player.enabled = false;
+            if (player != null)
+            {
+                player.EnterPreview();
+                player.enabled = false;
+            }
             var rotator = FindObjectOfType<WorldRotator>();
             if (rotator != null) rotator.enabled = false;
 
@@ -146,13 +156,24 @@ namespace Resource.Scripts
 
         private void OnStartGameClicked()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
+            BeginGameplayFromPreview();
+        }
+
+        /// <summary>转场完成后可调用此入口跳过预览，复用按钮的完整恢复流程。</summary>
+        public void BeginGameplayFromPreview()
+        {
             if (!_isPreviewing) return;
             _isPreviewing = false;
             Time.timeScale = 1f;
             SfxManager.Instance.PlayButtonClick();
 
             var player = FindObjectOfType<PlayerController>();
-            if (player != null) player.enabled = true;
+            if (player != null)
+            {
+                player.enabled = true;
+                player.BeginGameplay();
+            }
             var rotator = FindObjectOfType<WorldRotator>();
             if (rotator != null) rotator.enabled = true;
 

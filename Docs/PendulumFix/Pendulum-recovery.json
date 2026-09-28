@@ -1,0 +1,1258 @@
+{
+    "utc": "2026-09-23T18:37:06.5164187Z",
+    "version": "6000.1.3f1",
+    "label": "recovery",
+    "scheduling": "Synchronous simulation of 60 Hz and 240 Hz render scheduling with the project's fixed timestep. This is not a measured real rendering FPS test.",
+    "fixedTimestep": 0.019999992102384568,
+    "passed": false,
+    "geometry": [
+        {
+            "name": "Clock",
+            "boardPosition": {
+                "x": 2.6417956352233888,
+                "y": 5.590489387512207,
+                "z": 0.0
+            },
+            "boardScale": {
+                "x": 5.6417975425720219,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "pivot": {
+                "x": 0.19325554370880128,
+                "y": 5.500489234924316,
+                "z": 0.0
+            },
+            "hinge": {
+                "x": 0.19325566291809083,
+                "y": 5.500489234924316,
+                "z": 0.0
+            },
+            "gravityPoint": {
+                "x": 5.186246395111084,
+                "y": 5.500489234924316,
+                "z": 0.0
+            },
+            "strandPosition": {
+                "x": 0.21713781356811524,
+                "y": 2.330199956893921,
+                "z": 0.0
+            },
+            "strandScale": {
+                "x": 6.994801998138428,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "boardZ": 0.0,
+            "strandZ": 90.0,
+            "hingeGap": 1.1920928955078126e-7,
+            "armLength": 4.992990493774414,
+            "gravity": 120.0,
+            "damping": 3.0,
+            "bounce": 0.07999999821186066,
+            "minAngle": 0.0,
+            "maxAngle": 90.0
+        },
+        {
+            "name": "Clock (1)",
+            "boardPosition": {
+                "x": 13.387577056884766,
+                "y": 5.410488605499268,
+                "z": 0.0
+            },
+            "boardScale": {
+                "x": 5.6417975425720219,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "pivot": {
+                "x": 15.836116790771485,
+                "y": 5.500489234924316,
+                "z": 0.0
+            },
+            "hinge": {
+                "x": 15.836116790771485,
+                "y": 5.500488758087158,
+                "z": 0.0
+            },
+            "gravityPoint": {
+                "x": 10.84312629699707,
+                "y": 5.50048828125,
+                "z": 0.0
+            },
+            "strandPosition": {
+                "x": 15.85999870300293,
+                "y": 2.330199956893921,
+                "z": 0.0
+            },
+            "strandScale": {
+                "x": 6.994801998138428,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "boardZ": 180.0,
+            "strandZ": 90.0,
+            "hingeGap": 4.76837158203125e-7,
+            "armLength": 4.992990493774414,
+            "gravity": 120.0,
+            "damping": 3.0,
+            "bounce": 0.07999999821186066,
+            "minAngle": -90.0,
+            "maxAngle": 0.0
+        }
+    ],
+    "results": [
+        {
+            "name": "Clock / CW / simulated 60 Hz",
+            "error": "",
+            "passed": false,
+            "simulatedRenderHz": 60,
+            "revolutions": 1,
+            "physicsSteps": 1019,
+            "contactFrames": 932,
+            "trackedBoardContactFrames": 292,
+            "contactEpisodes": 2,
+            "overlapFrames": 32,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 1,
+            "maxHingeGap": 0.000015173333849816117,
+            "maxBoardAxisErrorDegrees": 0.02797645516693592,
+            "maxPenetration": 0.0027703074738383295,
+            "minimumSideClearance": -4.119332313537598,
+            "actualClockwiseTravel": 0.0,
+            "accumulatedClockwiseDegrees": 360.0,
+            "accumulatedCounterClockwiseDegrees": 360.0000305175781,
+            "maxPlayerSpeed": 14.181041717529297,
+            "maxCorrection": 0.10616882145404816,
+            "completedHalfTurns": 2,
+            "simulatedSeconds": 20.383193969726564,
+            "clonedWorldColliders": 8,
+            "firstOverlapByCollider": [
+                {
+                    "collider": "Wall",
+                    "type": "CompositeCollider2D",
+                    "layer": 6,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 281,
+                    "shapeCount": 3,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.00024849799228832126,
+                    "worldClockwiseAngle": 215.59454345703126,
+                    "playerPosition": {
+                        "x": 8.40963363647461,
+                        "y": -6.578967571258545
+                    },
+                    "playerVelocity": {
+                        "x": 0.13611072301864625,
+                        "y": -0.09548096358776093
+                    },
+                    "intendedVelocity": {
+                        "x": 0.13611072301864625,
+                        "y": -0.09548096358776093
+                    },
+                    "correction": {
+                        "x": 0.047156162559986117,
+                        "y": -0.027129722759127618
+                    },
+                    "normal": {
+                        "x": -0.5820441246032715,
+                        "y": -0.8131572008132935
+                    },
+                    "pointA": {
+                        "x": 7.784461975097656,
+                        "y": -6.4253435134887699
+                    },
+                    "pointB": {
+                        "x": 7.78460693359375,
+                        "y": -6.425141334533691
+                    },
+                    "solverVelocityDelta": {
+                        "x": 2.379760503768921,
+                        "y": -1.3602303266525269
+                    }
+                },
+                {
+                    "collider": "Clock (1)",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 296,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0006556953303515911,
+                    "worldClockwiseAngle": 223.76995849609376,
+                    "playerPosition": {
+                        "x": 8.869306564331055,
+                        "y": -6.829253673553467
+                    },
+                    "playerVelocity": {
+                        "x": 0.17865952849388123,
+                        "y": -0.1679181456565857
+                    },
+                    "intendedVelocity": {
+                        "x": 0.17865952849388123,
+                        "y": -0.1679181456565857
+                    },
+                    "correction": {
+                        "x": 0.007845664396882058,
+                        "y": 0.001199296209961176
+                    },
+                    "normal": {
+                        "x": 0.010934388265013695,
+                        "y": 0.9999402165412903
+                    },
+                    "pointA": {
+                        "x": 9.008111000061036,
+                        "y": -2.0502560138702394
+                    },
+                    "pointB": {
+                        "x": 9.008103370666504,
+                        "y": -2.0509116649627687
+                    },
+                    "solverVelocityDelta": {
+                        "x": 0.21606317162513734,
+                        "y": 0.22988426685333253
+                    }
+                },
+                {
+                    "collider": "Clock",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 791,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0009098154841922224,
+                    "worldClockwiseAngle": 135.03167724609376,
+                    "playerPosition": {
+                        "x": 7.736599922180176,
+                        "y": -28.42136573791504
+                    },
+                    "playerVelocity": {
+                        "x": -0.18581396341323853,
+                        "y": -0.18210819363594056
+                    },
+                    "intendedVelocity": {
+                        "x": -0.18581396341323853,
+                        "y": -0.18210819363594056
+                    },
+                    "correction": {
+                        "x": -0.009731568396091462,
+                        "y": 0.0014732142444700003
+                    },
+                    "normal": {
+                        "x": -0.004566015210002661,
+                        "y": 0.9999896287918091
+                    },
+                    "pointA": {
+                        "x": 7.855434417724609,
+                        "y": -23.642305374145509
+                    },
+                    "pointB": {
+                        "x": 7.855438232421875,
+                        "y": -23.643217086791993
+                    },
+                    "solverVelocityDelta": {
+                        "x": -0.28688642382621767,
+                        "y": 0.2927243709564209
+                    }
+                }
+            ],
+            "crossings": []
+        },
+        {
+            "name": "Clock (1) / CW / simulated 60 Hz",
+            "error": "",
+            "passed": false,
+            "simulatedRenderHz": 60,
+            "revolutions": 1,
+            "physicsSteps": 1085,
+            "contactFrames": 951,
+            "trackedBoardContactFrames": 248,
+            "contactEpisodes": 4,
+            "overlapFrames": 30,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 1,
+            "maxHingeGap": 0.000019074976080446504,
+            "maxBoardAxisErrorDegrees": 0.02797645516693592,
+            "maxPenetration": 0.006871353834867477,
+            "minimumSideClearance": -6.964870452880859,
+            "actualClockwiseTravel": 7.450580596923828e-9,
+            "accumulatedClockwiseDegrees": 360.0,
+            "accumulatedCounterClockwiseDegrees": 359.9998779296875,
+            "maxPlayerSpeed": 14.64331340789795,
+            "maxCorrection": 0.11533944308757782,
+            "completedHalfTurns": 2,
+            "simulatedSeconds": 21.699840545654298,
+            "clonedWorldColliders": 8,
+            "firstOverlapByCollider": [
+                {
+                    "collider": "Wall",
+                    "type": "CompositeCollider2D",
+                    "layer": 6,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 292,
+                    "shapeCount": 3,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.002784414915367961,
+                    "worldClockwiseAngle": 214.79586791992188,
+                    "playerPosition": {
+                        "x": 15.124815940856934,
+                        "y": -3.1809563636779787
+                    },
+                    "playerVelocity": {
+                        "x": 0.0,
+                        "y": -0.32238027453422549
+                    },
+                    "intendedVelocity": {
+                        "x": 0.0,
+                        "y": -0.32238027453422549
+                    },
+                    "correction": {
+                        "x": 0.010530070401728154,
+                        "y": 0.0058332523331046108
+                    },
+                    "normal": {
+                        "x": -0.2731868624687195,
+                        "y": 0.961961030960083
+                    },
+                    "pointA": {
+                        "x": 14.897566795349121,
+                        "y": 1.5491100549697877
+                    },
+                    "pointB": {
+                        "x": 14.898327827453614,
+                        "y": 1.5464316606521607
+                    },
+                    "solverVelocityDelta": {
+                        "x": 0.0,
+                        "y": 0.0
+                    }
+                },
+                {
+                    "collider": "Clock",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 856,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0022872386034578087,
+                    "worldClockwiseAngle": 135.42874145507813,
+                    "playerPosition": {
+                        "x": 7.885383129119873,
+                        "y": -40.41874694824219
+                    },
+                    "playerVelocity": {
+                        "x": -0.18341371417045594,
+                        "y": -0.17727826535701753
+                    },
+                    "intendedVelocity": {
+                        "x": -0.18341371417045594,
+                        "y": -0.17727826535701753
+                    },
+                    "correction": {
+                        "x": -0.012054025195538998,
+                        "y": -0.00020788377150893211
+                    },
+                    "normal": {
+                        "x": 0.044448915868997577,
+                        "y": 0.9990115761756897
+                    },
+                    "pointA": {
+                        "x": 8.067365646362305,
+                        "y": -35.64094924926758
+                    },
+                    "pointB": {
+                        "x": 8.067264556884766,
+                        "y": -35.64323043823242
+                    },
+                    "solverVelocityDelta": {
+                        "x": -0.28208619356155398,
+                        "y": 0.29184895753860476
+                    }
+                }
+            ],
+            "crossings": []
+        },
+        {
+            "name": "Clock / CCW / simulated 60 Hz",
+            "error": "",
+            "passed": false,
+            "simulatedRenderHz": 60,
+            "revolutions": 1,
+            "physicsSteps": 1003,
+            "contactFrames": 877,
+            "trackedBoardContactFrames": 364,
+            "contactEpisodes": 3,
+            "overlapFrames": 16,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 1,
+            "maxHingeGap": 0.0000171926076291129,
+            "maxBoardAxisErrorDegrees": 0.02797645516693592,
+            "maxPenetration": 0.0028556110337376596,
+            "minimumSideClearance": -0.703615128993988,
+            "actualClockwiseTravel": 0.0,
+            "accumulatedClockwiseDegrees": 360.0,
+            "accumulatedCounterClockwiseDegrees": 360.0,
+            "maxPlayerSpeed": 16.299829483032228,
+            "maxCorrection": 0.10408440232276917,
+            "completedHalfTurns": 2,
+            "simulatedSeconds": 20.066532135009767,
+            "clonedWorldColliders": 8,
+            "firstOverlapByCollider": [
+                {
+                    "collider": "Wall",
+                    "type": "CompositeCollider2D",
+                    "layer": 6,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 759,
+                    "shapeCount": 3,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0001262177393073216,
+                    "worldClockwiseAngle": -144.62686157226563,
+                    "playerPosition": {
+                        "x": 6.672322750091553,
+                        "y": -33.06648635864258
+                    },
+                    "playerVelocity": {
+                        "x": 0.13566216826438905,
+                        "y": -0.0943831130862236
+                    },
+                    "intendedVelocity": {
+                        "x": 0.13566216826438905,
+                        "y": -0.0943831130862236
+                    },
+                    "correction": {
+                        "x": 0.050907619297504428,
+                        "y": -0.029642118141055108
+                    },
+                    "normal": {
+                        "x": -0.5788981318473816,
+                        "y": -0.8153998851776123
+                    },
+                    "pointA": {
+                        "x": 6.051204204559326,
+                        "y": -32.91575241088867
+                    },
+                    "pointB": {
+                        "x": 6.0512776374816898,
+                        "y": -32.915653228759769
+                    },
+                    "solverVelocityDelta": {
+                        "x": 2.5275685787200929,
+                        "y": -1.4532331228256226
+                    }
+                },
+                {
+                    "collider": "Clock (1)",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 774,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0011234574485570193,
+                    "worldClockwiseAngle": -136.4512939453125,
+                    "playerPosition": {
+                        "x": 7.159207344055176,
+                        "y": -33.33720016479492
+                    },
+                    "playerVelocity": {
+                        "x": 0.17736093699932099,
+                        "y": -0.16541269421577454
+                    },
+                    "intendedVelocity": {
+                        "x": 0.17736093699932099,
+                        "y": -0.16541269421577454
+                    },
+                    "correction": {
+                        "x": 0.00874781608581543,
+                        "y": 0.0006784920115023851
+                    },
+                    "normal": {
+                        "x": -0.007143104914575815,
+                        "y": 0.9999744296073914
+                    },
+                    "pointA": {
+                        "x": 7.274721145629883,
+                        "y": -28.558156967163087
+                    },
+                    "pointB": {
+                        "x": 7.274728775024414,
+                        "y": -28.559282302856447
+                    },
+                    "solverVelocityDelta": {
+                        "x": 0.21349142491817475,
+                        "y": 0.22891250252723695
+                    }
+                }
+            ],
+            "crossings": []
+        },
+        {
+            "name": "Clock (1) / CCW / simulated 60 Hz",
+            "error": "",
+            "passed": false,
+            "simulatedRenderHz": 60,
+            "revolutions": 1,
+            "physicsSteps": 1046,
+            "contactFrames": 959,
+            "trackedBoardContactFrames": 322,
+            "contactEpisodes": 3,
+            "overlapFrames": 32,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 1,
+            "maxHingeGap": 0.000018547678337199613,
+            "maxBoardAxisErrorDegrees": 0.02797645516693592,
+            "maxPenetration": 0.002801090944558382,
+            "minimumSideClearance": -4.1449151039123539,
+            "actualClockwiseTravel": 0.0,
+            "accumulatedClockwiseDegrees": 360.0,
+            "accumulatedCounterClockwiseDegrees": 360.0,
+            "maxPlayerSpeed": 14.767251968383789,
+            "maxCorrection": 0.11208762973546982,
+            "completedHalfTurns": 2,
+            "simulatedSeconds": 20.933185577392579,
+            "clonedWorldColliders": 8,
+            "firstOverlapByCollider": [
+                {
+                    "collider": "Wall",
+                    "type": "CompositeCollider2D",
+                    "layer": 6,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 292,
+                    "shapeCount": 3,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.00025167473359033465,
+                    "worldClockwiseAngle": -216.90464782714845,
+                    "playerPosition": {
+                        "x": 6.341350078582764,
+                        "y": -7.027120113372803
+                    },
+                    "playerVelocity": {
+                        "x": -0.14244653284549714,
+                        "y": -0.10486403107643128
+                    },
+                    "intendedVelocity": {
+                        "x": -0.14244653284549714,
+                        "y": -0.10486403107643128
+                    },
+                    "correction": {
+                        "x": -0.047604624181985858,
+                        "y": -0.026354340836405755
+                    },
+                    "normal": {
+                        "x": 0.6004845499992371,
+                        "y": -0.7996364235877991
+                    },
+                    "pointA": {
+                        "x": 7.239713668823242,
+                        "y": -6.856076240539551
+                    },
+                    "pointB": {
+                        "x": 7.23956298828125,
+                        "y": -6.855875015258789
+                    },
+                    "solverVelocityDelta": {
+                        "x": -2.402627944946289,
+                        "y": -1.3215066194534302
+                    }
+                },
+                {
+                    "collider": "Clock",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 306,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.001600146759301424,
+                    "worldClockwiseAngle": -224.54354858398438,
+                    "playerPosition": {
+                        "x": 5.888544082641602,
+                        "y": -7.25742244720459
+                    },
+                    "playerVelocity": {
+                        "x": -0.18324561417102815,
+                        "y": -0.17694446444511414
+                    },
+                    "intendedVelocity": {
+                        "x": -0.18324561417102815,
+                        "y": -0.17694446444511414
+                    },
+                    "correction": {
+                        "x": -0.01077420823276043,
+                        "y": 0.0007959108334034681
+                    },
+                    "normal": {
+                        "x": 0.021220983937382699,
+                        "y": 0.9997747540473938
+                    },
+                    "pointA": {
+                        "x": 6.04060173034668,
+                        "y": -2.478637933731079
+                    },
+                    "pointB": {
+                        "x": 6.040567398071289,
+                        "y": -2.4802377223968508
+                    },
+                    "solverVelocityDelta": {
+                        "x": -0.2823694348335266,
+                        "y": 0.29242485761642458
+                    }
+                },
+                {
+                    "collider": "Clock (1)",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 818,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0007458283216692507,
+                    "worldClockwiseAngle": -136.084228515625,
+                    "playerPosition": {
+                        "x": 5.715046405792236,
+                        "y": -31.81280517578125
+                    },
+                    "playerVelocity": {
+                        "x": 0.1795201450586319,
+                        "y": -0.16959093511104585
+                    },
+                    "intendedVelocity": {
+                        "x": 0.1795201450586319,
+                        "y": -0.16959093511104585
+                    },
+                    "correction": {
+                        "x": 0.00789664126932621,
+                        "y": 0.001133856363594532
+                    },
+                    "normal": {
+                        "x": 0.012228277511894703,
+                        "y": 0.9999252557754517
+                    },
+                    "pointA": {
+                        "x": 5.855518341064453,
+                        "y": -27.03382682800293
+                    },
+                    "pointB": {
+                        "x": 5.855508804321289,
+                        "y": -27.034570693969728
+                    },
+                    "solverVelocityDelta": {
+                        "x": 0.21752308309078217,
+                        "y": 0.23025864362716676
+                    }
+                }
+            ],
+            "crossings": []
+        },
+        {
+            "name": "Clock / CW / simulated 240 Hz",
+            "error": "",
+            "passed": false,
+            "simulatedRenderHz": 240,
+            "revolutions": 1,
+            "physicsSteps": 1019,
+            "contactFrames": 932,
+            "trackedBoardContactFrames": 292,
+            "contactEpisodes": 2,
+            "overlapFrames": 32,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 1,
+            "maxHingeGap": 0.000015173333849816117,
+            "maxBoardAxisErrorDegrees": 0.02797645516693592,
+            "maxPenetration": 0.0027703074738383295,
+            "minimumSideClearance": -4.119332313537598,
+            "actualClockwiseTravel": 0.0,
+            "accumulatedClockwiseDegrees": 360.0,
+            "accumulatedCounterClockwiseDegrees": 360.0000305175781,
+            "maxPlayerSpeed": 14.181041717529297,
+            "maxCorrection": 0.10616882145404816,
+            "completedHalfTurns": 2,
+            "simulatedSeconds": 20.38406753540039,
+            "clonedWorldColliders": 8,
+            "firstOverlapByCollider": [
+                {
+                    "collider": "Wall",
+                    "type": "CompositeCollider2D",
+                    "layer": 6,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 281,
+                    "shapeCount": 3,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.00024849799228832126,
+                    "worldClockwiseAngle": 215.59454345703126,
+                    "playerPosition": {
+                        "x": 8.40963363647461,
+                        "y": -6.578967571258545
+                    },
+                    "playerVelocity": {
+                        "x": 0.13611072301864625,
+                        "y": -0.09548096358776093
+                    },
+                    "intendedVelocity": {
+                        "x": 0.13611072301864625,
+                        "y": -0.09548096358776093
+                    },
+                    "correction": {
+                        "x": 0.047156162559986117,
+                        "y": -0.027129722759127618
+                    },
+                    "normal": {
+                        "x": -0.5820441246032715,
+                        "y": -0.8131572008132935
+                    },
+                    "pointA": {
+                        "x": 7.784461975097656,
+                        "y": -6.4253435134887699
+                    },
+                    "pointB": {
+                        "x": 7.78460693359375,
+                        "y": -6.425141334533691
+                    },
+                    "solverVelocityDelta": {
+                        "x": 2.379760503768921,
+                        "y": -1.3602303266525269
+                    }
+                },
+                {
+                    "collider": "Clock (1)",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 296,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0006556953303515911,
+                    "worldClockwiseAngle": 223.76995849609376,
+                    "playerPosition": {
+                        "x": 8.869306564331055,
+                        "y": -6.829253673553467
+                    },
+                    "playerVelocity": {
+                        "x": 0.17865952849388123,
+                        "y": -0.1679181456565857
+                    },
+                    "intendedVelocity": {
+                        "x": 0.17865952849388123,
+                        "y": -0.1679181456565857
+                    },
+                    "correction": {
+                        "x": 0.007845664396882058,
+                        "y": 0.001199296209961176
+                    },
+                    "normal": {
+                        "x": 0.010934388265013695,
+                        "y": 0.9999402165412903
+                    },
+                    "pointA": {
+                        "x": 9.008111000061036,
+                        "y": -2.0502560138702394
+                    },
+                    "pointB": {
+                        "x": 9.008103370666504,
+                        "y": -2.0509116649627687
+                    },
+                    "solverVelocityDelta": {
+                        "x": 0.21606317162513734,
+                        "y": 0.22988426685333253
+                    }
+                },
+                {
+                    "collider": "Clock",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 791,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0009098154841922224,
+                    "worldClockwiseAngle": 135.03167724609376,
+                    "playerPosition": {
+                        "x": 7.736599922180176,
+                        "y": -28.42136573791504
+                    },
+                    "playerVelocity": {
+                        "x": -0.18581396341323853,
+                        "y": -0.18210819363594056
+                    },
+                    "intendedVelocity": {
+                        "x": -0.18581396341323853,
+                        "y": -0.18210819363594056
+                    },
+                    "correction": {
+                        "x": -0.009731568396091462,
+                        "y": 0.0014732142444700003
+                    },
+                    "normal": {
+                        "x": -0.004566015210002661,
+                        "y": 0.9999896287918091
+                    },
+                    "pointA": {
+                        "x": 7.855434417724609,
+                        "y": -23.642305374145509
+                    },
+                    "pointB": {
+                        "x": 7.855438232421875,
+                        "y": -23.643217086791993
+                    },
+                    "solverVelocityDelta": {
+                        "x": -0.28688642382621767,
+                        "y": 0.2927243709564209
+                    }
+                }
+            ],
+            "crossings": []
+        },
+        {
+            "name": "Clock (1) / CW / simulated 240 Hz",
+            "error": "",
+            "passed": false,
+            "simulatedRenderHz": 240,
+            "revolutions": 1,
+            "physicsSteps": 1085,
+            "contactFrames": 951,
+            "trackedBoardContactFrames": 248,
+            "contactEpisodes": 4,
+            "overlapFrames": 30,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 1,
+            "maxHingeGap": 0.000019074976080446504,
+            "maxBoardAxisErrorDegrees": 0.02797645516693592,
+            "maxPenetration": 0.006871353834867477,
+            "minimumSideClearance": -6.964870452880859,
+            "actualClockwiseTravel": 7.450580596923828e-9,
+            "accumulatedClockwiseDegrees": 360.0,
+            "accumulatedCounterClockwiseDegrees": 359.9998779296875,
+            "maxPlayerSpeed": 14.64331340789795,
+            "maxCorrection": 0.11533944308757782,
+            "completedHalfTurns": 2,
+            "simulatedSeconds": 21.70101547241211,
+            "clonedWorldColliders": 8,
+            "firstOverlapByCollider": [
+                {
+                    "collider": "Wall",
+                    "type": "CompositeCollider2D",
+                    "layer": 6,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 292,
+                    "shapeCount": 3,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.002784414915367961,
+                    "worldClockwiseAngle": 214.79586791992188,
+                    "playerPosition": {
+                        "x": 15.124815940856934,
+                        "y": -3.1809563636779787
+                    },
+                    "playerVelocity": {
+                        "x": 0.0,
+                        "y": -0.32238027453422549
+                    },
+                    "intendedVelocity": {
+                        "x": 0.0,
+                        "y": -0.32238027453422549
+                    },
+                    "correction": {
+                        "x": 0.010530070401728154,
+                        "y": 0.0058332523331046108
+                    },
+                    "normal": {
+                        "x": -0.2731868624687195,
+                        "y": 0.961961030960083
+                    },
+                    "pointA": {
+                        "x": 14.897566795349121,
+                        "y": 1.5491100549697877
+                    },
+                    "pointB": {
+                        "x": 14.898327827453614,
+                        "y": 1.5464316606521607
+                    },
+                    "solverVelocityDelta": {
+                        "x": 0.0,
+                        "y": 0.0
+                    }
+                },
+                {
+                    "collider": "Clock",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 856,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0022872386034578087,
+                    "worldClockwiseAngle": 135.42874145507813,
+                    "playerPosition": {
+                        "x": 7.885383129119873,
+                        "y": -40.41874694824219
+                    },
+                    "playerVelocity": {
+                        "x": -0.18341371417045594,
+                        "y": -0.17727826535701753
+                    },
+                    "intendedVelocity": {
+                        "x": -0.18341371417045594,
+                        "y": -0.17727826535701753
+                    },
+                    "correction": {
+                        "x": -0.012054025195538998,
+                        "y": -0.00020788377150893211
+                    },
+                    "normal": {
+                        "x": 0.044448915868997577,
+                        "y": 0.9990115761756897
+                    },
+                    "pointA": {
+                        "x": 8.067365646362305,
+                        "y": -35.64094924926758
+                    },
+                    "pointB": {
+                        "x": 8.067264556884766,
+                        "y": -35.64323043823242
+                    },
+                    "solverVelocityDelta": {
+                        "x": -0.28208619356155398,
+                        "y": 0.29184895753860476
+                    }
+                }
+            ],
+            "crossings": []
+        },
+        {
+            "name": "Clock / CCW / simulated 240 Hz",
+            "error": "",
+            "passed": false,
+            "simulatedRenderHz": 240,
+            "revolutions": 1,
+            "physicsSteps": 1002,
+            "contactFrames": 873,
+            "trackedBoardContactFrames": 363,
+            "contactEpisodes": 3,
+            "overlapFrames": 14,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 1,
+            "maxHingeGap": 0.0000171926076291129,
+            "maxBoardAxisErrorDegrees": 0.02797645516693592,
+            "maxPenetration": 0.00286761368624866,
+            "minimumSideClearance": -0.700518012046814,
+            "actualClockwiseTravel": 0.0,
+            "accumulatedClockwiseDegrees": 360.0,
+            "accumulatedCounterClockwiseDegrees": 360.0,
+            "maxPlayerSpeed": 16.299829483032228,
+            "maxCorrection": 0.11085395514965058,
+            "completedHalfTurns": 2,
+            "simulatedSeconds": 20.042327880859376,
+            "clonedWorldColliders": 8,
+            "firstOverlapByCollider": [
+                {
+                    "collider": "Wall",
+                    "type": "CompositeCollider2D",
+                    "layer": 6,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 760,
+                    "shapeCount": 3,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0006038334686309099,
+                    "worldClockwiseAngle": -143.83737182617188,
+                    "playerPosition": {
+                        "x": 6.744509220123291,
+                        "y": -33.11884307861328
+                    },
+                    "playerVelocity": {
+                        "x": 0.14198161661624909,
+                        "y": -0.10377262532711029
+                    },
+                    "intendedVelocity": {
+                        "x": 0.14198161661624909,
+                        "y": -0.10377262532711029
+                    },
+                    "correction": {
+                        "x": 0.046667393296957019,
+                        "y": -0.021971944719552995
+                    },
+                    "normal": {
+                        "x": -0.5900789499282837,
+                        "y": -0.8073455095291138
+                    },
+                    "pointA": {
+                        "x": 6.10898494720459,
+                        "y": -32.957733154296878
+                    },
+                    "pointB": {
+                        "x": 6.109341621398926,
+                        "y": -32.957244873046878
+                    },
+                    "solverVelocityDelta": {
+                        "x": 2.4719185829162599,
+                        "y": -1.1514801979064942
+                    }
+                },
+                {
+                    "collider": "Clock (1)",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 773,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0019083868246525527,
+                    "worldClockwiseAngle": -136.75186157226563,
+                    "playerPosition": {
+                        "x": 7.144618988037109,
+                        "y": -33.33885192871094
+                    },
+                    "playerVelocity": {
+                        "x": 0.17560799419879914,
+                        "y": -0.16206315159797669
+                    },
+                    "intendedVelocity": {
+                        "x": 0.17560799419879914,
+                        "y": -0.16206315159797669
+                    },
+                    "correction": {
+                        "x": 0.009945171885192395,
+                        "y": -0.00010739034041762352
+                    },
+                    "normal": {
+                        "x": -0.033206693828105929,
+                        "y": 0.9994484782218933
+                    },
+                    "pointA": {
+                        "x": 7.226553440093994,
+                        "y": -28.560487747192384
+                    },
+                    "pointB": {
+                        "x": 7.226616382598877,
+                        "y": -28.562395095825197
+                    },
+                    "solverVelocityDelta": {
+                        "x": 0.21016468107700349,
+                        "y": 0.2277297079563141
+                    }
+                }
+            ],
+            "crossings": []
+        },
+        {
+            "name": "Clock (1) / CCW / simulated 240 Hz",
+            "error": "",
+            "passed": false,
+            "simulatedRenderHz": 240,
+            "revolutions": 1,
+            "physicsSteps": 1046,
+            "contactFrames": 959,
+            "trackedBoardContactFrames": 322,
+            "contactEpisodes": 3,
+            "overlapFrames": 32,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 1,
+            "maxHingeGap": 0.000018547678337199613,
+            "maxBoardAxisErrorDegrees": 0.02797645516693592,
+            "maxPenetration": 0.002801090944558382,
+            "minimumSideClearance": -4.1449151039123539,
+            "actualClockwiseTravel": 0.0,
+            "accumulatedClockwiseDegrees": 360.0,
+            "accumulatedCounterClockwiseDegrees": 360.0,
+            "maxPlayerSpeed": 14.767251968383789,
+            "maxCorrection": 0.11208762973546982,
+            "completedHalfTurns": 2,
+            "simulatedSeconds": 20.921682357788087,
+            "clonedWorldColliders": 8,
+            "firstOverlapByCollider": [
+                {
+                    "collider": "Wall",
+                    "type": "CompositeCollider2D",
+                    "layer": 6,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 292,
+                    "shapeCount": 3,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.00025167473359033465,
+                    "worldClockwiseAngle": -216.90464782714845,
+                    "playerPosition": {
+                        "x": 6.341350078582764,
+                        "y": -7.027120113372803
+                    },
+                    "playerVelocity": {
+                        "x": -0.14244653284549714,
+                        "y": -0.10486403107643128
+                    },
+                    "intendedVelocity": {
+                        "x": -0.14244653284549714,
+                        "y": -0.10486403107643128
+                    },
+                    "correction": {
+                        "x": -0.047604624181985858,
+                        "y": -0.026354340836405755
+                    },
+                    "normal": {
+                        "x": 0.6004845499992371,
+                        "y": -0.7996364235877991
+                    },
+                    "pointA": {
+                        "x": 7.239713668823242,
+                        "y": -6.856076240539551
+                    },
+                    "pointB": {
+                        "x": 7.23956298828125,
+                        "y": -6.855875015258789
+                    },
+                    "solverVelocityDelta": {
+                        "x": -2.402627944946289,
+                        "y": -1.3215066194534302
+                    }
+                },
+                {
+                    "collider": "Clock",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 306,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.001600146759301424,
+                    "worldClockwiseAngle": -224.54354858398438,
+                    "playerPosition": {
+                        "x": 5.888544082641602,
+                        "y": -7.25742244720459
+                    },
+                    "playerVelocity": {
+                        "x": -0.18324561417102815,
+                        "y": -0.17694446444511414
+                    },
+                    "intendedVelocity": {
+                        "x": -0.18324561417102815,
+                        "y": -0.17694446444511414
+                    },
+                    "correction": {
+                        "x": -0.01077420823276043,
+                        "y": 0.0007959108334034681
+                    },
+                    "normal": {
+                        "x": 0.021220983937382699,
+                        "y": 0.9997747540473938
+                    },
+                    "pointA": {
+                        "x": 6.04060173034668,
+                        "y": -2.478637933731079
+                    },
+                    "pointB": {
+                        "x": 6.040567398071289,
+                        "y": -2.4802377223968508
+                    },
+                    "solverVelocityDelta": {
+                        "x": -0.2823694348335266,
+                        "y": 0.29242485761642458
+                    }
+                },
+                {
+                    "collider": "Clock (1)",
+                    "type": "BoxCollider2D",
+                    "layer": 8,
+                    "worldGeometryMask": 320,
+                    "physicsStep": 818,
+                    "shapeCount": 1,
+                    "guardRemaining": 1,
+                    "includedInGuardMask": true,
+                    "collisionIgnored": false,
+                    "consumedByComposite": false,
+                    "distance": -0.0007458283216692507,
+                    "worldClockwiseAngle": -136.084228515625,
+                    "playerPosition": {
+                        "x": 5.715046405792236,
+                        "y": -31.81280517578125
+                    },
+                    "playerVelocity": {
+                        "x": 0.1795201450586319,
+                        "y": -0.16959093511104585
+                    },
+                    "intendedVelocity": {
+                        "x": 0.1795201450586319,
+                        "y": -0.16959093511104585
+                    },
+                    "correction": {
+                        "x": 0.00789664126932621,
+                        "y": 0.001133856363594532
+                    },
+                    "normal": {
+                        "x": 0.012228277511894703,
+                        "y": 0.9999252557754517
+                    },
+                    "pointA": {
+                        "x": 5.855518341064453,
+                        "y": -27.03382682800293
+                    },
+                    "pointB": {
+                        "x": 5.855508804321289,
+                        "y": -27.034570693969728
+                    },
+                    "solverVelocityDelta": {
+                        "x": 0.21752308309078217,
+                        "y": 0.23025864362716676
+                    }
+                }
+            ],
+            "crossings": []
+        }
+    ]
+}

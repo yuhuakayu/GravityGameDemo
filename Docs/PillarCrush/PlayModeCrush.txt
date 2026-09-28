@@ -1,0 +1,22 @@
+1 correction=(-0.15, 0.00) crushed=False escape=0 dead=False
+2 correction=(0.15, 0.00) crushed=False escape=0 dead=False
+3 correction=(-0.15, 0.00) crushed=False escape=0 dead=False
+4 correction=(0.15, 0.00) crushed=False escape=0 dead=False
+5 correction=(-0.15, 0.00) crushed=False escape=0 dead=False
+6 correction=(0.15, 0.00) crushed=False escape=0 dead=False
+7 correction=(-0.15, 0.00) crushed=False escape=0 dead=False
+8 correction=(0.15, 0.00) crushed=False escape=0 dead=False
+9 correction=(-0.15, 0.00) crushed=False escape=0 dead=False
+10 correction=(0.15, 0.00) crushed=True escape=0 dead=False
+11 correction=(0.00, 0.15) crushed=True escape=1 dead=False
+12 correction=(0.00, 0.15) crushed=True escape=2 dead=False
+13 correction=(0.00, 0.15) crushed=True escape=3 dead=False
+14 correction=(0.00, 0.15) crushed=True escape=4 dead=False
+15 correction=(0.00, 0.15) crushed=True escape=5 dead=False
+16 correction=(0.00, 0.15) crushed=True escape=6 dead=False
+17 correction=(0.00, 0.15) crushed=True escape=7 dead=False
+18 correction=(0.00, 0.15) crushed=True escape=8 dead=False
+19 correction=(0.00, 0.15) crushed=True escape=9 dead=False
+20 correction=(0.00, 0.15) crushed=True escape=10 dead=True
+
+After existing death transition: scene=Test_PillarCrush, handle=-224426, playerDead=False, preview=True, timeScale=0, temporaryWalls=0

@@ -1,0 +1,663 @@
+fileFormatVersion: 2
+guid: bb787310de030be4d992cd05bf4122a1
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -7571360457990524848
+    second: Charge-Sheet_0
+  - first:
+      213: 1945313434491169365
+    second: Charge-Sheet_1
+  - first:
+      213: -9137575095405860494
+    second: Charge-Sheet_2
+  - first:
+      213: 3235272364349783536
+    second: Charge-Sheet_3
+  - first:
+      213: -1708863933193102363
+    second: Charge-Sheet_4
+  - first:
+      213: 915736056852905577
+    second: Charge-Sheet_5
+  - first:
+      213: 6719577359140938921
+    second: Charge-Sheet_6
+  - first:
+      213: 4831970897977972302
+    second: Charge-Sheet_7
+  - first:
+      213: 6138996128828730556
+    second: Charge-Sheet_8
+  - first:
+      213: -1113981747916363908
+    second: Charge-Sheet_9
+  - first:
+      213: 4139173353771548853
+    second: Charge-Sheet_10
+  - first:
+      213: 5493125806835716184
+    second: Charge-Sheet_11
+  - first:
+      213: 5325190268894868080
+    second: Charge-Sheet_12
+  - first:
+      213: 16852192459345156
+    second: Charge-Sheet_13
+  - first:
+      213: -8336439480472024304
+    second: Charge-Sheet_14
+  - first:
+      213: -8983401146188650029
+    second: Charge-Sheet_15
+  - first:
+      213: -1721497565967328720
+    second: Charge-Sheet_16
+  - first:
+      213: 7643730984697290238
+    second: Charge-Sheet_17
+  - first:
+      213: -8261810431223061970
+    second: Charge-Sheet_18
+  - first:
+      213: -1311835900716709180
+    second: Charge-Sheet_19
+  - first:
+      213: 7396844971830382040
+    second: Charge-Sheet_20
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Charge-Sheet_0
+      rect:
+        serializedVersion: 2
+        x: 24
+        y: 24
+        width: 9
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 050390b37cf1de690800000000000000
+      internalID: -7571360457990524848
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_1
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 12
+        width: 6
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 55a24af03442ffa10800000000000000
+      internalID: 1945313434491169365
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_2
+      rect:
+        serializedVersion: 2
+        x: 81
+        y: 22
+        width: 12
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 279a0e91ddfc03180800000000000000
+      internalID: -9137575095405860494
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_3
+      rect:
+        serializedVersion: 2
+        x: 101
+        y: 17
+        width: 15
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0fdf4bcf21ff5ec20800000000000000
+      internalID: 3235272364349783536
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_4
+      rect:
+        serializedVersion: 2
+        x: 140
+        y: 14
+        width: 18
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5eb5c848e45e848e0800000000000000
+      internalID: -1708863933193102363
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_5
+      rect:
+        serializedVersion: 2
+        x: 163
+        y: 15
+        width: 14
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96efbb8871955bc00800000000000000
+      internalID: 915736056852905577
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_6
+      rect:
+        serializedVersion: 2
+        x: 207
+        y: 14
+        width: 14
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9a46a5c910cb04d50800000000000000
+      internalID: 6719577359140938921
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_7
+      rect:
+        serializedVersion: 2
+        x: 221
+        y: 15
+        width: 19
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e46900b4eeb9e0340800000000000000
+      internalID: 4831970897977972302
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_8
+      rect:
+        serializedVersion: 2
+        x: 272
+        y: 3
+        width: 29
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cbca5501478123550800000000000000
+      internalID: 6138996128828730556
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_9
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 7
+        width: 29
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c772d2d90875a80f0800000000000000
+      internalID: -1113981747916363908
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_10
+      rect:
+        serializedVersion: 2
+        x: 19
+        y: 11
+        width: 6
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b0c0572c3c417930800000000000000
+      internalID: 4139173353771548853
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_11
+      rect:
+        serializedVersion: 2
+        x: 28
+        y: 13
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 85059f641d08b3c40800000000000000
+      internalID: 5493125806835716184
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_12
+      rect:
+        serializedVersion: 2
+        x: 81
+        y: 3
+        width: 10
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 07278d2e550e6e940800000000000000
+      internalID: 5325190268894868080
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_13
+      rect:
+        serializedVersion: 2
+        x: 91
+        y: 12
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 40dc931dafedb3000800000000000000
+      internalID: 16852192459345156
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_14
+      rect:
+        serializedVersion: 2
+        x: 157
+        y: 14
+        width: 6
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 01b4ceaf5740f4c80800000000000000
+      internalID: -8336439480472024304
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_15
+      rect:
+        serializedVersion: 2
+        x: 157
+        y: 4
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3d9a69ee04c845380800000000000000
+      internalID: -8983401146188650029
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_16
+      rect:
+        serializedVersion: 2
+        x: 212
+        y: 1
+        width: 15
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 03a51daa5130c18e0800000000000000
+      internalID: -1721497565967328720
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_17
+      rect:
+        serializedVersion: 2
+        x: 226
+        y: 6
+        width: 9
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: efd578515dcf31a60800000000000000
+      internalID: 7643730984697290238
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_18
+      rect:
+        serializedVersion: 2
+        x: 28
+        y: 5
+        width: 10
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e22255d8f27285d80800000000000000
+      internalID: -8261810431223061970
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_19
+      rect:
+        serializedVersion: 2
+        x: 97
+        y: 7
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4ca0d2ed23c6bcde0800000000000000
+      internalID: -1311835900716709180
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Charge-Sheet_20
+      rect:
+        serializedVersion: 2
+        x: 147
+        y: 5
+        width: 10
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8dd859ccf4fd6a660800000000000000
+      internalID: 7396844971830382040
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Charge-Sheet_0: -7571360457990524848
+      Charge-Sheet_1: 1945313434491169365
+      Charge-Sheet_10: 4139173353771548853
+      Charge-Sheet_11: 5493125806835716184
+      Charge-Sheet_12: 5325190268894868080
+      Charge-Sheet_13: 16852192459345156
+      Charge-Sheet_14: -8336439480472024304
+      Charge-Sheet_15: -8983401146188650029
+      Charge-Sheet_16: -1721497565967328720
+      Charge-Sheet_17: 7643730984697290238
+      Charge-Sheet_18: -8261810431223061970
+      Charge-Sheet_19: -1311835900716709180
+      Charge-Sheet_2: -9137575095405860494
+      Charge-Sheet_20: 7396844971830382040
+      Charge-Sheet_3: 3235272364349783536
+      Charge-Sheet_4: -1708863933193102363
+      Charge-Sheet_5: 915736056852905577
+      Charge-Sheet_6: 6719577359140938921
+      Charge-Sheet_7: 4831970897977972302
+      Charge-Sheet_8: 6138996128828730556
+      Charge-Sheet_9: -1113981747916363908
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

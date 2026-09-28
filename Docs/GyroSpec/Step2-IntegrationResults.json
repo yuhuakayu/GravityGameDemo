@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "message": "Code executed successfully.",
+  "data": {
+    "result": [
+      "Editor paused: physics preserved",
+      "Native DualSense remains connected",
+      "Preview blocks rotation",
+      "A: 0.1 stick-seconds => clockwise 9 degrees",
+      "Gyro zero does not accept right-stick input",
+      "A->B switch preserves 37 degrees",
+      "B: +10 wheel degrees => +10 world degrees",
+      "Pulse blocks B",
+      "Pulse resume preserves 47 degrees",
+      "Pause blocks rotation",
+      "Pause resume has no catch-up",
+      "Death blocks rotation",
+      "Steering limit clamps actual transform to 60 degrees"
+    ],
+    "compiler": "codedom"
+  }
+}

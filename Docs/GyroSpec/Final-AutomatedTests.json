@@ -1,0 +1,539 @@
+{
+  "job_id": "d46821ef2d9a44a493afa8e994ebdc76",
+  "status": "succeeded",
+  "mode": "EditMode",
+  "started_unix_ms": 1790172278585,
+  "finished_unix_ms": 1790172281563,
+  "last_update_unix_ms": 1790172281563,
+  "progress": {
+    "completed": 56,
+    "total": 56,
+    "current_test_full_name": null,
+    "current_test_started_unix_ms": 1790172281506,
+    "last_finished_test_full_name": "Resource.Tests.Gyro.GyroTests.T9_NearParallelGravity_EnteringCrossingAndLeavingConeHasNoNaNOrRateJump",
+    "last_finished_unix_ms": 1790172281508,
+    "stuck_suspected": false,
+    "editor_is_focused": false,
+    "blocked_reason": null,
+    "failures_so_far": [],
+    "failures_capped": false
+  },
+  "error": null,
+  "result": {
+    "mode": "EditMode",
+    "summary": {
+      "total": 56,
+      "passed": 56,
+      "failed": 0,
+      "skipped": 0,
+      "durationSeconds": 0.9236098,
+      "resultState": "Passed"
+    },
+    "results": [
+      {
+        "name": "HeldFrameReadout_DoesNotInventSensorTimeOrReplayAfterDisconnect",
+        "fullName": "Resource.Tests.Gyro.GyroAdditionalTests.HeldFrameReadout_DoesNotInventSensorTimeOrReplayAfterDisconnect",
+        "state": "Passed",
+        "durationSeconds": 0.0116294,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidGravityAndRates_AreRejectedWithoutPoisoningTheNextSample",
+        "fullName": "Resource.Tests.Gyro.GyroAdditionalTests.InvalidGravityAndRates_AreRejectedWithoutPoisoningTheNextSample",
+        "state": "Passed",
+        "durationSeconds": 0.0009672,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "SensorClock_BurstTraceAt250HzHasSameWorldRotationAt60_144_600Fps",
+        "fullName": "Resource.Tests.Gyro.GyroAdditionalTests.SensorClock_BurstTraceAt250HzHasSameWorldRotationAt60_144_600Fps",
+        "state": "Passed",
+        "durationSeconds": 0.0288424,
+        "message": null,
+        "stackTrace": null,
+        "output": "250 Hz burst trace at 60 FPS: 144.000006840 degrees; 0 frames without new samples.\r\n250 Hz burst trace at 144 FPS: 144.000006840 degrees; 0 frames without new samples.\r\n250 Hz burst trace at 600 FPS: 144.000006840 degrees; 2800 frames without new samples.\r\n"
+      },
+      {
+        "name": "SingularCone_CrossingOutAndBackKeepsAxisAndRateContinuous",
+        "fullName": "Resource.Tests.Gyro.GyroAdditionalTests.SingularCone_CrossingOutAndBackKeepsAxisAndRateContinuous",
+        "state": "Passed",
+        "durationSeconds": 0.0060293,
+        "message": null,
+        "stackTrace": null,
+        "output": "65 to 115 to 65 degrees: max wheel rate error=0.000000000 degrees/s.\r\n"
+      },
+      {
+        "name": "SlowConstantRoll_WithLowGyroVarianceIsNotStationaryCalibration(False)",
+        "fullName": "Resource.Tests.Gyro.GyroAdditionalTests.SlowConstantRoll_WithLowGyroVarianceIsNotStationaryCalibration(False)",
+        "state": "Passed",
+        "durationSeconds": 0.0026551,
+        "message": null,
+        "stackTrace": null,
+        "output": "Constant 1.5 degrees/s over 6 s, manual=False: calibrated=False, bias=(0.00, 0.00, 0.00).\r\n"
+      },
+      {
+        "name": "SlowConstantRoll_WithLowGyroVarianceIsNotStationaryCalibration(True)",
+        "fullName": "Resource.Tests.Gyro.GyroAdditionalTests.SlowConstantRoll_WithLowGyroVarianceIsNotStationaryCalibration(True)",
+        "state": "Passed",
+        "durationSeconds": 0.0011884,
+        "message": null,
+        "stackTrace": null,
+        "output": "Constant 1.5 degrees/s over 6 s, manual=True: calibrated=False, bias=(0.00, 0.00, 0.00).\r\n"
+      },
+      {
+        "name": "CalibrationMetadataMustPrecedeSamplesAndInitialBiasRejectsNonfiniteValues",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.CalibrationMetadataMustPrecedeSamplesAndInitialBiasRejectsNonfiniteValues",
+        "state": "Passed",
+        "durationSeconds": 0.0077808,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "CurrentCultureWithDecimalComma_DoesNotChangeCsvFormatOrParsing",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.CurrentCultureWithDecimalComma_DoesNotChangeCsvFormatOrParsing",
+        "state": "Passed",
+        "durationSeconds": 0.0080407,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "EmptyRecordings_AreRejected(\"\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.EmptyRecordings_AreRejected(\"\")",
+        "state": "Passed",
+        "durationSeconds": 0.0024656,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "EmptyRecordings_AreRejected(\"deltaTime,gyroX,gyroY,gyroZ,accelX,accelY,accelZ,gravityX,gravityY,gravityZ\\n\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.EmptyRecordings_AreRejected(\"deltaTime,gyroX,gyroY,gyroZ,accelX,accelY,accelZ,gravityX,gravityY,gravityZ\\n\")",
+        "state": "Passed",
+        "durationSeconds": 0.0017064,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "HeaderMismatchAndOversizedLine_AreRejected",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.HeaderMismatchAndOversizedLine_AreRejected",
+        "state": "Passed",
+        "durationSeconds": 0.0038498,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidAppendDoesNotWriteACorruptRowAndDisposedRecorderCannotRestart",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidAppendDoesNotWriteACorruptRowAndDisposedRecorderCannotRestart",
+        "state": "Passed",
+        "durationSeconds": 0.0025896,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidCalibrationMetadata_IsRejected(\"#initialBias,NaN,0,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidCalibrationMetadata_IsRejected(\"#initialBias,NaN,0,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0023361,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidCalibrationMetadata_IsRejected(\"#initialBias,0,Infinity,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidCalibrationMetadata_IsRejected(\"#initialBias,0,Infinity,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0017272,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidCalibrationMetadata_IsRejected(\"#initialBias,3e38,0,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidCalibrationMetadata_IsRejected(\"#initialBias,3e38,0,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0016058,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidCalibrationMetadata_IsRejected(\"#initialBias,0,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidCalibrationMetadata_IsRejected(\"#initialBias,0,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0051063,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,0,0,0,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,0,0,0,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0062125,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,NaN,0,1,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,NaN,0,1,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0047089,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,3e38,0,1,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,3e38,0,1,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0044774,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,0,0,1,2\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,0,0,1,2\")",
+        "state": "Passed",
+        "durationSeconds": 0.0055505,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,0,0,1,true\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,0,0,1,true\")",
+        "state": "Passed",
+        "durationSeconds": 0.0052315,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,0,0,1\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,0,0,1\")",
+        "state": "Passed",
+        "durationSeconds": 0.0059032,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,0,0,1,1\\n#initialAxis,0,0,1,1\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialAxis,0,0,1,1\\n#initialAxis,0,0,1,1\")",
+        "state": "Passed",
+        "durationSeconds": 0.0059033,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialBias,0,0,0\\n#initialBias,0,0,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.InvalidOrDuplicateSnapshotMetadata_IsRejected(\"#initialBias,0,0,0\\n#initialBias,0,0,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0051792,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,NaN,0,0,0,1,0,0,-1,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,NaN,0,0,0,1,0,0,-1,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0024968,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,Infinity,0,0,0,1,0,0,-1,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,Infinity,0,0,0,1,0,0,-1,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0018238,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,1e100,0,0,0,1,0,0,-1,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,1e100,0,0,0,1,0,0,-1,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0017806,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,3e38,0,0,0,1,0,0,-1,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,3e38,0,0,0,1,0,0,-1,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0016729,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0,1,0,0,0,1,0,0,-1,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0,1,0,0,0,1,0,0,-1,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.001609,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"-0.004,1,0,0,0,1,0,0,-1,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"-0.004,1,0,0,0,1,0,0,-1,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0015097,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.11,1,0,0,0,1,0,0,-1,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.11,1,0,0,0,1,0,0,-1,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.0017539,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,1,0,0,0,1,0,0,0,0\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,1,0,0,0,1,0,0,0,0\")",
+        "state": "Passed",
+        "durationSeconds": 0.001603,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,1,0,0,0,1,0,0,-1\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,1,0,0,0,1,0,0,-1\")",
+        "state": "Passed",
+        "durationSeconds": 0.0016806,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,1,0,0,0,1,0,0,-1,0,extra\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"0.004,1,0,0,0,1,0,0,-1,0,extra\")",
+        "state": "Passed",
+        "durationSeconds": 0.0051841,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"\")",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.MalformedRow_IsRejectedWithItsLineNumberInsteadOfBeingDropped(\"\")",
+        "state": "Passed",
+        "durationSeconds": 0.0019541,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "OversizedFileAndSampleCollection_AreRejectedBeforeLoading",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.OversizedFileAndSampleCollection_AreRejectedBeforeLoading",
+        "state": "Passed",
+        "durationSeconds": 0.002778,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "RecordedCsv_RoundTripsAllRawFloatsAndRebuildsRelativeCallbackTime",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.RecordedCsv_RoundTripsAllRawFloatsAndRebuildsRelativeCallbackTime",
+        "state": "Passed",
+        "durationSeconds": 0.025962,
+        "message": null,
+        "stackTrace": null,
+        "output": "CSV round trip: 511 samples, duration=1.5959629118442535s, all 10 raw float columns preserved exactly.\r\n"
+      },
+      {
+        "name": "RecordingAfterCrossing90Degrees_RestoresWheelHemisphereAndMotionSign",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.RecordingAfterCrossing90Degrees_RestoresWheelHemisphereAndMotionSign",
+        "state": "Passed",
+        "durationSeconds": 0.0152618,
+        "message": null,
+        "stackTrace": null,
+        "output": "CSV started at 115° after crossing the singular cone: live=30.776249738°, restored replay=30.776249738°, missing-axis replay=-30.776249738°.\r\n"
+      },
+      {
+        "name": "RecordingConstructor_CopiesInputAndExposesReadOnlySamples",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.RecordingConstructor_CopiesInputAndExposesReadOnlySamples",
+        "state": "Passed",
+        "durationSeconds": 0.0024661,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "RecordingThatStartsDuringMotion_RestoresLiveBiasAndMatchesLiveRotation",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.RecordingThatStartsDuringMotion_RestoresLiveBiasAndMatchesLiveRotation",
+        "state": "Passed",
+        "durationSeconds": 0.0566652,
+        "message": null,
+        "stackTrace": null,
+        "output": "Motion-start CSV with 2°/s initial bias: live=551.625009750°, replay=551.625009750°, delta=0.000000000° over 10 s.\r\n"
+      },
+      {
+        "name": "RepeatedStartDoesNotOverwriteAndStopFlushesPartialBatch",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.RepeatedStartDoesNotOverwriteAndStopFlushesPartialBatch",
+        "state": "Passed",
+        "durationSeconds": 0.003821,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "SnapshotMetadataCanUseEitherOrderButCannotFollowSamples",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.SnapshotMetadataCanUseEitherOrderButCannotFollowSamples",
+        "state": "Passed",
+        "durationSeconds": 0.0101047,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "StartIoFailureDoesNotClaimToBeRecording",
+        "fullName": "Resource.Tests.Gyro.GyroRecordingTests.StartIoFailureDoesNotClaimToBeRecording",
+        "state": "Passed",
+        "durationSeconds": 0.002297,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "Calibration_RequiresStationarySecondsAndManualThreeSeconds",
+        "fullName": "Resource.Tests.Gyro.GyroTests.Calibration_RequiresStationarySecondsAndManualThreeSeconds",
+        "state": "Passed",
+        "durationSeconds": 0.0013441,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "FrameOutput_UsesSampleTimeWeightsAndRejectsInvalidSamples",
+        "fullName": "Resource.Tests.Gyro.GyroTests.FrameOutput_UsesSampleTimeWeightsAndRejectsInvalidSamples",
+        "state": "Passed",
+        "durationSeconds": 0.0003482,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "MappingOrder_DeadzoneSensitivityPrecisionCurveAndInvertMatchSpecification",
+        "fullName": "Resource.Tests.Gyro.GyroTests.MappingOrder_DeadzoneSensitivityPrecisionCurveAndInvertMatchSpecification",
+        "state": "Passed",
+        "durationSeconds": 0.0001887,
+        "message": null,
+        "stackTrace": null,
+        "output": ""
+      },
+      {
+        "name": "T1_Wheel90Degrees_HasPositiveStickAndGravityDerived90DegreeTarget",
+        "fullName": "Resource.Tests.Gyro.GyroTests.T1_Wheel90Degrees_HasPositiveStickAndGravityDerived90DegreeTarget",
+        "state": "Passed",
+        "durationSeconds": 0.0012718,
+        "message": null,
+        "stackTrace": null,
+        "output": "T1: A=1.000000; gravity theta=90.000000°; B=90.000000° (smoothing=0).\r\nT1 default smoothing: moving endpoint=85.677640°; after 0.5 s stationary=89.999800°.\r\n"
+      },
+      {
+        "name": "T10_ModeSwitchAndPulseResume_PreserveCurrentWorldAngle",
+        "fullName": "Resource.Tests.Gyro.GyroTests.T10_ModeSwitchAndPulseResume_PreserveCurrentWorldAngle",
+        "state": "Passed",
+        "durationSeconds": 0.0003119,
+        "message": null,
+        "stackTrace": null,
+        "output": "T10: mode-switch snap=0.000000000°; blocked movement=0°; pulse-resume snap=0.000000000°; new 5° wheel movement gives 10° world movement.\r\n"
+      },
+      {
+        "name": "T2_Pitch60DegreesPerSecondFor2Seconds_IsZero",
+        "fullName": "Resource.Tests.Gyro.GyroTests.T2_Pitch60DegreesPerSecondFor2Seconds_IsZero",
+        "state": "Passed",
+        "durationSeconds": 0.0004993,
+        "message": null,
+        "stackTrace": null,
+        "output": "T2: maximum A output over 2 s=0.000000000.\r\n"
+      },
+      {
+        "name": "T3_Yaw60DegreesPerSecondFor2Seconds_IsZero",
+        "fullName": "Resource.Tests.Gyro.GyroTests.T3_Yaw60DegreesPerSecondFor2Seconds_IsZero",
+        "state": "Passed",
+        "durationSeconds": 0.0005402,
+        "message": null,
+        "stackTrace": null,
+        "output": "T3: maximum A output over 2 s=0.000000000.\r\n"
+      },
+      {
+        "name": "T4_Wheel30PlusPitch100_MatchesPureWheelWithin2Percent",
+        "fullName": "Resource.Tests.Gyro.GyroTests.T4_Wheel30PlusPitch100_MatchesPureWheelWithin2Percent",
+        "state": "Passed",
+        "durationSeconds": 0.0005568,
+        "message": null,
+        "stackTrace": null,
+        "output": "T4: max mixed/pure wheel rate error=0.000000000%.\r\n"
+      },
+      {
+        "name": "T5_FlatUprightAnd45DegreeGrip_MatchWithin2Percent",
+        "fullName": "Resource.Tests.Gyro.GyroTests.T5_FlatUprightAnd45DegreeGrip_MatchWithin2Percent",
+        "state": "Passed",
+        "durationSeconds": 0.0020004,
+        "message": null,
+        "stackTrace": null,
+        "output": "T5: pose stick-seconds=0.883876400, 0.883876400, 0.883876400; spread=0.000000000%.\r\n"
+      },
+      {
+        "name": "T6_250HzSamplesAt60_144_600RenderFps_WorldAnglesWithin1Percent",
+        "fullName": "Resource.Tests.Gyro.GyroTests.T6_250HzSamplesAt60_144_600RenderFps_WorldAnglesWithin1Percent",
+        "state": "Passed",
+        "durationSeconds": 0.0250324,
+        "message": null,
+        "stackTrace": null,
+        "output": "T6 60 FPS: sample-derived reference=510.045109294°; actual consumed world delta=510.045109294°; naive frame-clock readout integration (not used for world)=510.401454153°.\r\nT6 144 FPS: sample-derived reference=510.045109294°; actual consumed world delta=510.045109294°; naive frame-clock readout integration (not used for world)=510.777361435°.\r\nT6 600 FPS: sample-derived reference=510.045109294°; actual consumed world delta=510.045109294°; naive frame-clock readout integration (not used for world)=510.005096835°.\r\nT6: world angle at 60/144/600 FPS=510.045109294°, 510.045109294°, 510.045109294°; max spread=0.000000% (250 Hz sensor, 24 s, speed=90°/s; world consumes sample-time area).\r\n"
+      },
+      {
+        "name": "T7_HalfDegreeBiasPlusNoise_Calibrated5MinuteDriftBelow2Degrees",
+        "fullName": "Resource.Tests.Gyro.GyroTests.T7_HalfDegreeBiasPlusNoise_Calibrated5MinuteDriftBelow2Degrees",
+        "state": "Passed",
+        "durationSeconds": 0.0537733,
+        "message": null,
+        "stackTrace": null,
+        "output": "T7: 300 s unthresholded corrected wheel drift=-0.015797715°; bias=(0.000069, -0.000040, 0.500063); seeded uniform noise ±0.03°/s, warmup=1.2 s.\r\n"
+      },
+      {
+        "name": "T8_StoppedSamples_ReturnZeroWithin50Milliseconds",
+        "fullName": "Resource.Tests.Gyro.GyroTests.T8_StoppedSamples_ReturnZeroWithin50Milliseconds",
+        "state": "Passed",
+        "durationSeconds": 0.0008501,
+        "message": null,
+        "stackTrace": null,
+        "output": "T8: output held at 19 ms, zero at 21 ms and 50 ms; no exception on prolonged disconnect.\r\n"
+      },
+      {
+        "name": "T9_NearParallelGravity_EnteringCrossingAndLeavingConeHasNoNaNOrRateJump",
+        "fullName": "Resource.Tests.Gyro.GyroTests.T9_NearParallelGravity_EnteringCrossingAndLeavingConeHasNoNaNOrRateJump",
+        "state": "Passed",
+        "durationSeconds": 0.0017877,
+        "message": null,
+        "stackTrace": null,
+        "output": "T9: wheel 65→115°, noisy singular cone; maximum rate step=0.000000000°/s; singular-start output=0, theta=90°.\r\n"
+      }
+    ]
+  }
+}

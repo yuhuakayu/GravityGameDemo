@@ -69,3 +69,6 @@ TestResults/
 
 # JetBrains cache
 *.DotSettings.user
+
+# Local assistant settings
+/.claude/settings.local.json

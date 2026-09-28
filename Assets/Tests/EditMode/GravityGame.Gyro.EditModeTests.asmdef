@@ -1,0 +1,8 @@
+{
+  "name": "GravityGame.Gyro.EditModeTests",
+  "rootNamespace": "Resource.Tests.Gyro",
+  "references": ["GravityGame.Gyro.Core"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

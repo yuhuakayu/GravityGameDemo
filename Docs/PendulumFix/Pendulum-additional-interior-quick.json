@@ -1,0 +1,689 @@
+{
+    "utc": "2026-09-23T18:52:33.7277588Z",
+    "method": "Additional unchanged Stage1 collider fixtures: each plank free-end side, the farthest clear playable vertical wall edge with real player-history pivot, and the same edge rotating about an explicitly fixed WorldRoot-origin test anchor. Initial player bounds must be clear of actual collidable Tilemap cells as well as collider outlines. This corrects the invalid solid-tile interior placement retained in additional-quick.json. Player is initialized once. Synchronous 60/240 Hz render scheduling; not measured rendered FPS.",
+    "passed": false,
+    "results": [
+        {
+            "scenario": "Clock free-end side",
+            "contactCollider": "Clock / BoxCollider2D",
+            "pivotMode": "Explicit current player pivot",
+            "initialPlayerCenter": {
+                "x": 6.776064872741699,
+                "y": 5.590489387512207
+            },
+            "initialSurfacePoint": {
+                "x": 5.46269416809082,
+                "y": 5.590489387512207
+            },
+            "initialSurfaceNormal": {
+                "x": 1.0,
+                "y": 0.0
+            },
+            "initialPivotPosition": {
+                "x": -6.809999942779541,
+                "y": -0.75
+            },
+            "initialPivotDistanceToSurface": 13.813790321350098,
+            "initialTileOverlap": false,
+            "targetContactFrames": 206,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "Clock side / simulated 60 Hz",
+                "error": "",
+                "passed": true,
+                "simulatedRenderHz": 60,
+                "revolutions": 1,
+                "physicsSteps": 1096,
+                "contactFrames": 1022,
+                "trackedBoardContactFrames": 206,
+                "contactEpisodes": 3,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.000014431710951612331,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": -6.830577850341797,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 359.99981689453127,
+                "maxPlayerSpeed": 13.445280075073243,
+                "maxCorrection": 0.09740529954433441,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 21.933170318603517,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "Clock (1) free-end side",
+            "contactCollider": "Clock (1) / BoxCollider2D",
+            "pivotMode": "Explicit current player pivot",
+            "initialPlayerCenter": {
+                "x": 9.253307342529297,
+                "y": 5.410488128662109
+            },
+            "initialSurfacePoint": {
+                "x": 10.566678047180176,
+                "y": 5.410488128662109
+            },
+            "initialSurfaceNormal": {
+                "x": -1.0,
+                "y": -8.742277657347586e-8
+            },
+            "initialPivotPosition": {
+                "x": -6.809999942779541,
+                "y": -0.75
+            },
+            "initialPivotDistanceToSurface": 18.436391830444337,
+            "initialTileOverlap": false,
+            "targetContactFrames": 176,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "Clock (1) side / simulated 60 Hz",
+                "error": "",
+                "passed": true,
+                "simulatedRenderHz": 60,
+                "revolutions": 1,
+                "physicsSteps": 1069,
+                "contactFrames": 965,
+                "trackedBoardContactFrames": 176,
+                "contactEpisodes": 4,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.00001585080099175684,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": -4.1383585929870609,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 360.00006103515627,
+                "maxPlayerSpeed": 13.518492698669434,
+                "maxCorrection": 0.09703049808740616,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 21.3831787109375,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "playable far wall / automatic pivot",
+            "contactCollider": "Wall / CompositeCollider2D",
+            "pivotMode": "Stage1 automatic airborne-history branch with configured render-frame delay; ground probes absent, grounded branch not covered",
+            "initialPlayerCenter": {
+                "x": 19.686630249023439,
+                "y": 2.500000238418579
+            },
+            "initialSurfacePoint": {
+                "x": 21.0,
+                "y": 2.500000238418579
+            },
+            "initialSurfaceNormal": {
+                "x": -1.0,
+                "y": 0.0
+            },
+            "initialPivotPosition": {
+                "x": 19.561912536621095,
+                "y": 0.15401220321655274
+            },
+            "initialPivotDistanceToSurface": 2.7516822814941408,
+            "initialTileOverlap": false,
+            "targetContactFrames": 900,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "far wall / automatic pivot / simulated 60 Hz",
+                "error": "",
+                "passed": false,
+                "simulatedRenderHz": 60,
+                "revolutions": 1,
+                "physicsSteps": 1133,
+                "contactFrames": 1000,
+                "trackedBoardContactFrames": 91,
+                "contactEpisodes": 2,
+                "overlapFrames": 97,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 2,
+                "maxHingeGap": 0.00001629639336897526,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.22765517234802247,
+                "minimumSideClearance": -0.5235507488250732,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 360.0002136230469,
+                "maxPlayerSpeed": 19.45155906677246,
+                "maxCorrection": 0.15000002086162568,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 22.666492462158204,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [
+                    {
+                        "collider": "StrandForClock (1)",
+                        "type": "BoxCollider2D",
+                        "lastConstraintCollider": "StrandForClock (1)",
+                        "layer": 8,
+                        "worldGeometryMask": 320,
+                        "physicsStep": 104,
+                        "shapeCount": 1,
+                        "guardRemaining": 1,
+                        "includedInGuardMask": true,
+                        "collisionIgnored": false,
+                        "consumedByComposite": false,
+                        "distance": -0.008584580384194851,
+                        "worldClockwiseAngle": 63.66046142578125,
+                        "entryPlaneDepth": 0.00858163833618164,
+                        "mtvDepth": 0.008584580384194851,
+                        "mtvAlignment": 1.0,
+                        "playerPosition": {
+                            "x": 20.219614028930665,
+                            "y": -1.9375921487808228
+                        },
+                        "playerVelocity": {
+                            "x": 0.37226229906082156,
+                            "y": -0.7341757416725159
+                        },
+                        "intendedVelocity": {
+                            "x": 0.37226229906082156,
+                            "y": -0.7341757416725159
+                        },
+                        "correction": {
+                            "x": 0.0037109246477484705,
+                            "y": 0.011199528351426125
+                        },
+                        "normal": {
+                            "x": -0.4436906576156616,
+                            "y": 0.8961800336837769
+                        },
+                        "pointA": {
+                            "x": 19.772693634033204,
+                            "y": 2.707724094390869
+                        },
+                        "pointB": {
+                            "x": 19.776500701904298,
+                            "y": 2.70003080368042
+                        },
+                        "solverVelocityDelta": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "entryNormal": {
+                            "x": 0.44369059801101687,
+                            "y": -0.8961800336837769
+                        },
+                        "mtvNormal": {
+                            "x": 0.4436906576156616,
+                            "y": -0.8961800336837769
+                        },
+                        "requestedCorrection": {
+                            "x": 0.0038532670587301256,
+                            "y": -0.007782947272062302
+                        }
+                    },
+                    {
+                        "collider": "Wall",
+                        "type": "CompositeCollider2D",
+                        "lastConstraintCollider": "Wall",
+                        "layer": 6,
+                        "worldGeometryMask": 320,
+                        "physicsStep": 105,
+                        "shapeCount": 3,
+                        "guardRemaining": 1,
+                        "includedInGuardMask": true,
+                        "collisionIgnored": false,
+                        "consumedByComposite": false,
+                        "distance": -0.018165696412324907,
+                        "worldClockwiseAngle": 64.20614624023438,
+                        "entryPlaneDepth": 0.01816272735595703,
+                        "mtvDepth": 0.018165696412324907,
+                        "mtvAlignment": 1.0,
+                        "playerPosition": {
+                            "x": 20.226398468017579,
+                            "y": -1.9621037244796754
+                        },
+                        "playerVelocity": {
+                            "x": 2.4159470868312384e-8,
+                            "y": 1.1675971300917354e-8
+                        },
+                        "intendedVelocity": {
+                            "x": 2.4159470868312384e-8,
+                            "y": 1.1675971300917354e-8
+                        },
+                        "correction": {
+                            "x": 0.006783224642276764,
+                            "y": -0.014035586267709732
+                        },
+                        "normal": {
+                            "x": 0.43513524532318118,
+                            "y": -0.9003651142120361
+                        },
+                        "pointA": {
+                            "x": 20.911731719970704,
+                            "y": -1.9208354949951172
+                        },
+                        "pointB": {
+                            "x": 20.903827667236329,
+                            "y": -1.904479742050171
+                        },
+                        "solverVelocityDelta": {
+                            "x": 0.5160366296768189,
+                            "y": 0.8477327823638916
+                        },
+                        "entryNormal": {
+                            "x": -0.43513453006744387,
+                            "y": 0.9003654718399048
+                        },
+                        "mtvNormal": {
+                            "x": -0.43513524532318118,
+                            "y": 0.9003651142120361
+                        },
+                        "requestedCorrection": {
+                            "x": -0.007948048412799836,
+                            "y": 0.016445795074105264
+                        }
+                    }
+                ],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "playable far wall / fixed root-origin pivot",
+            "contactCollider": "Wall / CompositeCollider2D",
+            "pivotMode": "Explicit fixed initial WorldRoot origin; far-radius stress override confined to this private fixture",
+            "initialPlayerCenter": {
+                "x": 19.686630249023439,
+                "y": 2.500000238418579
+            },
+            "initialSurfacePoint": {
+                "x": 21.0,
+                "y": 2.500000238418579
+            },
+            "initialSurfaceNormal": {
+                "x": -1.0,
+                "y": 0.0
+            },
+            "initialPivotPosition": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "initialPivotDistanceToSurface": 21.148286819458009,
+            "initialTileOverlap": false,
+            "targetContactFrames": 2554,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "far wall / fixed root-origin pivot / simulated 60 Hz",
+                "error": "",
+                "passed": true,
+                "simulatedRenderHz": 60,
+                "revolutions": 1,
+                "physicsSteps": 2911,
+                "contactFrames": 2717,
+                "trackedBoardContactFrames": 625,
+                "contactEpisodes": 4,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.000015728399375802837,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": -1.1177581548690797,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 359.9998779296875,
+                "maxPlayerSpeed": 18.83711814880371,
+                "maxCorrection": 0.0871800035238266,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 58.23261642456055,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "Clock free-end side",
+            "contactCollider": "Clock / BoxCollider2D",
+            "pivotMode": "Explicit current player pivot",
+            "initialPlayerCenter": {
+                "x": 6.776064872741699,
+                "y": 5.590489387512207
+            },
+            "initialSurfacePoint": {
+                "x": 5.46269416809082,
+                "y": 5.590489387512207
+            },
+            "initialSurfaceNormal": {
+                "x": 1.0,
+                "y": 0.0
+            },
+            "initialPivotPosition": {
+                "x": -6.809999942779541,
+                "y": -0.75
+            },
+            "initialPivotDistanceToSurface": 13.813790321350098,
+            "initialTileOverlap": false,
+            "targetContactFrames": 206,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "Clock side / simulated 240 Hz",
+                "error": "",
+                "passed": true,
+                "simulatedRenderHz": 240,
+                "revolutions": 1,
+                "physicsSteps": 1096,
+                "contactFrames": 1022,
+                "trackedBoardContactFrames": 206,
+                "contactEpisodes": 3,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.000014431710951612331,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": -6.830577850341797,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 359.99981689453127,
+                "maxPlayerSpeed": 13.445280075073243,
+                "maxCorrection": 0.09740529954433441,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 21.92189598083496,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "Clock (1) free-end side",
+            "contactCollider": "Clock (1) / BoxCollider2D",
+            "pivotMode": "Explicit current player pivot",
+            "initialPlayerCenter": {
+                "x": 9.253307342529297,
+                "y": 5.410488128662109
+            },
+            "initialSurfacePoint": {
+                "x": 10.566678047180176,
+                "y": 5.410488128662109
+            },
+            "initialSurfaceNormal": {
+                "x": -1.0,
+                "y": -8.742277657347586e-8
+            },
+            "initialPivotPosition": {
+                "x": -6.809999942779541,
+                "y": -0.75
+            },
+            "initialPivotDistanceToSurface": 18.436391830444337,
+            "initialTileOverlap": false,
+            "targetContactFrames": 176,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "Clock (1) side / simulated 240 Hz",
+                "error": "",
+                "passed": true,
+                "simulatedRenderHz": 240,
+                "revolutions": 1,
+                "physicsSteps": 1069,
+                "contactFrames": 965,
+                "trackedBoardContactFrames": 176,
+                "contactEpisodes": 4,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.00001585080099175684,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": -4.1383585929870609,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 360.00006103515627,
+                "maxPlayerSpeed": 13.518492698669434,
+                "maxCorrection": 0.09703049808740616,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 21.384281158447267,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "playable far wall / automatic pivot",
+            "contactCollider": "Wall / CompositeCollider2D",
+            "pivotMode": "Stage1 automatic airborne-history branch with configured render-frame delay; ground probes absent, grounded branch not covered",
+            "initialPlayerCenter": {
+                "x": 19.686630249023439,
+                "y": 2.500000238418579
+            },
+            "initialSurfacePoint": {
+                "x": 21.0,
+                "y": 2.500000238418579
+            },
+            "initialSurfaceNormal": {
+                "x": -1.0,
+                "y": 0.0
+            },
+            "initialPivotPosition": {
+                "x": 19.561912536621095,
+                "y": 0.15401220321655274
+            },
+            "initialPivotDistanceToSurface": 2.7516822814941408,
+            "initialTileOverlap": false,
+            "targetContactFrames": 960,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "far wall / automatic pivot / simulated 240 Hz",
+                "error": "",
+                "passed": false,
+                "simulatedRenderHz": 240,
+                "revolutions": 1,
+                "physicsSteps": 1193,
+                "contactFrames": 1087,
+                "trackedBoardContactFrames": 110,
+                "contactEpisodes": 2,
+                "overlapFrames": 98,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 2,
+                "maxHingeGap": 0.00001537753632874228,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.2422409951686859,
+                "minimumSideClearance": -0.5235453248023987,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 360.0001220703125,
+                "maxPlayerSpeed": 19.067354202270509,
+                "maxCorrection": 0.15000002086162568,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 23.863977432250978,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [
+                    {
+                        "collider": "Wall",
+                        "type": "CompositeCollider2D",
+                        "lastConstraintCollider": "Wall",
+                        "layer": 6,
+                        "worldGeometryMask": 320,
+                        "physicsStep": 98,
+                        "shapeCount": 3,
+                        "guardRemaining": 1,
+                        "includedInGuardMask": true,
+                        "collisionIgnored": false,
+                        "consumedByComposite": false,
+                        "distance": -0.002039193408563733,
+                        "worldClockwiseAngle": 63.293701171875,
+                        "entryPlaneDepth": -0.000202178955078125,
+                        "mtvDepth": 0.002039193408563733,
+                        "mtvAlignment": -1.066565928908858e-7,
+                        "playerPosition": {
+                            "x": 20.447221755981447,
+                            "y": -1.3488861322402955
+                        },
+                        "playerVelocity": {
+                            "x": 0.3762020170688629,
+                            "y": -0.7304211854934692
+                        },
+                        "intendedVelocity": {
+                            "x": 0.3762020170688629,
+                            "y": -0.7304211854934692
+                        },
+                        "correction": {
+                            "x": 0.008338029496371746,
+                            "y": 0.004371081478893757
+                        },
+                        "normal": {
+                            "x": 0.4494193196296692,
+                            "y": -0.8933209180831909
+                        },
+                        "pointA": {
+                            "x": 21.150955200195314,
+                            "y": -1.298542857170105
+                        },
+                        "pointB": {
+                            "x": 21.150039672851564,
+                            "y": -1.29672110080719
+                        },
+                        "solverVelocityDelta": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "entryNormal": {
+                            "x": 0.8933209776878357,
+                            "y": 0.449419230222702
+                        },
+                        "mtvNormal": {
+                            "x": -0.4494193196296692,
+                            "y": 0.8933209180831909
+                        },
+                        "requestedCorrection": {
+                            "x": -0.0008720625774003565,
+                            "y": 0.0019559282809495928
+                        }
+                    },
+                    {
+                        "collider": "StrandForClock (1)",
+                        "type": "BoxCollider2D",
+                        "lastConstraintCollider": "StrandForClock (1)",
+                        "layer": 8,
+                        "worldGeometryMask": 320,
+                        "physicsStep": 101,
+                        "shapeCount": 1,
+                        "guardRemaining": 1,
+                        "includedInGuardMask": true,
+                        "collisionIgnored": false,
+                        "consumedByComposite": false,
+                        "distance": -0.030563293024897577,
+                        "worldClockwiseAngle": 64.92877197265625,
+                        "entryPlaneDepth": 0.03056478500366211,
+                        "mtvDepth": 0.030563293024897577,
+                        "mtvAlignment": 1.0,
+                        "playerPosition": {
+                            "x": 20.480363845825197,
+                            "y": -1.3514989614486695
+                        },
+                        "playerVelocity": {
+                            "x": -0.07683216780424118,
+                            "y": -0.03594399616122246
+                        },
+                        "intendedVelocity": {
+                            "x": -0.07683216780424118,
+                            "y": -0.03594399616122246
+                        },
+                        "correction": {
+                            "x": 0.0037999525666236879,
+                            "y": 0.01785293221473694
+                        },
+                        "normal": {
+                            "x": -0.4237467348575592,
+                            "y": 0.9057807326316834
+                        },
+                        "pointA": {
+                            "x": 20.05913734436035,
+                            "y": 3.3061861991882326
+                        },
+                        "pointB": {
+                            "x": 20.07208824157715,
+                            "y": 3.2785024642944338
+                        },
+                        "solverVelocityDelta": {
+                            "x": 0.153609961271286,
+                            "y": -0.32036298513412478
+                        },
+                        "entryNormal": {
+                            "x": 0.42374682426452639,
+                            "y": -0.9057806730270386
+                        },
+                        "mtvNormal": {
+                            "x": 0.4237467348575592,
+                            "y": -0.9057807326316834
+                        },
+                        "requestedCorrection": {
+                            "x": 0.012994104996323586,
+                            "y": -0.027775568887591363
+                        }
+                    }
+                ],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "playable far wall / fixed root-origin pivot",
+            "contactCollider": "Wall / CompositeCollider2D",
+            "pivotMode": "Explicit fixed initial WorldRoot origin; far-radius stress override confined to this private fixture",
+            "initialPlayerCenter": {
+                "x": 19.686630249023439,
+                "y": 2.500000238418579
+            },
+            "initialSurfacePoint": {
+                "x": 21.0,
+                "y": 2.500000238418579
+            },
+            "initialSurfaceNormal": {
+                "x": -1.0,
+                "y": 0.0
+            },
+            "initialPivotPosition": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "initialPivotDistanceToSurface": 21.148286819458009,
+            "initialTileOverlap": false,
+            "targetContactFrames": 2554,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "far wall / fixed root-origin pivot / simulated 240 Hz",
+                "error": "",
+                "passed": true,
+                "simulatedRenderHz": 240,
+                "revolutions": 1,
+                "physicsSteps": 2911,
+                "contactFrames": 2717,
+                "trackedBoardContactFrames": 625,
+                "contactEpisodes": 4,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.000015728399375802837,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": -1.1177581548690797,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 359.9998779296875,
+                "maxPlayerSpeed": 18.83711814880371,
+                "maxCorrection": 0.0871800035238266,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 58.217647552490237,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        }
+    ]
+}

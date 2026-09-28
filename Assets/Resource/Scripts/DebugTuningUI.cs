@@ -61,11 +61,10 @@ namespace Resource.Scripts
             float steeringAngle = _worldRotator != null ? _worldRotator.SteeringAngleReadout : 0f;
             bool grounded = _player != null && _player.IsGrounded;
 
-            if (_gyroReader == null)
-                _gyroReader = FindObjectOfType<DS5GyroReader>();
-            string gyroLine = _gyroReader != null
-                ? $"陀螺仪: {(_gyroReader.IsAvailable ? "已连接" : "未连接")}  速度: {_gyroReader.GyroVelocity:+0.000;-0.000}"
-                : "陀螺仪: 场景里没有 DS5GyroReader";
+            var gyro = Gyro.GyroRuntime.Current;
+            string gyroLine = gyro != null
+                ? $"陀螺仪: {gyro.Device?.Model}  输出: {gyro.StickOutput:+0.000;-0.000}（~ 打开完整控制台）"
+                : "陀螺仪: 尚未启动";
 
             _readoutText.text =
                 $"手柄: {gpName}\n" +
@@ -189,7 +188,8 @@ namespace Resource.Scripts
             if (_worldRotator != null)
             {
                 AddFloatRow("旋转速度", 10f, 360f, _worldRotator.rotateSpeed, v => _worldRotator.rotateSpeed = v);
-                AddToggleRow("优先用陀螺仪（而非摇杆）", _worldRotator.useGyroIfAvailable, v => _worldRotator.useGyroIfAvailable = v);
+                AddToggleRow("原生陀螺仪（~ 完整设置）", Gyro.GyroRuntime.Instance.Settings.inputSource != Gyro.GyroInputSource.RightStick,
+                    v => Gyro.GyroRuntime.Instance.Settings.inputSource = v ? Gyro.GyroInputSource.Gyro : Gyro.GyroInputSource.RightStick);
                 AddFloatRow("摇杆死区", 0f, 0.5f, _worldRotator.stickDeadzone, v => _worldRotator.stickDeadzone = v);
                 AddFloatRow("摇杆平滑强度", 1f, 30f, _worldRotator.stickSmoothing, v => _worldRotator.stickSmoothing = v);
                 AddFloatRow("方向持续时间(秒)", 0f, 0.5f, _worldRotator.stickSustainTime, v => _worldRotator.stickSustainTime = v);

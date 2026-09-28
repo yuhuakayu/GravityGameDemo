@@ -1,0 +1,3 @@
+Clock (1) pos=(12.77000, 6.41000, 0.00000) z=181.1476 hinge=(15.21625, 6.54902, 0.00000) pivot=(15.88593, 5.48628, 0.00000) gap=1.256137 parent=StrandForClock (1) parentPos=(15.86000, 2.33000, 0.00000) parentScale=(6.96394, 1.00000, 1.00000) parentZ=89.09584 collider=(5.66069, 1.11279, 0.00000) gravity=120 damping=3 bounce=0.08
+Clock pos=(3.10000, 6.37000, 0.00000) z=359.1916 hinge=(0.65043, 6.31456, 0.00000) pivot=(0.24351, 5.51466, 0.00000) gap=0.8974541 parent=StrandForClock parentPos=(0.21714, 2.33040, 0.00000) parentScale=(7.02567, 1.00000, 1.00000) parentZ=89.09584 collider=(5.65535, 1.07950, 0.00000) gravity=120 damping=3 bounce=0.08
+player size=(2.57674, 4.86617, 0.00000)

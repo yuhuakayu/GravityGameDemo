@@ -1,0 +1,266 @@
+{
+    "utc": "2026-09-23T18:27:02.3242839Z",
+    "version": "6000.1.3f1",
+    "label": "first-pass",
+    "scheduling": "Synchronous simulation of 60 Hz and 240 Hz render scheduling with the project's fixed timestep. This is not a measured real rendering FPS test.",
+    "fixedTimestep": 0.019999992102384568,
+    "passed": false,
+    "geometry": [
+        {
+            "name": "Clock",
+            "boardPosition": {
+                "x": 2.6417956352233888,
+                "y": 5.590489387512207,
+                "z": 0.0
+            },
+            "boardScale": {
+                "x": 5.6417975425720219,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "pivot": {
+                "x": 0.19325554370880128,
+                "y": 5.500489234924316,
+                "z": 0.0
+            },
+            "hinge": {
+                "x": 0.19325566291809083,
+                "y": 5.500489234924316,
+                "z": 0.0
+            },
+            "gravityPoint": {
+                "x": 5.186246395111084,
+                "y": 5.500489234924316,
+                "z": 0.0
+            },
+            "strandPosition": {
+                "x": 0.21713781356811524,
+                "y": 2.330199956893921,
+                "z": 0.0
+            },
+            "strandScale": {
+                "x": 6.994801998138428,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "boardZ": 0.0,
+            "strandZ": 90.0,
+            "hingeGap": 1.1920928955078126e-7,
+            "armLength": 4.992990493774414,
+            "gravity": 120.0,
+            "damping": 3.0,
+            "bounce": 0.07999999821186066,
+            "minAngle": 0.0,
+            "maxAngle": 90.0
+        },
+        {
+            "name": "Clock (1)",
+            "boardPosition": {
+                "x": 13.387577056884766,
+                "y": 5.410488605499268,
+                "z": 0.0
+            },
+            "boardScale": {
+                "x": 5.6417975425720219,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "pivot": {
+                "x": 15.836116790771485,
+                "y": 5.500489234924316,
+                "z": 0.0
+            },
+            "hinge": {
+                "x": 15.836116790771485,
+                "y": 5.500488758087158,
+                "z": 0.0
+            },
+            "gravityPoint": {
+                "x": 10.84312629699707,
+                "y": 5.50048828125,
+                "z": 0.0
+            },
+            "strandPosition": {
+                "x": 15.85999870300293,
+                "y": 2.330199956893921,
+                "z": 0.0
+            },
+            "strandScale": {
+                "x": 6.994801998138428,
+                "y": 1.0,
+                "z": 1.0
+            },
+            "boardZ": 180.0,
+            "strandZ": 90.0,
+            "hingeGap": 4.76837158203125e-7,
+            "armLength": 4.992990493774414,
+            "gravity": 120.0,
+            "damping": 3.0,
+            "bounce": 0.07999999821186066,
+            "minAngle": -90.0,
+            "maxAngle": 0.0
+        }
+    ],
+    "results": [
+        {
+            "name": "Clock / CW / simulated 60 Hz",
+            "error": "UnityEngine.MissingComponentException: There is no 'Rigidbody2D' attached to the \"WorldRoot\" game object, but a script is trying to access it.\nYou probably need to add a Rigidbody2D to the game object \"WorldRoot\". Or your script needs to check if the component is attached before using it. Parameter name: dest\r\n  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x000e2] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00010] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEditor.EditorUtility.CopySerialized (UnityEngine.Object source, UnityEngine.Object dest) [0x00039] in <f94d23feabb04bb4b93f81d724b016ac>:0 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneComponent (UnityEngine.Component source) [0x00055] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:333 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneCollider (UnityEngine.Collider2D source, System.Boolean geometry) [0x00011] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:339 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture..ctor (Resource.Scripts.WorldRotator world, Resource.Scripts.PlayerController player, Resource.Scripts.PivotPendulum[] pendulums, System.Int32 board) [0x000d7] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:234 \r\n  at Resource.Scripts.Editor.PendulumStageValidation.RunAndSave (System.String label, System.Int32 revolutions) [0x0025e] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:78 ",
+            "passed": false,
+            "simulatedRenderHz": 60,
+            "revolutions": 1,
+            "physicsSteps": 0,
+            "contactFrames": 0,
+            "overlapFrames": 0,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 0,
+            "maxHingeGap": 0.0,
+            "maxBoardAxisErrorDegrees": 0.0,
+            "maxPenetration": 0.0,
+            "minimumSideClearance": 3.4028234663852887e38,
+            "actualClockwiseTravel": 0.0,
+            "maxPlayerSpeed": 0.0,
+            "maxCorrection": 0.0,
+            "clonedWorldColliders": 0
+        },
+        {
+            "name": "Clock (1) / CW / simulated 60 Hz",
+            "error": "UnityEngine.MissingComponentException: There is no 'Rigidbody2D' attached to the \"WorldRoot\" game object, but a script is trying to access it.\nYou probably need to add a Rigidbody2D to the game object \"WorldRoot\". Or your script needs to check if the component is attached before using it. Parameter name: dest\r\n  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x000e2] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00010] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEditor.EditorUtility.CopySerialized (UnityEngine.Object source, UnityEngine.Object dest) [0x00039] in <f94d23feabb04bb4b93f81d724b016ac>:0 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneComponent (UnityEngine.Component source) [0x00055] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:333 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneCollider (UnityEngine.Collider2D source, System.Boolean geometry) [0x00011] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:339 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture..ctor (Resource.Scripts.WorldRotator world, Resource.Scripts.PlayerController player, Resource.Scripts.PivotPendulum[] pendulums, System.Int32 board) [0x000d7] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:234 \r\n  at Resource.Scripts.Editor.PendulumStageValidation.RunAndSave (System.String label, System.Int32 revolutions) [0x0025e] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:78 ",
+            "passed": false,
+            "simulatedRenderHz": 60,
+            "revolutions": 1,
+            "physicsSteps": 0,
+            "contactFrames": 0,
+            "overlapFrames": 0,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 0,
+            "maxHingeGap": 0.0,
+            "maxBoardAxisErrorDegrees": 0.0,
+            "maxPenetration": 0.0,
+            "minimumSideClearance": 3.4028234663852887e38,
+            "actualClockwiseTravel": 0.0,
+            "maxPlayerSpeed": 0.0,
+            "maxCorrection": 0.0,
+            "clonedWorldColliders": 0
+        },
+        {
+            "name": "Clock / CCW / simulated 60 Hz",
+            "error": "UnityEngine.MissingComponentException: There is no 'Rigidbody2D' attached to the \"WorldRoot\" game object, but a script is trying to access it.\nYou probably need to add a Rigidbody2D to the game object \"WorldRoot\". Or your script needs to check if the component is attached before using it. Parameter name: dest\r\n  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x000e2] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00010] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEditor.EditorUtility.CopySerialized (UnityEngine.Object source, UnityEngine.Object dest) [0x00039] in <f94d23feabb04bb4b93f81d724b016ac>:0 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneComponent (UnityEngine.Component source) [0x00055] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:333 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneCollider (UnityEngine.Collider2D source, System.Boolean geometry) [0x00011] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:339 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture..ctor (Resource.Scripts.WorldRotator world, Resource.Scripts.PlayerController player, Resource.Scripts.PivotPendulum[] pendulums, System.Int32 board) [0x000d7] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:234 \r\n  at Resource.Scripts.Editor.PendulumStageValidation.RunAndSave (System.String label, System.Int32 revolutions) [0x0025e] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:78 ",
+            "passed": false,
+            "simulatedRenderHz": 60,
+            "revolutions": 1,
+            "physicsSteps": 0,
+            "contactFrames": 0,
+            "overlapFrames": 0,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 0,
+            "maxHingeGap": 0.0,
+            "maxBoardAxisErrorDegrees": 0.0,
+            "maxPenetration": 0.0,
+            "minimumSideClearance": 3.4028234663852887e38,
+            "actualClockwiseTravel": 0.0,
+            "maxPlayerSpeed": 0.0,
+            "maxCorrection": 0.0,
+            "clonedWorldColliders": 0
+        },
+        {
+            "name": "Clock (1) / CCW / simulated 60 Hz",
+            "error": "UnityEngine.MissingComponentException: There is no 'Rigidbody2D' attached to the \"WorldRoot\" game object, but a script is trying to access it.\nYou probably need to add a Rigidbody2D to the game object \"WorldRoot\". Or your script needs to check if the component is attached before using it. Parameter name: dest\r\n  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x000e2] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00010] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEditor.EditorUtility.CopySerialized (UnityEngine.Object source, UnityEngine.Object dest) [0x00039] in <f94d23feabb04bb4b93f81d724b016ac>:0 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneComponent (UnityEngine.Component source) [0x00055] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:333 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneCollider (UnityEngine.Collider2D source, System.Boolean geometry) [0x00011] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:339 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture..ctor (Resource.Scripts.WorldRotator world, Resource.Scripts.PlayerController player, Resource.Scripts.PivotPendulum[] pendulums, System.Int32 board) [0x000d7] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:234 \r\n  at Resource.Scripts.Editor.PendulumStageValidation.RunAndSave (System.String label, System.Int32 revolutions) [0x0025e] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:78 ",
+            "passed": false,
+            "simulatedRenderHz": 60,
+            "revolutions": 1,
+            "physicsSteps": 0,
+            "contactFrames": 0,
+            "overlapFrames": 0,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 0,
+            "maxHingeGap": 0.0,
+            "maxBoardAxisErrorDegrees": 0.0,
+            "maxPenetration": 0.0,
+            "minimumSideClearance": 3.4028234663852887e38,
+            "actualClockwiseTravel": 0.0,
+            "maxPlayerSpeed": 0.0,
+            "maxCorrection": 0.0,
+            "clonedWorldColliders": 0
+        },
+        {
+            "name": "Clock / CW / simulated 240 Hz",
+            "error": "UnityEngine.MissingComponentException: There is no 'Rigidbody2D' attached to the \"WorldRoot\" game object, but a script is trying to access it.\nYou probably need to add a Rigidbody2D to the game object \"WorldRoot\". Or your script needs to check if the component is attached before using it. Parameter name: dest\r\n  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x000e2] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00010] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEditor.EditorUtility.CopySerialized (UnityEngine.Object source, UnityEngine.Object dest) [0x00039] in <f94d23feabb04bb4b93f81d724b016ac>:0 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneComponent (UnityEngine.Component source) [0x00055] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:333 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneCollider (UnityEngine.Collider2D source, System.Boolean geometry) [0x00011] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:339 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture..ctor (Resource.Scripts.WorldRotator world, Resource.Scripts.PlayerController player, Resource.Scripts.PivotPendulum[] pendulums, System.Int32 board) [0x000d7] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:234 \r\n  at Resource.Scripts.Editor.PendulumStageValidation.RunAndSave (System.String label, System.Int32 revolutions) [0x0025e] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:78 ",
+            "passed": false,
+            "simulatedRenderHz": 240,
+            "revolutions": 1,
+            "physicsSteps": 0,
+            "contactFrames": 0,
+            "overlapFrames": 0,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 0,
+            "maxHingeGap": 0.0,
+            "maxBoardAxisErrorDegrees": 0.0,
+            "maxPenetration": 0.0,
+            "minimumSideClearance": 3.4028234663852887e38,
+            "actualClockwiseTravel": 0.0,
+            "maxPlayerSpeed": 0.0,
+            "maxCorrection": 0.0,
+            "clonedWorldColliders": 0
+        },
+        {
+            "name": "Clock (1) / CW / simulated 240 Hz",
+            "error": "UnityEngine.MissingComponentException: There is no 'Rigidbody2D' attached to the \"WorldRoot\" game object, but a script is trying to access it.\nYou probably need to add a Rigidbody2D to the game object \"WorldRoot\". Or your script needs to check if the component is attached before using it. Parameter name: dest\r\n  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x000e2] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00010] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEditor.EditorUtility.CopySerialized (UnityEngine.Object source, UnityEngine.Object dest) [0x00039] in <f94d23feabb04bb4b93f81d724b016ac>:0 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneComponent (UnityEngine.Component source) [0x00055] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:333 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneCollider (UnityEngine.Collider2D source, System.Boolean geometry) [0x00011] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:339 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture..ctor (Resource.Scripts.WorldRotator world, Resource.Scripts.PlayerController player, Resource.Scripts.PivotPendulum[] pendulums, System.Int32 board) [0x000d7] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:234 \r\n  at Resource.Scripts.Editor.PendulumStageValidation.RunAndSave (System.String label, System.Int32 revolutions) [0x0025e] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:78 ",
+            "passed": false,
+            "simulatedRenderHz": 240,
+            "revolutions": 1,
+            "physicsSteps": 0,
+            "contactFrames": 0,
+            "overlapFrames": 0,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 0,
+            "maxHingeGap": 0.0,
+            "maxBoardAxisErrorDegrees": 0.0,
+            "maxPenetration": 0.0,
+            "minimumSideClearance": 3.4028234663852887e38,
+            "actualClockwiseTravel": 0.0,
+            "maxPlayerSpeed": 0.0,
+            "maxCorrection": 0.0,
+            "clonedWorldColliders": 0
+        },
+        {
+            "name": "Clock / CCW / simulated 240 Hz",
+            "error": "UnityEngine.MissingComponentException: There is no 'Rigidbody2D' attached to the \"WorldRoot\" game object, but a script is trying to access it.\nYou probably need to add a Rigidbody2D to the game object \"WorldRoot\". Or your script needs to check if the component is attached before using it. Parameter name: dest\r\n  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x000e2] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00010] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEditor.EditorUtility.CopySerialized (UnityEngine.Object source, UnityEngine.Object dest) [0x00039] in <f94d23feabb04bb4b93f81d724b016ac>:0 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneComponent (UnityEngine.Component source) [0x00055] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:333 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneCollider (UnityEngine.Collider2D source, System.Boolean geometry) [0x00011] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:339 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture..ctor (Resource.Scripts.WorldRotator world, Resource.Scripts.PlayerController player, Resource.Scripts.PivotPendulum[] pendulums, System.Int32 board) [0x000d7] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:234 \r\n  at Resource.Scripts.Editor.PendulumStageValidation.RunAndSave (System.String label, System.Int32 revolutions) [0x0025e] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:78 ",
+            "passed": false,
+            "simulatedRenderHz": 240,
+            "revolutions": 1,
+            "physicsSteps": 0,
+            "contactFrames": 0,
+            "overlapFrames": 0,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 0,
+            "maxHingeGap": 0.0,
+            "maxBoardAxisErrorDegrees": 0.0,
+            "maxPenetration": 0.0,
+            "minimumSideClearance": 3.4028234663852887e38,
+            "actualClockwiseTravel": 0.0,
+            "maxPlayerSpeed": 0.0,
+            "maxCorrection": 0.0,
+            "clonedWorldColliders": 0
+        },
+        {
+            "name": "Clock (1) / CCW / simulated 240 Hz",
+            "error": "UnityEngine.MissingComponentException: There is no 'Rigidbody2D' attached to the \"WorldRoot\" game object, but a script is trying to access it.\nYou probably need to add a Rigidbody2D to the game object \"WorldRoot\". Or your script needs to check if the component is attached before using it. Parameter name: dest\r\n  at UnityEngine.Object+MarshalledUnityObject.TryThrowEditorNullExceptionObject (UnityEngine.Object unityObj, System.String parameterName) [0x000e2] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEngine.Bindings.ThrowHelper.ThrowArgumentNullException (System.Object obj, System.String parameterName) [0x00010] in <89527d299cb64ba88f87240781b415e5>:0 \r\n  at UnityEditor.EditorUtility.CopySerialized (UnityEngine.Object source, UnityEngine.Object dest) [0x00039] in <f94d23feabb04bb4b93f81d724b016ac>:0 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneComponent (UnityEngine.Component source) [0x00055] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:333 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture.CloneCollider (UnityEngine.Collider2D source, System.Boolean geometry) [0x00011] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:339 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Fixture..ctor (Resource.Scripts.WorldRotator world, Resource.Scripts.PlayerController player, Resource.Scripts.PivotPendulum[] pendulums, System.Int32 board) [0x000d7] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:234 \r\n  at Resource.Scripts.Editor.PendulumStageValidation.RunAndSave (System.String label, System.Int32 revolutions) [0x0025e] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:78 ",
+            "passed": false,
+            "simulatedRenderHz": 240,
+            "revolutions": 1,
+            "physicsSteps": 0,
+            "contactFrames": 0,
+            "overlapFrames": 0,
+            "originalSideCrossings": 0,
+            "maxRemainingOverlap": 0,
+            "maxHingeGap": 0.0,
+            "maxBoardAxisErrorDegrees": 0.0,
+            "maxPenetration": 0.0,
+            "minimumSideClearance": 3.4028234663852887e38,
+            "actualClockwiseTravel": 0.0,
+            "maxPlayerSpeed": 0.0,
+            "maxCorrection": 0.0,
+            "clonedWorldColliders": 0
+        }
+    ]
+}

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Resource.Scripts.Gyro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -131,6 +132,7 @@ namespace Resource.Scripts
 
         void Update()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             if (_titlePanelRoot != null && _titlePanelRoot.gameObject.activeSelf)
                 HandleTitleInput();
 
@@ -428,6 +430,7 @@ namespace Resource.Scripts
 
         private void OnStartGameClicked()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             if (_navLocked) return;
             _navLocked = true;
             SfxManager.Instance.PlayButtonClick();
@@ -437,6 +440,7 @@ namespace Resource.Scripts
 
         private void OnOptionsClicked()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             if (_navLocked) return;
             _navLocked = true;
             SfxManager.Instance.PlayButtonClick();
@@ -446,6 +450,7 @@ namespace Resource.Scripts
 
         private void OnQuitClicked()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             SfxManager.Instance.PlayButtonClick();
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -456,6 +461,7 @@ namespace Resource.Scripts
 
         private void BackToTitle(RectTransform fromRoot, CanvasGroup fromGroup, Vector2 fromExitOffset)
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             if (_navLocked) return;
             _navLocked = true;
             SfxManager.Instance.PlayButtonClick();
@@ -629,6 +635,7 @@ namespace Resource.Scripts
             int capturedIndex = index;
             button.onClick.AddListener(() =>
             {
+                if (GyroRuntime.ConsoleCapturesInput) return;
                 _selectedLevelIndex = capturedIndex;
                 UpdateCardHighlight();
                 ConfirmLevelSelection();
@@ -710,6 +717,7 @@ namespace Resource.Scripts
 
         private void ConfirmLevelSelection()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             if (_navLocked) return;
             if (_levelCards.Count == 0 || _selectedLevelIndex >= levels.Count) return;
 

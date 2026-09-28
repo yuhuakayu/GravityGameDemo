@@ -1,0 +1,32 @@
+{
+  "method": "Unity Play Mode actual Stage1 WorldRotator, Editor physics paused while invoking complete runtime/world update path; simulated samples, not hand movement.",
+  "speedModeChecks": [
+    "All 10 recorded samples, saved bias, and sensor-time area preserved",
+    "Replay effective gyro source leaves persisted right-stick selection untouched",
+    "Final replay frame rotates actual world by 2.206500000 degrees",
+    "Empty sensor frame holds rotation activity without adding world movement",
+    "Rotation activity expires after sensor hold interval",
+    "Playback completes only after final frame, then resumes original source"
+  ],
+  "angleMode": {
+    "method": "250 Hz, one-second 90-degree trace, initial world 37 degrees, first recorded theta 0.36 degrees, smoothing/deadzone disabled; grouping changes first render batch size.",
+    "results": [
+      {
+        "samplesPerRenderFrame": 4,
+        "worldDegrees": 126.64,
+        "relativeDegrees": 89.64
+      },
+      {
+        "samplesPerRenderFrame": 2,
+        "worldDegrees": 126.64,
+        "relativeDegrees": 89.64
+      },
+      {
+        "samplesPerRenderFrame": 1,
+        "worldDegrees": 126.64,
+        "relativeDegrees": 89.64
+      }
+    ]
+  },
+  "frameRateCancellation": "PASS: applies 60 FPS/vSync 0, restores prior -1/vSync 1 on cancel; does not report passed."
+}

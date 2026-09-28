@@ -1,0 +1,6 @@
+{
+  "name": "GravityGame.Gyro.Core",
+  "rootNamespace": "Resource.Scripts.Gyro",
+  "references": [],
+  "autoReferenced": true
+}

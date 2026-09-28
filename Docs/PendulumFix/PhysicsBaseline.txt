@@ -1,0 +1,2 @@
+Legacy deployed parallel error=24.13049
+Legacy maximum physical hinge gap during 120 deg/s rotation=1.191264

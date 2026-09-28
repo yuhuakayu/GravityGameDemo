@@ -1,9 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Resource.Scripts.Gyro;
 
 namespace Resource.Scripts
 {
+    [DefaultExecutionOrder(-250)]
+    [RequireComponent(typeof(Rigidbody2D))]
     public class WorldRotator : MonoBehaviour
     {
         [Header("调试")]
@@ -16,13 +19,49 @@ namespace Resource.Scripts
         [Tooltip("旋转速度（度/秒），键盘 Q/E 和手柄右摇杆都用这个值")]
         public float rotateSpeed = 90f;
 
-        [Header("陀螺仪")]
-        [Tooltip("优先用 DS5GyroReader 读到的原始陀螺仪角速度（只响应真正的旋转，不会被手柄平移/晃动误触发）。" +
-                 "找不到 DS5GyroReader 或它没连上手柄时，自动退回普通摇杆 X 轴。陀螺仪手感跟摇杆不一样，试过觉得诡异可以关掉，默认关")]
-        public bool useGyroIfAvailable = false;
-        private DS5GyroReader _gyroReader;
+        [Header("物理旋转限制")]
+        [Min(0f), Tooltip("实际世界旋转的最大角速度（度/秒）")]
+        public float maxAngularSpeed = 120f;
+        [Min(0.01f), Tooltip("每个真实物理步允许的最大转角；剩余目标在后续物理步消费")]
+        public float maxStepAngle = 3f;
+        [Range(0.05f, 0.49f), Tooltip("最远几何点每步位移不超过玩家最小碰撞厚度的此比例；存在独立摆板时根运动只使用该预算的 70%，为摆板自身运动预留 30%。接触附近还受穿透修复预算限制。")]
+        public float maxPointTravelFraction = 0.45f;
+        [Tooltip("开：按几何远点位移限速并预测夹缝（防穿墙更严格，但远处有墙时旋转会很慢）。关（默认）：恢复原来的旋转手感，只保留每步最大转角限制，防穿墙交给碰撞层修正和 CrushGuard。")]
+        public bool useGeometrySafetyClamp = false;
+        [Min(0.02f), Tooltip("速度模式最多保留多少秒的待执行输入，避免长期积压后松手仍持续旋转；角度模式始终使用最新目标")]
+        public float maxInputLagSeconds = 0.25f;
+        [Tooltip("跟随世界根节点的独立几何刚体（例如带 CompositeCollider2D 的 Tilemap）。保存为 Kinematic 后也需保留此引用；旧场景中的 Static 后代会自动识别。不要加入独立运动的柱子或玩家。")]
+        public Rigidbody2D[] attachedGeometryBodies = new Rigidbody2D[0];
+        private Rigidbody2D _body;
+        private float _lastBodyAngle;
+        private float _targetClockwiseAngle;
+        private bool _incrementalTarget;
+        private double _lastIncrementalInputTime;
+        private bool _angleInitialized;
+        private int _inputRevision = -1;
+        private float _requestedOutput;
+        private readonly List<AttachedGeometryBody> _attachedBodies = new List<AttachedGeometryBody>();
+        private Collider2D[] _movingGeometry;
+        private bool _hasIndependentPendulumGeometry;
+        public Vector2 NextPosition { get; private set; }
+        public float NextAngle { get; private set; }
+        public bool HasPendingPhysicsPose { get; private set; }
+        public Vector2 NextUp => Quaternion.Euler(0f, 0f, NextAngle) * Vector2.up;
+        public float LastAppliedStepAngle { get; private set; }
 
-        [Header("摇杆平滑（缓解 Steam Input 手柄晃动误触发）")]
+        private struct AttachedGeometryBody
+        {
+            public Rigidbody2D Body;
+            // World-unit offset with only the root's initial rotation removed; retains scale.
+            public Vector2 Offset;
+            public float RelativeAngle;
+        }
+
+        // Retained for old serialized scenes; active source selection is stored in GyroSettings.
+        [HideInInspector] public bool useGyroIfAvailable = false;
+        private WorldRotationInput _rotationInput;
+
+        [Header("物理右摇杆平滑")]
         [Tooltip("摇杆信号死区，低于这个值视为 0")]
         public float stickDeadzone = 0.05f;
         [Tooltip("摇杆信号平滑强度：越大跟手但越容易被晃动带出小尖峰，越小越稳但转动手感会有延迟")]
@@ -30,9 +69,6 @@ namespace Resource.Scripts
         public float stickSmoothing = 12f;
         [Tooltip("摇杆信号要朝同一个方向持续这么多秒，才会被当作真实转动输入；晃动通常是短促的、方向来回跳的，达不到这个时长会被过滤掉")]
         public float stickSustainTime = 0.08f;
-        private float _smoothedStickX;
-        private float _sustainTimer;
-        private float _lastSign;
 
         [Header("旋转中心")]
         [Tooltip("留空则自动找场景里的 PlayerController 当旋转中心；手动拖一个 Transform 可以覆盖")]
@@ -42,6 +78,8 @@ namespace Resource.Scripts
 
         private PlayerController _autoPlayer;
         private readonly Queue<Vector3> _positionHistory = new Queue<Vector3>();
+        private int _pivotFrame = -1;
+        private Vector3? _framePivot;
 
         [Header("方向盘范围")]
         [Tooltip("不勾选 = 无限旋转，不做范围限制")]
@@ -53,97 +91,86 @@ namespace Resource.Scripts
         [Range(-360f, 360f)]
         [SerializeField] private float _steeringAngle = 0f;
         /// <summary>当前方向盘角度（只读，调试面板用）</summary>
-        public float SteeringAngleReadout => _steeringAngle;
+        public float SteeringAngleReadout { get { SynchronizeActualAngle(); return _steeringAngle; } }
+        /// <summary>Clockwise-positive convention used by the gyro; Unity Z uses the opposite sign.</summary>
+        public float ClockwiseAngleReadout => -SteeringAngleReadout;
+        public float TargetClockwiseAngleReadout => _targetClockwiseAngle;
+        public WorldRotationInput RotationInput => _rotationInput;
         private float _lastGearTickAngle;
+        private double _lastRotationTime = double.NegativeInfinity;
+        private float _lastRotateSpeed01;
 
-        /// <summary>这一帧世界是否正在被玩家转动（输入不为 0）——自动移动模式下用来暂停横向移动，
-        /// 避免转世界的同时玩家还在往前滑，两件事叠在一起不好判断。</summary>
+        /// <summary>实际旋转与本步旋转请求；自动移动可在玩家侧按此信号暂停。</summary>
         public bool IsRotating { get; private set; }
 
-        void Start()
+        void Awake()
         {
-            float z = transform.eulerAngles.z;
-            _steeringAngle = z > 180f ? z - 360f : z;
+            _body = GetComponent<Rigidbody2D>();
+            if (_body == null) _body = gameObject.AddComponent<Rigidbody2D>();
+            _body.bodyType = RigidbodyType2D.Kinematic;
+            _body.useFullKinematicContacts = true;
+            _body.interpolation = RigidbodyInterpolation2D.Interpolate;
+            _body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            _body.gravityScale = 0f;
+            InitializeAngle();
+            CacheAttachedGeometryBodies();
+            RefreshMotionGeometry();
+            _rotationInput = GetComponent<WorldRotationInput>();
+            if (_rotationInput == null) _rotationInput = gameObject.AddComponent<WorldRotationInput>();
+        }
+
+        private void OnEnable()
+        {
+            DiscardPendingRotation();
+            if (_rotationInput != null) _rotationInput.ResetContinuity();
+        }
+        private void OnDisable()
+        {
+            IsRotating = false;
+            _lastRotationTime = double.NegativeInfinity;
+            _lastRotateSpeed01 = 0f;
+            DiscardPendingRotation();
+            if (_rotationInput != null) _rotationInput.ResetContinuity();
+        }
+
+        private void InitializeAngle()
+        {
+            if (_body == null || _angleInitialized) return;
+            _lastBodyAngle = _body.rotation;
+            _steeringAngle = Mathf.DeltaAngle(0f, _lastBodyAngle);
+            _targetClockwiseAngle = -_steeringAngle;
             _lastGearTickAngle = _steeringAngle;
+            _angleInitialized = true;
         }
 
         void Update()
         {
-            float input = 0f;
-
-            // 键盘 Q/E
-            if (Keyboard.current != null)
+            SynchronizeActualAngle();
+            WorldRotationCommand command = _rotationInput.Evaluate(this);
+            if (_inputRevision != _rotationInput.ContinuityRevision)
             {
-                if (Keyboard.current.qKey.isPressed) input = +1f;
-                if (Keyboard.current.eKey.isPressed) input = -1f;
+                DiscardPendingRotation();
+                _inputRevision = _rotationInput.ContinuityRevision;
             }
-
-            // 优先用 DS5 原始陀螺仪角速度：真正测的是旋转，手柄平移/晃动不会触发
-            bool usedGyro = false;
-            if (useGyroIfAvailable)
+            if (command.Blocked) DiscardPendingRotation();
+            else
             {
-                if (_gyroReader == null)
-                    _gyroReader = FindObjectOfType<DS5GyroReader>();
-
-                if (_gyroReader != null && _gyroReader.IsAvailable && Mathf.Abs(_gyroReader.GyroVelocity) > 0.001f)
-                {
-                    input = _gyroReader.GyroVelocity;
-                    usedGyro = true;
-                }
+                if (command.HasTarget) SetTargetAngle(command.TargetAngle);
+                else QueueClockwiseDelta(command.ClockwiseDelta);
             }
-
-            // 没有陀螺仪数据（没找到 DS5GyroReader / 手柄没连上，或者关掉了 useGyroIfAvailable）时，
-            // 走普通摇杆 X 轴，叠两层过滤：
-            //   1) 低通平滑：滤掉快速的小尖峰
-            //   2) 方向持续时间：必须朝同一个方向持续 stickSustainTime 秒才生效——
-            //      手柄晃动一般是短促、方向来回跳的，故意转手柄才会是持续同一个方向
-            if (!usedGyro)
+            _requestedOutput = command.Output;
+            double now = Time.realtimeSinceStartupAsDouble;
+            if (command.Blocked)
             {
-                float bestStickX = 0f;
-                foreach (var gp in Gamepad.all)
-                {
-                    float sx = gp.rightStick.x.ReadValue();
-                    if (Mathf.Abs(sx) > Mathf.Abs(bestStickX))
-                        bestStickX = sx;
-                }
-
-                _smoothedStickX = Mathf.Lerp(_smoothedStickX, bestStickX, Time.deltaTime * stickSmoothing);
-
-                if (Mathf.Abs(_smoothedStickX) < stickDeadzone)
-                {
-                    _sustainTimer = 0f;
-                }
-                else
-                {
-                    float sign = Mathf.Sign(_smoothedStickX);
-                    if (!Mathf.Approximately(sign, _lastSign))
-                    {
-                        _sustainTimer = 0f;
-                        _lastSign = sign;
-                    }
-                    else
-                    {
-                        _sustainTimer += Time.deltaTime;
-                    }
-                }
-
-                if (_sustainTimer >= stickSustainTime && Mathf.Abs(_smoothedStickX) > stickDeadzone)
-                    input = -_smoothedStickX;
+                _lastRotationTime = double.NegativeInfinity;
+                _lastRotateSpeed01 = 0f;
             }
-
-            input *= rotateSpeed;
-            IsRotating = Mathf.Abs(input) > 0.001f;
-
-            // 方向盘角度累加 + 限幅（可关闭）
-            _steeringAngle += input * Time.deltaTime;
-            if (limitSteeringRange)
-            {
-                float halfRange = steeringRange * 0.5f;
-                _steeringAngle = Mathf.Clamp(_steeringAngle, -halfRange, halfRange);
-            }
+            // Keep audio and parallax rotation state across sensor gaps, without freezing gameplay
+            // or adding any transform movement or extra gyro integration time.
+            IsRotating = !command.Blocked && now - _lastRotationTime <= GyroProcessor.HoldSeconds;
 
             // 旋转"吱呀"摩擦音：音量/音调跟旋转速度联动
-            float rotateSpeed01 = rotateSpeed > 0f ? Mathf.Abs(input) / rotateSpeed : 0f;
+            float rotateSpeed01 = IsRotating ? _lastRotateSpeed01 : 0f;
             SfxManager.Instance.UpdateRotateCreak(rotateSpeed01);
 
             // 每转过 90° 播放一次齿轮"咔嚓"声
@@ -153,18 +180,11 @@ namespace Resource.Scripts
                 SfxManager.Instance.PlayGearClick(rotateSpeed01);
             }
 
-            // 直接旋转，无平滑
-            float delta = input * Time.deltaTime;
-
-            // 旋转中心：优先用手动指定的 pivot；没指定就走自动逻辑
-            Vector3? pivotPos = pivot != null ? pivot.position : ResolveAutoPivotPosition();
-            if (pivotPos.HasValue)
-                transform.RotateAround(pivotPos.Value, Vector3.forward, delta);
-            else
-                transform.Rotate(0f, 0f, delta);
+            // Keep the airborne pivot history advancing on frames without a sensor callback.
+            ResolveFramePivot();
 
             if (isDebugLog)
-                Debug.Log($"[WorldRotator] steering={_steeringAngle:F1}° input={input:F1}");
+                Debug.Log($"[WorldRotator] clockwise={ClockwiseAngleReadout:F1}° target={_targetClockwiseAngle:F1}° source={_rotationInput.SourceLabel}");
 
             // 手柄扫描
             if (isDebugScanGamepads)
@@ -180,6 +200,229 @@ namespace Resource.Scripts
                     Debug.Log(sb.ToString());
                 }
             }
+        }
+
+        private void FixedUpdate() => StepPhysics(Time.fixedDeltaTime);
+
+        public void StepPhysics(float dt)
+        {
+            HasPendingPhysicsPose = false;
+            LastAppliedStepAngle = 0f;
+            SynchronizeActualAngle();
+            // Recheck live gameplay gates: Update may not run between consecutive physics steps.
+            if (dt <= 0f || _rotationInput == null || _rotationInput.IsGameplayBlocked(this))
+            {
+                DiscardPendingRotation();
+                return;
+            }
+
+            // Geometry safety may lower the usable angular speed. Bound stale rate input by
+            // elapsed time as well as degrees so releasing the control cannot leave a long tail.
+            if (_incrementalTarget && Time.realtimeSinceStartupAsDouble - _lastIncrementalInputTime >
+                Mathf.Max(0.02f, maxInputLagSeconds))
+            {
+                _targetClockwiseAngle = ClockwiseAngleReadout;
+                _incrementalTarget = false;
+            }
+
+            float stepLimit = Mathf.Min(Mathf.Max(0f, maxAngularSpeed) * dt,
+                Mathf.Max(0.01f, maxStepAngle));
+            float clockwiseStep = Mathf.Clamp(_targetClockwiseAngle - ClockwiseAngleReadout,
+                -stepLimit, stepLimit);
+            float unityStep = -clockwiseStep;
+            Vector2 nextPosition = _body.position;
+            Vector3? pivotPosition = ResolveFramePivot();
+            Vector2 center = pivotPosition.HasValue ? (Vector2)pivotPosition.Value : _body.position;
+            if (_autoPlayer == null)
+                foreach (var candidate in FindObjectsByType<PlayerController>(FindObjectsSortMode.None))
+                    if (candidate.gameObject.scene == gameObject.scene) { _autoPlayer = candidate; break; }
+            // Root transport must not consume the entire shared travel budget every step:
+            // an independently simulated board needs room to respond to gravity afterwards.
+            float rootTravelFraction = maxPointTravelFraction * (_hasIndependentPendulumGeometry ? .7f : 1f);
+            if (useGeometrySafetyClamp)
+                unityStep = KinematicMotionSafety.ClampRotationStep(_movingGeometry, center, unityStep,
+                    _autoPlayer, rootTravelFraction);
+            if (pivotPosition.HasValue)
+            {
+                nextPosition = center + (Vector2)(Quaternion.Euler(0f, 0f, unityStep)
+                    * (Vector3)(_body.position - center));
+            }
+
+            // Unity only uses the final MoveRotation request in one physics step. A loop here
+            // would NOT create collision substeps. Limit each real FixedUpdate and retain the
+            // remaining target for subsequent simulations, without Physics2D.Simulate/global edits.
+            _body.MovePosition(nextPosition);
+            float nextAngle = _body.rotation + unityStep;
+            _body.MoveRotation(nextAngle);
+            NextPosition = nextPosition;
+            NextAngle = nextAngle;
+            HasPendingPhysicsPose = true;
+            LastAppliedStepAngle = unityStep;
+            if (Mathf.Abs(unityStep) > 0.000001f)
+            {
+                IsRotating = true;
+                _lastRotationTime = Time.realtimeSinceStartupAsDouble;
+            }
+            else IsRotating = Time.realtimeSinceStartupAsDouble - _lastRotationTime <= GyroProcessor.HoldSeconds;
+            Quaternion nextOrientation = Quaternion.Euler(0f, 0f, nextAngle);
+            foreach (AttachedGeometryBody geometry in _attachedBodies)
+            {
+                if (geometry.Body == null || !geometry.Body.gameObject.activeInHierarchy) continue;
+                // A Composite requires its own body. Drive its absolute target explicitly:
+                // applying a delta to its already-parented pose could apply the root twice.
+                geometry.Body.MovePosition(nextPosition + (Vector2)(nextOrientation * (Vector3)geometry.Offset));
+                geometry.Body.MoveRotation(nextAngle + geometry.RelativeAngle);
+            }
+        }
+
+        /// <summary>Queue the latest clockwise target; physics applies it over bounded real steps.</summary>
+        public void SetTargetAngle(float clockwiseAngle)
+        {
+            if (float.IsNaN(clockwiseAngle) || float.IsInfinity(clockwiseAngle)) return;
+            _incrementalTarget = false;
+            _targetClockwiseAngle = ClampSteeringAngle(clockwiseAngle);
+        }
+
+        /// <summary>Discard pre-pause/recenter input so resume never catches up old movement.</summary>
+        public void DiscardPendingRotation()
+        {
+            HasPendingPhysicsPose = false;
+            LastAppliedStepAngle = 0f;
+            _incrementalTarget = false;
+            SynchronizeActualAngle();
+            _targetClockwiseAngle = -_steeringAngle;
+            if (_body == null) return;
+            NextPosition = _body.position;
+            NextAngle = _body.rotation;
+            _body.linearVelocity = Vector2.zero;
+            _body.angularVelocity = 0f;
+            foreach (AttachedGeometryBody geometry in _attachedBodies)
+            {
+                if (geometry.Body == null) continue;
+                geometry.Body.linearVelocity = Vector2.zero;
+                geometry.Body.angularVelocity = 0f;
+            }
+        }
+
+        /// <summary>Map a visual hierarchy point directly to the pending physical root pose.
+        /// Removing the render transform first avoids Rigidbody interpolation introducing a lag.</summary>
+        public Vector2 GetPointAtNextPose(Transform point)
+        {
+            Vector2 offset = Quaternion.Inverse(transform.rotation) * (point.position - transform.position);
+            Vector2 position = HasPendingPhysicsPose ? NextPosition : _body.position;
+            float angle = HasPendingPhysicsPose ? NextAngle : _body.rotation;
+            return position + (Vector2)(Quaternion.Euler(0f, 0f, angle) * (Vector3)offset);
+        }
+
+        public void RefreshMotionGeometry()
+        {
+            var geometry = new List<Collider2D>(GetComponentsInChildren<Collider2D>(true));
+            _hasIndependentPendulumGeometry = false;
+            // These boards have independent bodies outside the root hierarchy, but their hinges
+            // and reference axes follow it. Include them in the root's transport travel budget.
+            foreach (var pendulum in FindObjectsByType<PivotPendulum>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (pendulum.worldRoot != null && (pendulum.worldRoot == transform || pendulum.worldRoot.IsChildOf(transform)))
+                    foreach (var collider in pendulum.GetComponentsInChildren<Collider2D>(true))
+                    {
+                        if (!geometry.Contains(collider)) geometry.Add(collider);
+                        if (collider.enabled && !collider.isTrigger && collider.gameObject.activeInHierarchy &&
+                            collider.attachedRigidbody != _body)
+                            _hasIndependentPendulumGeometry = true;
+                    }
+            _movingGeometry = geometry.ToArray();
+        }
+
+        private void CacheAttachedGeometryBodies()
+        {
+            _attachedBodies.Clear();
+            var configuredBodies = new HashSet<Rigidbody2D>();
+            if (attachedGeometryBodies != null)
+                foreach (Rigidbody2D body in attachedGeometryBodies)
+                    if (body != null) configuredBodies.Add(body);
+
+            foreach (Rigidbody2D body in GetComponentsInChildren<Rigidbody2D>(true))
+            {
+                if (body == _body || (!configuredBodies.Contains(body) && body.bodyType != RigidbodyType2D.Static)) continue;
+                // Leave independent movers and all geometry below them under their own control.
+                bool independentParent = false;
+                for (Transform parent = body.transform.parent; parent != null && parent != transform; parent = parent.parent)
+                    if (parent.GetComponent<Rigidbody2D>() != null) { independentParent = true; break; }
+                if (independentParent || body.GetComponent<PlayerController>() != null ||
+                    body.GetComponent<PivotPendulum>() != null || body.GetComponent<Rotator>() != null) continue;
+
+                _attachedBodies.Add(new AttachedGeometryBody
+                {
+                    Body = body,
+                    Offset = Quaternion.Euler(0f, 0f, -_body.rotation) * (Vector3)(body.position - _body.position),
+                    RelativeAngle = Mathf.DeltaAngle(_body.rotation, body.rotation)
+                });
+                body.bodyType = RigidbodyType2D.Kinematic;
+                body.useFullKinematicContacts = true;
+                body.interpolation = RigidbodyInterpolation2D.Interpolate;
+                body.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+                body.gravityScale = 0f;
+            }
+        }
+
+        /// <summary>Call at the beginning and end of a solar pulse; resuming angle mode rebases the wheel.</summary>
+        public void SetSolarPulseActive(bool active)
+        {
+            if (_rotationInput == null) _rotationInput = GetComponent<WorldRotationInput>();
+            if (_rotationInput != null) _rotationInput.SetSolarPulseActive(active);
+            if (active)
+            {
+                DiscardPendingRotation();
+                IsRotating = false;
+                _lastRotationTime = double.NegativeInfinity;
+                _lastRotateSpeed01 = 0f;
+                SfxManager.Instance.UpdateRotateCreak(0f);
+            }
+        }
+
+        private void QueueClockwiseDelta(float clockwiseDelta)
+        {
+            if (float.IsNaN(clockwiseDelta) || float.IsInfinity(clockwiseDelta)) return;
+            if (Mathf.Abs(clockwiseDelta) < 0.000001f) return;
+            _incrementalTarget = true;
+            _lastIncrementalInputTime = Time.realtimeSinceStartupAsDouble;
+            float current = ClockwiseAngleReadout;
+            float effectiveSpeed = Mathf.Min(Mathf.Max(0f, maxAngularSpeed),
+                Mathf.Max(0.01f, maxStepAngle) / Mathf.Max(0.0001f, Time.fixedDeltaTime));
+            float maxBacklog = effectiveSpeed * Mathf.Max(0.02f, maxInputLagSeconds);
+            _targetClockwiseAngle = ClampSteeringAngle(Mathf.Clamp(_targetClockwiseAngle + clockwiseDelta,
+                current - maxBacklog, current + maxBacklog));
+        }
+
+        private float ClampSteeringAngle(float target)
+        {
+            if (limitSteeringRange)
+            {
+                float halfRange = Mathf.Max(0f, steeringRange) * 0.5f;
+                target = Mathf.Clamp(target, -halfRange, halfRange);
+            }
+            return target;
+        }
+
+        private void SynchronizeActualAngle()
+        {
+            if (_body == null) return;
+            InitializeAngle();
+            float actualDelta = Mathf.DeltaAngle(_lastBodyAngle, _body.rotation);
+            _lastBodyAngle = _body.rotation;
+            _steeringAngle += actualDelta;
+            if (Mathf.Abs(actualDelta) <= 0.00001f) return;
+            _lastRotationTime = Time.realtimeSinceStartupAsDouble;
+            _lastRotateSpeed01 = Mathf.Clamp01(Mathf.Max(Mathf.Abs(_requestedOutput),
+                rotateSpeed > 0f && Time.fixedDeltaTime > 0f
+                    ? Mathf.Abs(actualDelta) / (rotateSpeed * Time.fixedDeltaTime) : 0f));
+        }
+
+        private Vector3? ResolveFramePivot()
+        {
+            if (_pivotFrame == Time.frameCount) return _framePivot;
+            _pivotFrame = Time.frameCount;
+            _framePivot = pivot != null ? pivot.position : ResolveAutoPivotPosition();
+            return _framePivot;
         }
 
         /// <summary>

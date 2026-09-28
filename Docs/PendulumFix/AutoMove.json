@@ -1,0 +1,113 @@
+{
+    "utc": "2026-09-23T19:25:18.6483928Z",
+    "unityVersion": "6000.1.3f1",
+    "method": "Isolated Play-mode PhysicsScene2D; fixture WorldRotator.IsRotating is set explicitly, then production PlayerController.BeginPhysicsStep -> local Simulate -> CompletePhysicsStep. No main-scene step, PlayerLoop frame, or fixture Start runs.",
+    "timestep": 0.009999999776482582,
+    "passed": true,
+    "results": [
+        {
+            "name": "Rotation pauses automatic X while gravity continues / anti-push on",
+            "detail": "Only automatic horizontal contribution is held. Dynamic-body free fall continues; final velocity=(0.00, -1.18)",
+            "passed": true,
+            "steps": 12,
+            "maxHorizontalContribution": 0.0,
+            "gravityError": 1.1920928955078126e-7,
+            "resumeAfterQuietSeconds": 0.0,
+            "solverInjectedSpeed": 0.0,
+            "finalSpeed": 0.0,
+            "correctionDistance": 0.0,
+            "remainingPenetration": 0.0
+        },
+        {
+            "name": "Rotation pauses automatic X while gravity continues / anti-push off",
+            "detail": "Only automatic horizontal contribution is held. Dynamic-body free fall continues; final velocity=(0.00, -1.18)",
+            "passed": true,
+            "steps": 12,
+            "maxHorizontalContribution": 0.0,
+            "gravityError": 1.1920928955078126e-7,
+            "resumeAfterQuietSeconds": 0.0,
+            "solverInjectedSpeed": 0.0,
+            "finalSpeed": 0.0,
+            "correctionDistance": 0.0,
+            "remainingPenetration": 0.0
+        },
+        {
+            "name": "A single false IsRotating sample does not resume input",
+            "detail": "true -> false for one 10 ms step -> true must not introduce an automatic X pulse.",
+            "passed": true,
+            "steps": 3,
+            "maxHorizontalContribution": 0.0,
+            "gravityError": 0.0,
+            "resumeAfterQuietSeconds": 0.0,
+            "solverInjectedSpeed": 0.0,
+            "finalSpeed": 0.0,
+            "correctionDistance": 0.0,
+            "remainingPenetration": 0.0
+        },
+        {
+            "name": "Continuous false resumes at 0.15 seconds",
+            "detail": "No contribution during the first 0.14 s of continuous false; the next step reaches 0.15 s and restores configured autoMoveSpeed.",
+            "passed": true,
+            "steps": 16,
+            "maxHorizontalContribution": 0.0,
+            "gravityError": 0.0,
+            "resumeAfterQuietSeconds": 0.14999999105930329,
+            "solverInjectedSpeed": 0.0,
+            "finalSpeed": 0.0,
+            "correctionDistance": 0.0,
+            "remainingPenetration": 0.0
+        },
+        {
+            "name": "A new true sample resets the quiet-time countdown",
+            "detail": "Two interrupted 0.10 s false periods cannot be added together; only the uninterrupted last 0.15 s resumes input.",
+            "passed": true,
+            "steps": 27,
+            "maxHorizontalContribution": 0.0,
+            "gravityError": 0.0,
+            "resumeAfterQuietSeconds": 0.14999999105930329,
+            "solverInjectedSpeed": 0.0,
+            "finalSpeed": 0.0,
+            "correctionDistance": 0.0,
+            "remainingPenetration": 0.0
+        },
+        {
+            "name": "Turning the feature off resumes immediately / anti-push on",
+            "detail": "Disabling the option restores legacy automatic X on the next physics step even while IsRotating remains true.",
+            "passed": true,
+            "steps": 2,
+            "maxHorizontalContribution": 0.0,
+            "gravityError": 0.0,
+            "resumeAfterQuietSeconds": 0.0,
+            "solverInjectedSpeed": 0.0,
+            "finalSpeed": 0.0,
+            "correctionDistance": 0.0,
+            "remainingPenetration": 0.0
+        },
+        {
+            "name": "Turning the feature off resumes immediately / anti-push off",
+            "detail": "Disabling the option restores legacy automatic X on the next physics step even while IsRotating remains true.",
+            "passed": true,
+            "steps": 2,
+            "maxHorizontalContribution": 0.0,
+            "gravityError": 0.0,
+            "resumeAfterQuietSeconds": 0.0,
+            "solverInjectedSpeed": 0.0,
+            "finalSpeed": 0.0,
+            "correctionDistance": 0.0,
+            "remainingPenetration": 0.0
+        },
+        {
+            "name": "Paused automatic input still removes a real wall impulse and repairs overlap",
+            "detail": "The kinematic wall creates a real solver impulse while automatic input is paused. The player removes its injected velocity, and CrushGuard still performs bounded position repair.",
+            "passed": true,
+            "steps": 1,
+            "maxHorizontalContribution": 0.0,
+            "gravityError": 0.0,
+            "resumeAfterQuietSeconds": 0.0,
+            "solverInjectedSpeed": 10.000001907348633,
+            "finalSpeed": 0.0,
+            "correctionDistance": 0.060100018978118899,
+            "remainingPenetration": 0.0
+        }
+    ]
+}

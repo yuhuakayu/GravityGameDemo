@@ -31,6 +31,7 @@ namespace Resource.Scripts
 
         void Update()
         {
+            if (Gyro.GyroRuntime.ConsoleCapturesInput) return;
             if (_cam == null) return;
 
             var gamepad = Gamepad.current;

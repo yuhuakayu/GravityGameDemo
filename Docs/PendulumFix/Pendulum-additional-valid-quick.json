@@ -1,0 +1,439 @@
+{
+    "utc": "2026-09-23T18:51:22.7467054Z",
+    "method": "Additional unchanged Stage1 collider fixtures: each plank free-end side, the farthest clear playable vertical wall edge with real player-history pivot, and the same edge rotating about an explicitly fixed WorldRoot-origin test anchor. Initial player bounds must be clear of actual collidable Tilemap cells as well as collider outlines. This corrects the invalid solid-tile interior placement retained in additional-quick.json. Player is initialized once. Synchronous 60/240 Hz render scheduling; not measured rendered FPS.",
+    "passed": false,
+    "results": [
+        {
+            "scenario": "Clock free-end side",
+            "contactCollider": "Clock / BoxCollider2D",
+            "pivotMode": "Explicit current player pivot",
+            "initialPlayerCenter": {
+                "x": 6.776064872741699,
+                "y": 5.590489387512207
+            },
+            "initialSurfacePoint": {
+                "x": 5.46269416809082,
+                "y": 5.590489387512207
+            },
+            "initialSurfaceNormal": {
+                "x": 1.0,
+                "y": 0.0
+            },
+            "initialPivotPosition": {
+                "x": -6.809999942779541,
+                "y": -0.75
+            },
+            "initialPivotDistanceToSurface": 13.813790321350098,
+            "initialTileOverlap": false,
+            "targetContactFrames": 206,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "Clock side / simulated 60 Hz",
+                "error": "",
+                "passed": true,
+                "simulatedRenderHz": 60,
+                "revolutions": 1,
+                "physicsSteps": 1096,
+                "contactFrames": 1022,
+                "trackedBoardContactFrames": 206,
+                "contactEpisodes": 3,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.000014431710951612331,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": -6.830577850341797,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 359.99981689453127,
+                "maxPlayerSpeed": 13.445280075073243,
+                "maxCorrection": 0.09740529954433441,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 21.933170318603517,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "Clock (1) free-end side",
+            "contactCollider": "Clock (1) / BoxCollider2D",
+            "pivotMode": "Explicit current player pivot",
+            "initialPlayerCenter": {
+                "x": 9.253307342529297,
+                "y": 5.410488128662109
+            },
+            "initialSurfacePoint": {
+                "x": 10.566678047180176,
+                "y": 5.410488128662109
+            },
+            "initialSurfaceNormal": {
+                "x": -1.0,
+                "y": -8.742277657347586e-8
+            },
+            "initialPivotPosition": {
+                "x": -6.809999942779541,
+                "y": -0.75
+            },
+            "initialPivotDistanceToSurface": 18.436391830444337,
+            "initialTileOverlap": false,
+            "targetContactFrames": 176,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "Clock (1) side / simulated 60 Hz",
+                "error": "",
+                "passed": true,
+                "simulatedRenderHz": 60,
+                "revolutions": 1,
+                "physicsSteps": 1069,
+                "contactFrames": 965,
+                "trackedBoardContactFrames": 176,
+                "contactEpisodes": 4,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.00001585080099175684,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": -4.1383585929870609,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 360.00006103515627,
+                "maxPlayerSpeed": 13.518492698669434,
+                "maxCorrection": 0.09703049808740616,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 21.3831787109375,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "playable far wall / automatic pivot",
+            "contactCollider": "Wall / CompositeCollider2D",
+            "pivotMode": "Stage1 automatic airborne-history branch with configured render-frame delay; ground probes absent, grounded branch not covered",
+            "initialPlayerCenter": {
+                "x": 28.313392639160158,
+                "y": -1.499990701675415
+            },
+            "initialSurfacePoint": {
+                "x": 27.000015258789064,
+                "y": -1.4999854564666749
+            },
+            "initialSurfaceNormal": {
+                "x": 1.0,
+                "y": -0.0000040871927922125909
+            },
+            "initialPivotPosition": {
+                "x": 28.188676834106447,
+                "y": -3.8459787368774416
+            },
+            "initialPivotDistanceToSurface": 2.6299431324005129,
+            "initialTileOverlap": false,
+            "targetContactFrames": 29,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "far wall / automatic pivot / simulated 60 Hz",
+                "error": "System.InvalidOperationException: 120 simulated seconds elapsed without reaching a 360-degree target. actual=224.082, target=360\r\n  at Resource.Scripts.Editor.PendulumStageValidation+Session.PrepareFrame (System.Double elapsedSeconds) [0x000d1] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:161 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Session.AdvanceFrame (System.Double elapsedSeconds, System.Action afterPhysicsStep) [0x00001] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:165 \r\n  at Resource.Scripts.Editor.PendulumScenarioValidation.RunAndSave (System.String label, System.Int32 revolutions) [0x002e8] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumScenarioValidation.cs:68 ",
+                "passed": false,
+                "simulatedRenderHz": 60,
+                "revolutions": 1,
+                "physicsSteps": 6000,
+                "contactFrames": 29,
+                "trackedBoardContactFrames": 0,
+                "contactEpisodes": 1,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.000492081162519753,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": 3.4028234663852887e38,
+                "actualClockwiseTravel": 224.08200073242188,
+                "accumulatedClockwiseDegrees": 224.08200073242188,
+                "accumulatedCounterClockwiseDegrees": 0.0,
+                "maxPlayerSpeed": 1177.2418212890625,
+                "maxCorrection": 0.03105817548930645,
+                "completedHalfTurns": 0,
+                "simulatedSeconds": 120.02782440185547,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "playable far wall / fixed root-origin pivot",
+            "contactCollider": "Wall / CompositeCollider2D",
+            "pivotMode": "Explicit fixed initial WorldRoot origin; far-radius stress override confined to this private fixture",
+            "initialPlayerCenter": {
+                "x": 28.313392639160158,
+                "y": -1.499990701675415
+            },
+            "initialSurfacePoint": {
+                "x": 27.000015258789064,
+                "y": -1.4999854564666749
+            },
+            "initialSurfaceNormal": {
+                "x": 1.0,
+                "y": -0.0000040871927922125909
+            },
+            "initialPivotPosition": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "initialPivotDistanceToSurface": 27.041648864746095,
+            "initialTileOverlap": false,
+            "targetContactFrames": 0,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "far wall / fixed root-origin pivot / simulated 60 Hz",
+                "error": "",
+                "passed": false,
+                "simulatedRenderHz": 60,
+                "revolutions": 1,
+                "physicsSteps": 607,
+                "contactFrames": 0,
+                "trackedBoardContactFrames": 0,
+                "contactEpisodes": 1,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.000014344795999932103,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": 3.4028234663852887e38,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 359.9747619628906,
+                "accumulatedCounterClockwiseDegrees": 359.9748229980469,
+                "maxPlayerSpeed": 119.09288024902344,
+                "maxCorrection": 0.0,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 12.149986267089844,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "Clock free-end side",
+            "contactCollider": "Clock / BoxCollider2D",
+            "pivotMode": "Explicit current player pivot",
+            "initialPlayerCenter": {
+                "x": 6.776064872741699,
+                "y": 5.590489387512207
+            },
+            "initialSurfacePoint": {
+                "x": 5.46269416809082,
+                "y": 5.590489387512207
+            },
+            "initialSurfaceNormal": {
+                "x": 1.0,
+                "y": 0.0
+            },
+            "initialPivotPosition": {
+                "x": -6.809999942779541,
+                "y": -0.75
+            },
+            "initialPivotDistanceToSurface": 13.813790321350098,
+            "initialTileOverlap": false,
+            "targetContactFrames": 206,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "Clock side / simulated 240 Hz",
+                "error": "",
+                "passed": true,
+                "simulatedRenderHz": 240,
+                "revolutions": 1,
+                "physicsSteps": 1096,
+                "contactFrames": 1022,
+                "trackedBoardContactFrames": 206,
+                "contactEpisodes": 3,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.000014431710951612331,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": -6.830577850341797,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 359.99981689453127,
+                "maxPlayerSpeed": 13.445280075073243,
+                "maxCorrection": 0.09740529954433441,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 21.92189598083496,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "Clock (1) free-end side",
+            "contactCollider": "Clock (1) / BoxCollider2D",
+            "pivotMode": "Explicit current player pivot",
+            "initialPlayerCenter": {
+                "x": 9.253307342529297,
+                "y": 5.410488128662109
+            },
+            "initialSurfacePoint": {
+                "x": 10.566678047180176,
+                "y": 5.410488128662109
+            },
+            "initialSurfaceNormal": {
+                "x": -1.0,
+                "y": -8.742277657347586e-8
+            },
+            "initialPivotPosition": {
+                "x": -6.809999942779541,
+                "y": -0.75
+            },
+            "initialPivotDistanceToSurface": 18.436391830444337,
+            "initialTileOverlap": false,
+            "targetContactFrames": 176,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "Clock (1) side / simulated 240 Hz",
+                "error": "",
+                "passed": true,
+                "simulatedRenderHz": 240,
+                "revolutions": 1,
+                "physicsSteps": 1069,
+                "contactFrames": 965,
+                "trackedBoardContactFrames": 176,
+                "contactEpisodes": 4,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.00001585080099175684,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": -4.1383585929870609,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 360.0,
+                "accumulatedCounterClockwiseDegrees": 360.00006103515627,
+                "maxPlayerSpeed": 13.518492698669434,
+                "maxCorrection": 0.09703049808740616,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 21.384281158447267,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "playable far wall / automatic pivot",
+            "contactCollider": "Wall / CompositeCollider2D",
+            "pivotMode": "Stage1 automatic airborne-history branch with configured render-frame delay; ground probes absent, grounded branch not covered",
+            "initialPlayerCenter": {
+                "x": 28.313392639160158,
+                "y": -1.499990701675415
+            },
+            "initialSurfacePoint": {
+                "x": 27.000015258789064,
+                "y": -1.4999854564666749
+            },
+            "initialSurfaceNormal": {
+                "x": 1.0,
+                "y": -0.0000040871927922125909
+            },
+            "initialPivotPosition": {
+                "x": 28.188676834106447,
+                "y": -3.8459787368774416
+            },
+            "initialPivotDistanceToSurface": 2.6299431324005129,
+            "initialTileOverlap": false,
+            "targetContactFrames": 30,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "far wall / automatic pivot / simulated 240 Hz",
+                "error": "System.InvalidOperationException: 120 simulated seconds elapsed without reaching a 360-degree target. actual=220.9499, target=360\r\n  at Resource.Scripts.Editor.PendulumStageValidation+Session.PrepareFrame (System.Double elapsedSeconds) [0x000d1] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:161 \r\n  at Resource.Scripts.Editor.PendulumStageValidation+Session.AdvanceFrame (System.Double elapsedSeconds, System.Action afterPhysicsStep) [0x00001] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumStageValidation.cs:165 \r\n  at Resource.Scripts.Editor.PendulumScenarioValidation.RunAndSave (System.String label, System.Int32 revolutions) [0x002e8] in D:\\unity  s   main\\Gravity Game\\Assets\\Resource\\Scripts\\Editor\\PendulumScenarioValidation.cs:68 ",
+                "passed": false,
+                "simulatedRenderHz": 240,
+                "revolutions": 1,
+                "physicsSteps": 6000,
+                "contactFrames": 30,
+                "trackedBoardContactFrames": 0,
+                "contactEpisodes": 1,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.000492081162519753,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": 3.4028234663852887e38,
+                "actualClockwiseTravel": 220.94989013671876,
+                "accumulatedClockwiseDegrees": 220.94989013671876,
+                "accumulatedCounterClockwiseDegrees": 0.0,
+                "maxPlayerSpeed": 1177.2418212890625,
+                "maxCorrection": 0.03331788256764412,
+                "completedHalfTurns": 0,
+                "simulatedSeconds": 119.98590087890625,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        },
+        {
+            "scenario": "playable far wall / fixed root-origin pivot",
+            "contactCollider": "Wall / CompositeCollider2D",
+            "pivotMode": "Explicit fixed initial WorldRoot origin; far-radius stress override confined to this private fixture",
+            "initialPlayerCenter": {
+                "x": 28.313392639160158,
+                "y": -1.499990701675415
+            },
+            "initialSurfacePoint": {
+                "x": 27.000015258789064,
+                "y": -1.4999854564666749
+            },
+            "initialSurfaceNormal": {
+                "x": 1.0,
+                "y": -0.0000040871927922125909
+            },
+            "initialPivotPosition": {
+                "x": 0.0,
+                "y": 0.0
+            },
+            "initialPivotDistanceToSurface": 27.041648864746095,
+            "initialTileOverlap": false,
+            "targetContactFrames": 0,
+            "surfaceCrossings": 0,
+            "physics": {
+                "name": "far wall / fixed root-origin pivot / simulated 240 Hz",
+                "error": "",
+                "passed": false,
+                "simulatedRenderHz": 240,
+                "revolutions": 1,
+                "physicsSteps": 607,
+                "contactFrames": 0,
+                "trackedBoardContactFrames": 0,
+                "contactEpisodes": 1,
+                "overlapFrames": 0,
+                "originalSideCrossings": 0,
+                "maxRemainingOverlap": 0,
+                "maxHingeGap": 0.000014344795999932103,
+                "maxBoardAxisErrorDegrees": 0.02797645516693592,
+                "maxPenetration": 0.0,
+                "minimumSideClearance": 3.4028234663852887e38,
+                "actualClockwiseTravel": 0.0,
+                "accumulatedClockwiseDegrees": 359.9747619628906,
+                "accumulatedCounterClockwiseDegrees": 359.9748229980469,
+                "maxPlayerSpeed": 119.09288024902344,
+                "maxCorrection": 0.0,
+                "completedHalfTurns": 2,
+                "simulatedSeconds": 12.141524314880371,
+                "requestedAngularSpeed": 120.0,
+                "clonedWorldColliders": 8,
+                "firstOverlapByCollider": [],
+                "crossings": []
+            }
+        }
+    ]
+}

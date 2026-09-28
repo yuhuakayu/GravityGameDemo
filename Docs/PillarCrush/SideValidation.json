@@ -1,0 +1,106 @@
+{
+    "utc": "2026-09-23T19:26:15.9115978Z",
+    "passed": true,
+    "results": [
+        {
+            "name": "Thin wall crosses centre: preserve left entry side",
+            "passed": true,
+            "detail": "The original shortest-distance fallback exits the wrong face after the thin wall passes the player's centre. Entry-side recovery must persist across unresolved steps, never exceed 0.15 total per step, and leave velocity intact. Initial captured gap=0.009999983, pre-step raw normal=(-1.00, 0.00), pre-step pointA-pointB=(-0.01, 0.00), all correction directions retain original side=True",
+            "oldShortestCorrection": {
+                "x": 0.25,
+                "y": 0.0
+            },
+            "originalSideNormal": {
+                "x": -1.0,
+                "y": 0.0
+            },
+            "firstCorrection": {
+                "x": -0.15000000596046449,
+                "y": 0.0
+            },
+            "finalPosition": {
+                "x": -0.8701000213623047,
+                "y": 0.0
+            },
+            "firstBudgetUsed": 0.15000000596046449,
+            "maximumBudgetUsed": 0.15000000596046449,
+            "finalGap": 0.00009999796748161316,
+            "velocityUnchanged": true
+        },
+        {
+            "name": "Thin wall crosses centre: preserve right entry side",
+            "passed": true,
+            "detail": "The original shortest-distance fallback exits the wrong face after the thin wall passes the player's centre. Entry-side recovery must persist across unresolved steps, never exceed 0.15 total per step, and leave velocity intact. Initial captured gap=0.009999983, pre-step raw normal=(1.00, 0.00), pre-step pointA-pointB=(0.01, 0.00), all correction directions retain original side=True",
+            "oldShortestCorrection": {
+                "x": -0.25,
+                "y": 0.0
+            },
+            "originalSideNormal": {
+                "x": 1.0,
+                "y": 0.0
+            },
+            "firstCorrection": {
+                "x": 0.15000000596046449,
+                "y": 0.0
+            },
+            "finalPosition": {
+                "x": 0.8701000213623047,
+                "y": 0.0
+            },
+            "firstBudgetUsed": 0.15000000596046449,
+            "maximumBudgetUsed": 0.15000000596046449,
+            "finalGap": 0.00009999796748161316,
+            "velocityUnchanged": true
+        },
+        {
+            "name": "Rotating thin platform preserves capsule top-side contact",
+            "passed": true,
+            "detail": "Capsule support is taken from native shape vertices and radii, not AABB; transformed entry plane must remain tangent after rotation and non-uniform scale. Expected normal=(-0.05, 1.00), captured pre-step gap=0.01500005, required entry-side budget <= 0.15. Interpolated geometry physics angle=3, render angle=3, pre-step raw normal=(0.00, 1.00), pre-step pointA-pointB=(0.00, 0.02)",
+            "oldShortestCorrection": {
+                "x": -0.006091281771659851,
+                "y": 0.11622855812311173
+            },
+            "originalSideNormal": {
+                "x": -0.052335962653160098,
+                "y": 0.9986295104026794
+            },
+            "firstCorrection": {
+                "x": -0.00609651580452919,
+                "y": 0.11632843315601349
+            },
+            "finalPosition": {
+                "x": 2.493903398513794,
+                "y": 0.6663284301757813
+            },
+            "firstBudgetUsed": 0.11648807674646378,
+            "maximumBudgetUsed": 0.11648807674646378,
+            "finalGap": 0.00009995698928833008,
+            "velocityUnchanged": true
+        },
+        {
+            "name": "Rotating scaled platform transforms original normal correctly",
+            "passed": true,
+            "detail": "Capsule support is taken from native shape vertices and radii, not AABB; transformed entry plane must remain tangent after rotation and non-uniform scale. Expected normal=(-0.53, 0.85), captured pre-step gap=0.01500002, required entry-side budget <= 0.15. Interpolated geometry physics angle=32, render angle=32, pre-step raw normal=(-0.50, 0.87), pre-step pointA-pointB=(-0.01, 0.01)",
+            "oldShortestCorrection": {
+                "x": -0.027773158624768258,
+                "y": 0.04444633424282074
+            },
+            "originalSideNormal": {
+                "x": -0.5299191474914551,
+                "y": 0.8480481505393982
+            },
+            "firstCorrection": {
+                "x": -0.02782614342868328,
+                "y": 0.04453115165233612
+            },
+            "finalPosition": {
+                "x": 1.451772689819336,
+                "y": 1.4817906618118287
+            },
+            "firstBudgetUsed": 0.05251016840338707,
+            "maximumBudgetUsed": 0.05251016840338707,
+            "finalGap": 0.00010007619857788086,
+            "velocityUnchanged": true
+        }
+    ]
+}

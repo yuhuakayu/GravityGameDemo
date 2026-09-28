@@ -1,0 +1,103 @@
+{
+  "geometryAndAutoMove": {
+    "result": {
+      "success": true,
+      "message": "Test job status retrieved.",
+      "error": null,
+      "data": {
+        "job_id": "3a9b6c0dc5594412bdd9669ec70bbec2",
+        "status": "succeeded",
+        "mode": "PlayMode",
+        "started_unix_ms": 1790188875095,
+        "finished_unix_ms": 1790188877539,
+        "last_update_unix_ms": 1790188877539,
+        "progress": {
+          "completed": 4,
+          "total": 4,
+          "current_test_full_name": null,
+          "current_test_started_unix_ms": 1790188877501,
+          "last_finished_test_full_name": "GravityGame.Tests.PlayMode.PendulumGeometryPlayModeTests.OffAxisGravityMarker_ChangesArmLength_WithoutChangingBoardAngleOrHingePose",
+          "last_finished_unix_ms": 1790188877504,
+          "stuck_suspected": false,
+          "editor_is_focused": true,
+          "blocked_reason": null,
+          "failures_so_far": [],
+          "failures_capped": false
+        },
+        "error": null,
+        "result": null
+      },
+      "hint": null
+    }
+  },
+  "safety": {
+    "result": {
+      "success": true,
+      "message": "Test job status retrieved.",
+      "error": null,
+      "data": {
+        "job_id": "0316f8a448f2407e8d86740c67424a0f",
+        "status": "succeeded",
+        "mode": "PlayMode",
+        "started_unix_ms": 1790189117675,
+        "finished_unix_ms": 1790189119870,
+        "last_update_unix_ms": 1790189119870,
+        "progress": {
+          "completed": 3,
+          "total": 3,
+          "current_test_full_name": null,
+          "current_test_started_unix_ms": 1790189119826,
+          "last_finished_test_full_name": "GravityGame.Tests.PlayMode.KinematicMotionSafetyPlayModeTests.RotatingWorld_LeavesTravelBudgetForRealIndependentPendulumSwing",
+          "last_finished_unix_ms": 1790189119840,
+          "stuck_suspected": false,
+          "editor_is_focused": true,
+          "blocked_reason": null,
+          "failures_so_far": [],
+          "failures_capped": false
+        },
+        "error": null,
+        "result": {
+          "mode": "PlayMode",
+          "summary": {
+            "total": 3,
+            "passed": 3,
+            "failed": 0,
+            "skipped": 0,
+            "durationSeconds": 0.099602,
+            "resultState": "Passed"
+          },
+          "results": [
+            {
+              "name": "DistantRotatingBox_ActualPhysicsCornersMoveLessThanHalfPlayerThickness(1.0f)",
+              "fullName": "GravityGame.Tests.PlayMode.KinematicMotionSafetyPlayModeTests.DistantRotatingBox_ActualPhysicsCornersMoveLessThanHalfPlayerThickness(1.0f)",
+              "state": "Passed",
+              "durationSeconds": 0.0217846,
+              "message": null,
+              "stackTrace": null,
+              "output": "direction=1, raw corner travel=5.408552, safe maximum=0.2697825, safe minimum=0.2694692, player thickness=0.6000061\r\n"
+            },
+            {
+              "name": "DistantRotatingBox_ActualPhysicsCornersMoveLessThanHalfPlayerThickness(-1.0f)",
+              "fullName": "GravityGame.Tests.PlayMode.KinematicMotionSafetyPlayModeTests.DistantRotatingBox_ActualPhysicsCornersMoveLessThanHalfPlayerThickness(-1.0f)",
+              "state": "Passed",
+              "durationSeconds": 0.0027679,
+              "message": null,
+              "stackTrace": null,
+              "output": "direction=-1, raw corner travel=5.408552, safe maximum=0.2699529, safe minimum=0.2695605, player thickness=0.6000061\r\n"
+            },
+            {
+              "name": "RotatingWorld_LeavesTravelBudgetForRealIndependentPendulumSwing",
+              "fullName": "GravityGame.Tests.PlayMode.KinematicMotionSafetyPlayModeTests.RotatingWorld_LeavesTravelBudgetForRealIndependentPendulumSwing",
+              "state": "Passed",
+              "durationSeconds": 0.0134903,
+              "message": null,
+              "stackTrace": null,
+              "output": "root travel=6.612976, real relative swing=28.63563, maximum combined corner travel=0.2666887, player thickness=0.6000061\r\n"
+            }
+          ]
+        }
+      },
+      "hint": null
+    }
+  }
+}

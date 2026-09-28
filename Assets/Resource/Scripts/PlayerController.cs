@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
@@ -6,6 +7,8 @@ using UnityEngine.SceneManagement;
 
 namespace Resource.Scripts
 {
+    [DefaultExecutionOrder(-100)]
+    [RequireComponent(typeof(Rigidbody2D))]
     public class PlayerController : MonoBehaviour
     {
         [Header("调试")]
@@ -15,6 +18,36 @@ namespace Resource.Scripts
         [Header("移动设置")]
         public float maxMoveSpeed = 6f;
         public float jumpForce = 12f;
+
+        [Header("防止世界几何推动玩家")]
+        public bool antiPushEnabled = true;
+        public bool logVelocityDelta;
+        [SerializeField] private Vector2 intendedVelocity;
+        public Vector2 IntendedVelocity => intendedVelocity;
+        public Vector2 LastPhysicsVelocityDelta { get; private set; }
+        public Vector2 LastRejectedVelocityDelta { get; private set; }
+        public Vector2 LastRejectedDisplacement { get; private set; }
+        private readonly List<ContactPoint2D> _motionContacts = new List<ContactPoint2D>(16);
+        private CrushGuard _crushGuard;
+        private float _ownedGravityScale;
+        private bool _motionInitialized;
+        private bool _selfVelocityActive;
+        private bool _jumpQueued;
+        private bool _physicsStepPending;
+        private Vector2 _stepStartPosition;
+        private Vector2 _submittedVelocity;
+        private Coroutine _afterPhysics;
+
+        public float SimulatedGravityScale
+        {
+            get { InitializeMotion(); SynchronizeAntiPush(); return _selfVelocityActive ? _ownedGravityScale : rb.gravityScale; }
+            set
+            {
+                InitializeMotion(); SynchronizeAntiPush();
+                _ownedGravityScale = Mathf.Max(0f, value);
+                rb.gravityScale = _selfVelocityActive ? 0f : _ownedGravityScale;
+            }
+        }
 
         [Header("地面检测")]
         public Transform groundCheck;
@@ -45,7 +78,7 @@ namespace Resource.Scripts
         [Range(0f, 1f)] public float rumbleHighFreq = 0.05f;
 
         [Header("紧迫感玩法：自动移动 + 撞墙强制转向（默认关，不影响原本手动移动的关卡）")]
-        [Tooltip("打开后：手柄/键盘的左右移动完全失效，重力也会被关掉，玩家按固定方向自动滑行，" +
+        [Tooltip("打开后：手柄/键盘的左右移动失效，玩家持续横向自动移动并正常受重力影响，" +
                  "方向只能靠撞到 WallRedirect 墙来改变——世界旋转变成玩家唯一能做的操作，" +
                  "转世界＝改变接下来会撞上哪面墙。撞到 HazardKill 物体直接死亡重开本关")]
         public bool autoMoveMode = false;
@@ -53,12 +86,55 @@ namespace Resource.Scripts
         public float autoMoveSpeed = 6f;
         [Tooltip("自动移动模式下的初始移动方向（角度，0=右，90=上，180=左，270=下）")]
         public float autoMoveStartAngle = 0f;
-        [Tooltip("世界旋转的时候先暂停横向自动移动（重力/掉落不受影响），转停了之后要再等这么多秒才恢复移动")]
-        public float rotationMoveDelay = 0.2f;
+        [Tooltip("世界旋转时暂停自动横向输入；重力、冲刺与防穿透仍运行。")]
+        public bool pauseAutoMoveWhileRotating = true;
+        [Min(0f), Tooltip("IsRotating 连续为 false 达到此时长后恢复自动移动，过滤单帧抖动。")]
+        public float autoMoveResumeDelay = 0.15f;
+        [Tooltip("留空时在开始玩法时寻找当前场景的世界旋转器。")]
+        public WorldRotator autoMoveRotationSource;
+        public bool AutoMovePausedForRotation { get; private set; }
+        public float AutoMoveVelocityContribution { get; private set; }
+        private float _rotationQuietSeconds;
         private Vector2 _autoMoveDir = Vector2.right;
         private bool _isDead = false;
-        private WorldRotator _worldRotator;
-        private float _resumeMoveTimer;
+        private bool _gameplayStarted;
+        private PlayerJetpack _jetpack;
+        public bool IsDead => _isDead;
+        public bool IsGameplayActive => _gameplayStarted && isActiveAndEnabled && !_isDead && Time.timeScale > 0f;
+        [Header("角色外观")]
+        [SerializeField, Tooltip("原始图片朝右时打开；未更换美术的旧角色保持关闭。")]
+        private bool spriteFacesRight;
+        public float FacingSign => (spriteFacesRight ? 1f : -1f) *
+            (_spriteRenderer != null && _spriteRenderer.flipX ? -1f : 1f);
+
+        public void FaceDirection(float horizontalDirection)
+        {
+            if (_spriteRenderer == null || Mathf.Abs(horizontalDirection) <= 0.001f) return;
+            _spriteRenderer.flipX = spriteFacesRight ? horizontalDirection < 0f : horizontalDirection > 0f;
+        }
+
+        public void BeginGameplay()
+        {
+            InitializeMotion();
+            if (autoMoveRotationSource == null)
+                foreach (var world in FindObjectsByType<WorldRotator>(FindObjectsSortMode.None))
+                    if (world.gameObject.scene == gameObject.scene) { autoMoveRotationSource = world; break; }
+            intendedVelocity = Vector2.zero;
+            _jumpQueued = false;
+            AutoMovePausedForRotation = false;
+            _rotationQuietSeconds = 0f;
+            _gameplayStarted = true;
+        }
+
+        public void EnterPreview()
+        {
+            _gameplayStarted = false;
+            if (_jetpack != null) _jetpack.CancelDash();
+            intendedVelocity = Vector2.zero;
+            _jumpQueued = false;
+            _physicsStepPending = false;
+            if (rb != null) rb.linearVelocity = Vector2.zero;
+        }
 
         [Header("死亡：红光闪烁")]
         [Tooltip("红光淡入淡出的总时长（秒）")]
@@ -84,6 +160,56 @@ namespace Resource.Scripts
         private float _footstepDistance;
         private ParticleSystem _dustTrail;
 
+        private void Awake() { InitializeMotion(); }
+
+        private void OnEnable()
+        {
+            InitializeMotion();
+            _afterPhysics = StartCoroutine(AfterPhysics());
+        }
+
+        private void InitializeMotion()
+        {
+            if (rb == null) rb = GetComponent<Rigidbody2D>();
+            if (_jetpack == null) _jetpack = GetComponent<PlayerJetpack>();
+            if (_crushGuard == null) _crushGuard = GetComponent<CrushGuard>();
+            if (_crushGuard == null) _crushGuard = gameObject.AddComponent<CrushGuard>();
+            if (_motionInitialized) return;
+            _motionInitialized = true;
+            _ownedGravityScale = rb.gravityScale;
+            rb.bodyType = RigidbodyType2D.Dynamic;
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+            rb.constraints |= RigidbodyConstraints2D.FreezeRotation;
+            SynchronizeAntiPush();
+        }
+
+        private void SynchronizeAntiPush()
+        {
+            if (_selfVelocityActive == antiPushEnabled) return;
+            if (antiPushEnabled)
+            {
+                _ownedGravityScale = rb.gravityScale;
+                // Never import momentum left by the previous collision solver when enabling protection.
+                intendedVelocity = Vector2.zero;
+                rb.gravityScale = 0f;
+                rb.linearVelocity = Vector2.zero;
+            }
+            else rb.gravityScale = _ownedGravityScale;
+            _selfVelocityActive = antiPushEnabled;
+            _physicsStepPending = false;
+        }
+
+        private IEnumerator AfterPhysics()
+        {
+            var wait = new WaitForFixedUpdate();
+            while (true)
+            {
+                yield return wait;
+                CompletePhysicsStep(Time.fixedDeltaTime);
+            }
+        }
+
         void Start()
         {
             // 必须最先访问：SettingsManager.Awake() 会把 SfxManager.sfxEnabled 设成 true，
@@ -92,6 +218,7 @@ namespace Resource.Scripts
             _ = SettingsManager.Instance;
 
             rb = GetComponent<Rigidbody2D>();
+            _jetpack = GetComponent<PlayerJetpack>();
             // 在子级 PlayerIM 上查找 SpriteRenderer
             Transform playerIM = transform.Find("PlayerIM");
             if (playerIM != null)
@@ -108,7 +235,6 @@ namespace Resource.Scripts
                 _autoMoveDir = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)).normalized;
                 // 重力保持组件上配置的值（跟 Stage1 的玩家一致，默认 1），不再清零——
                 // HandleAutoMove() 只覆盖滑行方向那根轴，另一根轴留给重力正常影响。
-                _worldRotator = FindObjectOfType<WorldRotator>();
             }
 
             BuildDustTrail();
@@ -150,10 +276,160 @@ namespace Resource.Scripts
 
         void FixedUpdate()
         {
+            BeginPhysicsStep(Time.fixedDeltaTime);
+        }
+
+        public void BeginPhysicsStep(float deltaTime)
+        {
+            InitializeMotion();
+            SynchronizeAntiPush();
+            if (!IsGameplayActive || rb.bodyType != RigidbodyType2D.Dynamic || !rb.simulated || deltaTime <= 0f)
+            {
+                _physicsStepPending = false;
+                return;
+            }
             CheckGround();
             CheckWalls();
-            HandleMovement();
+            UpdateAutoMoveRotationPause(deltaTime);
+            AutoMoveVelocityContribution = 0f;
+            _stepStartPosition = rb.position;
+            if (_selfVelocityActive)
+            {
+                if (_jetpack == null || !_jetpack.TickDash(deltaTime))
+                    BuildIntendedVelocity(deltaTime);
+                intendedVelocity = ProjectAgainstContacts(intendedVelocity);
+                rb.linearVelocity = intendedVelocity;
+            }
+            else if (_jetpack == null || !_jetpack.TickDash(deltaTime))
+                HandleMovement();
+            _submittedVelocity = _selfVelocityActive ? intendedVelocity : rb.linearVelocity;
+            if (_selfVelocityActive) _crushGuard.CaptureBeforePhysics(deltaTime);
+            _physicsStepPending = true;
             if (autoMoveMode) CheckAutoMoveFootContact();
+        }
+
+        private void BuildIntendedVelocity(float dt)
+        {
+            float input = autoMoveMode ? _autoMoveDir.x : ReadMoveInput();
+            if (autoMoveMode && AutoMovePausedForRotation) input = 0f;
+            if ((_autoMoveDir.x > 0f && isTouchingWallRight || _autoMoveDir.x < 0f && isTouchingWallLeft) && autoMoveMode)
+                input = 0f;
+            if (!autoMoveMode && ((input < 0f && isTouchingWallLeft) || (input > 0f && isTouchingWallRight))) input = 0f;
+            intendedVelocity.x = input * (autoMoveMode ? autoMoveSpeed : maxMoveSpeed);
+            if (autoMoveMode) AutoMoveVelocityContribution = intendedVelocity.x;
+            if (_jumpQueued && isGrounded && !autoMoveMode) intendedVelocity.y = jumpForce;
+            _jumpQueued = false;
+            intendedVelocity += Physics2D.gravity * (_ownedGravityScale * dt);
+            FaceDirection(input);
+            UpdateFootsteps(input);
+            UpdateSquashStretch(Mathf.Abs(input));
+            UpdateRumble(input);
+        }
+
+        private void UpdateAutoMoveRotationPause(float dt)
+        {
+            if (!autoMoveMode || !pauseAutoMoveWhileRotating || autoMoveRotationSource == null)
+            {
+                AutoMovePausedForRotation = false;
+                _rotationQuietSeconds = 0f;
+                return;
+            }
+            if (autoMoveRotationSource.IsRotating)
+            {
+                AutoMovePausedForRotation = true;
+                _rotationQuietSeconds = 0f;
+            }
+            else if (AutoMovePausedForRotation)
+            {
+                _rotationQuietSeconds += dt;
+                if (_rotationQuietSeconds + 0.000001f >= Mathf.Max(0f, autoMoveResumeDelay))
+                    AutoMovePausedForRotation = false;
+            }
+        }
+
+        private float ReadMoveInput()
+        {
+            if (Gyro.GyroRuntime.ConsoleCapturesInput) return 0f;
+            float input = 0f;
+            var keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed) input = -1f;
+                if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) input = 1f;
+            }
+            var pad = Gamepad.current;
+            if (pad != null)
+            {
+                float left = pad.leftTrigger.ReadValue(), right = pad.rightTrigger.ReadValue();
+                if (left < 0.05f) left = 0f;
+                if (right < 0.05f) right = 0f;
+                if (left > 0f || right > 0f) input = right - left;
+            }
+            return input;
+        }
+
+        private Vector2 ProjectAgainstContacts(Vector2 velocity)
+        {
+            _motionContacts.Clear();
+            var filter = new ContactFilter2D();
+            int mask = _crushGuard != null ? _crushGuard.worldGeometryMask.value : (groundLayer.value | wallLayer.value);
+            filter.SetLayerMask(mask != 0 ? mask : Physics2D.GetLayerCollisionMask(gameObject.layer));
+            filter.useTriggers = false;
+            rb.GetContacts(filter, _motionContacts);
+            // Project only our own velocity; never add a surface's velocity or friction impulse.
+            for (int pass = 0; pass < 3; pass++)
+                foreach (var contact in _motionContacts)
+                {
+                    Vector2 normal = contact.normal;
+                    float intoSurface = Vector2.Dot(velocity, normal);
+                    if (intoSurface < 0f) velocity -= normal * intoSurface;
+                }
+            return velocity;
+        }
+
+        public void SetIntendedVelocity(Vector2 velocity)
+        {
+            InitializeMotion();
+            intendedVelocity = velocity;
+            rb.linearVelocity = velocity;
+        }
+
+        public void CompletePhysicsStep(float deltaTime)
+        {
+            if (!_physicsStepPending) return;
+            _physicsStepPending = false;
+            if (!IsGameplayActive || rb.bodyType != RigidbodyType2D.Dynamic) return;
+            Vector2 rawVelocity = rb.linearVelocity;
+            LastPhysicsVelocityDelta = rawVelocity - _submittedVelocity;
+            LastRejectedVelocityDelta = Vector2.zero;
+            LastRejectedDisplacement = Vector2.zero;
+            if (antiPushEnabled)
+            {
+                intendedVelocity = ProjectAgainstContacts(intendedVelocity);
+                LastRejectedVelocityDelta = rawVelocity - intendedVelocity;
+                rb.linearVelocity = intendedVelocity;
+
+                // Box2D may already have displaced us through a moving surface's impulse.
+                // Retain only the progress requested on each axis. Use the velocity submitted
+                // before simulation: projecting the whole step against a newly hit floor/wall
+                // would erase legitimate travel before impact and cause hovering at landings.
+                // A surface cannot reverse an axis, move an idle axis, or exceed our own step;
+                // any necessary separation is handled by CrushGuard's shared position budget.
+                Vector2 ownStep = _submittedVelocity * deltaTime;
+                Vector2 actualStep = rb.position - _stepStartPosition;
+                Vector2 allowedStep = new Vector2(
+                    Mathf.Clamp(actualStep.x, Mathf.Min(0f, ownStep.x), Mathf.Max(0f, ownStep.x)),
+                    Mathf.Clamp(actualStep.y, Mathf.Min(0f, ownStep.y), Mathf.Max(0f, ownStep.y)));
+                Vector2 controlledPosition = _stepStartPosition + allowedStep;
+                LastRejectedDisplacement = rb.position - controlledPosition;
+                if (LastRejectedDisplacement.sqrMagnitude > 0.000000000001f)
+                    rb.position = controlledPosition;
+            }
+            _crushGuard.ResolveAfterPhysics(deltaTime);
+            if (logVelocityDelta)
+                Debug.Log($"[AntiPush] enabled={antiPushEnabled} intended={_submittedVelocity:F4} raw={rawVelocity:F4} " +
+                    $"solverDelta={LastPhysicsVelocityDelta:F4} rejected={LastRejectedVelocityDelta:F4} final={rb.linearVelocity:F4} " +
+                    $"gravityStep={(Physics2D.gravity * (_ownedGravityScale * deltaTime)):F4} correction={_crushGuard.LastCorrection:F4}", this);
         }
 
         void Update()
@@ -226,6 +502,12 @@ namespace Resource.Scripts
 
             float moveInput = 0f;
 
+            if (Gyro.GyroRuntime.ConsoleCapturesInput)
+            {
+                rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+                return;
+            }
+
             if (Keyboard.current != null)
             {
                 if (Keyboard.current.aKey.isPressed ||
@@ -267,9 +549,7 @@ namespace Resource.Scripts
                 rb.linearVelocity.y
             );
 
-            // Sprite 翻转：向左 → flipX=true，向右 → flipX=false
-            if (_spriteRenderer != null && moveInput != 0f)
-                _spriteRenderer.flipX = moveInput > 0f;
+            FaceDirection(moveInput);
 
             UpdateFootsteps(moveInput);
             UpdateSquashStretch(Mathf.Abs(moveInput));
@@ -285,28 +565,19 @@ namespace Resource.Scripts
         /// 一旦挡住那一侧的检测器不再碰墙，横向移动自动恢复。
         /// 方向只能靠撞 WallRedirect 墙来改变。
         ///
-        /// 另外：世界正在被转动的时候先暂停横向移动，不能一边转世界一边继续往前滑；
-        /// 转停了之后还要再等 rotationMoveDelay 秒才恢复，给玩家一点反应时间。
-        /// 重力/掉落全程不受影响。
+        /// 横向自动移动由旋转暂停开关控制，重力/掉落照常计算。
         /// </summary>
         void HandleAutoMove()
         {
             if (_isDead) return;
 
-            bool isRotating = _worldRotator != null && _worldRotator.IsRotating;
-            if (isRotating)
-                _resumeMoveTimer = rotationMoveDelay;
-            else if (_resumeMoveTimer > 0f)
-                _resumeMoveTimer -= Time.fixedDeltaTime;
-
             bool wallBlocked = (_autoMoveDir.x > 0f && isTouchingWallRight) ||
                                 (_autoMoveDir.x < 0f && isTouchingWallLeft);
-            bool blocked = wallBlocked || _resumeMoveTimer > 0f;
-            float targetX = blocked ? 0f : _autoMoveDir.x * autoMoveSpeed;
+            float targetX = wallBlocked || AutoMovePausedForRotation ? 0f : _autoMoveDir.x * autoMoveSpeed;
+            AutoMoveVelocityContribution = targetX;
             rb.linearVelocity = new Vector2(targetX, rb.linearVelocity.y);
 
-            if (_spriteRenderer != null && Mathf.Abs(_autoMoveDir.x) > 0.01f)
-                _spriteRenderer.flipX = _autoMoveDir.x > 0f;
+            if (Mathf.Abs(_autoMoveDir.x) > 0.01f) FaceDirection(_autoMoveDir.x);
 
             UpdateFootsteps(targetX);
             UpdateSquashStretch(1f);
@@ -314,7 +585,9 @@ namespace Resource.Scripts
 
         void HandleJump()
         {
+            if (Gyro.GyroRuntime.ConsoleCapturesInput) return;
             if (_isDead) return; // 死亡后立刻锁输入
+            if (_jetpack != null && _jetpack.IsDashing) return;
             if (autoMoveMode) return; // 自动移动模式没有跳跃，方向完全靠撞墙决定
 
             bool jumpPressed = false;
@@ -332,8 +605,8 @@ namespace Resource.Scripts
                 if (isDebugLog) Debug.Log($"跳跃尝试 | isGrounded:{isGrounded}");
                 if (isGrounded)
                 {
-                    rb.linearVelocity = new Vector2(
-                        rb.linearVelocity.x, jumpForce);
+                    if (antiPushEnabled) _jumpQueued = true;
+                    else rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
                     if (isDebugLog) Debug.Log("跳跃成功！");
 
                     SfxManager.Instance.PlayJump();
@@ -437,10 +710,14 @@ namespace Resource.Scripts
         /// 统一的死亡入口：锁输入+冻结物理 → 播放死亡音效 → 红光闪烁淡入淡出 → 走现成的场景转场重开本关。
         /// 以后别的死亡原因（比如掉出边界）也直接调这个方法，不用另外写一套流程。
         /// </summary>
-        void Die()
+        public void Die()
         {
             if (_isDead) return;
             _isDead = true;
+            intendedVelocity = Vector2.zero;
+            _jumpQueued = false;
+            _physicsStepPending = false;
+            if (_jetpack != null) _jetpack.CancelDash();
             if (rb == null) rb = GetComponent<Rigidbody2D>(); // 极端情况下 Start() 还没跑到就被外部触发（比如浏览模式切游戏那一帧），做个兜底
             rb.linearVelocity = Vector2.zero;
             rb.bodyType = RigidbodyType2D.Kinematic; // 光锁输入不够，重力还在算，会让玩家在闪光的时候继续往下掉，干脆把物理也冻住（反正马上要重开关卡，不用管恢复）
@@ -460,7 +737,7 @@ namespace Resource.Scripts
             {
                 t += Time.deltaTime;
                 float glow = Mathf.Sin(Mathf.Clamp01(t / deathFlashDuration) * Mathf.PI) * deathFlashPeakGlow;
-                _deathFlashMaterial.SetFloat("_Glow", glow);
+                if (_deathFlashMaterial != null) _deathFlashMaterial.SetFloat("_Glow", glow);
                 yield return null;
             }
 
@@ -639,6 +916,11 @@ namespace Resource.Scripts
 
         void OnDisable()
         {
+            if (_afterPhysics != null) StopCoroutine(_afterPhysics);
+            _afterPhysics = null;
+            _physicsStepPending = false;
+            if (_jetpack != null) _jetpack.CancelDash();
+            if (_crushGuard != null) _crushGuard.ResolveAfterPhysics(0f);
             Gamepad.current?.SetMotorSpeeds(0f, 0f);
         }
 

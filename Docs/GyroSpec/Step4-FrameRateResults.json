@@ -1,0 +1,44 @@
+{
+  "source": "1000 synthetic sensor samples saved and loaded through the real CSV path; 250 Hz, 4 s; 15 deg/s wheel + 100 deg/s pitch + 60 deg/s yaw; initial gyro Z bias 0.5 deg/s; actual Unity rendered frames.",
+  "passed": true,
+  "status": "通过。A 角度差异 0.000000%，B 角度差异 0.000000%；误差分母至少为 1°。原帧率与垂直同步已恢复。",
+  "results": [
+    {
+      "RequestedFrameRate": 60,
+      "Label": "60 FPS",
+      "MeasuredFps": 60.0455494076806,
+      "SpeedModeDegrees": 171.87750679045175,
+      "AngleModeDegrees": 59.219608306884766,
+      "WallSeconds": 4.013619700000163,
+      "SampleSeconds": 4.000000189989805,
+      "SampleCount": 1000,
+      "TargetTimingReached": true
+    },
+    {
+      "RequestedFrameRate": 144,
+      "Label": "144 FPS",
+      "MeasuredFps": 143.89331749438782,
+      "SpeedModeDegrees": 171.8775067904517,
+      "AngleModeDegrees": 59.219608306884766,
+      "WallSeconds": 4.002965600000607,
+      "SampleSeconds": 4.000000189989805,
+      "SampleCount": 1000,
+      "TargetTimingReached": true
+    },
+    {
+      "RequestedFrameRate": -1,
+      "Label": "不锁帧（-1）",
+      "MeasuredFps": 210.11303781626427,
+      "SpeedModeDegrees": 171.8775067904517,
+      "AngleModeDegrees": 59.219608306884766,
+      "WallSeconds": 4.00260740000067,
+      "SampleSeconds": 4.000000189989805,
+      "SampleCount": 1000,
+      "TargetTimingReached": true
+    }
+  ],
+  "speedSpreadPercent": 3.3072052255278476e-14,
+  "angleSpreadPercent": 0,
+  "restoredFps": -1,
+  "restoredVSync": 1
+}

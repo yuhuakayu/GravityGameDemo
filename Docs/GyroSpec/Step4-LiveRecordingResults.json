@@ -1,0 +1,12 @@
+{
+  "path": "C:\\Users\\123\\AppData\\LocalLow\\DefaultCompany\\Gravity Game\\GyroRecordings\\20260923_231751_819.csv",
+  "samples": 4215,
+  "duration": 16.85809107380919,
+  "initialBias": "(0.125678, 0.876368, -0.216002)",
+  "initialAxis": "(0.000000, -0.195709, 0.980662)",
+  "crossedDegeneracy": false,
+  "replayStarted": true,
+  "replayCompleted": true,
+  "liveConnectedAfterPlayback": true,
+  "method": "Real DualSense raw samples recorded through GyroDiagnosticsPanel/GyroRecorder, loaded with both bias and axis metadata, then replayed at real time using GyroRuntime. Gameplay was paused with timeScale 0; actual-world movement is covered separately in Step4-PlaybackResults.json."
+}

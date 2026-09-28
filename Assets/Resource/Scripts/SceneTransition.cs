@@ -42,6 +42,9 @@ namespace Resource.Scripts
         private float _maxScale;
         private bool  _isTransitioning;
 
+        /// <summary>从虹膜合拢到新场景完全展开期间，玩法输入应保持锁定。</summary>
+        public bool IsTransitioning => _isTransitioning;
+
         void Awake()
         {
             if (_instance != null && _instance != this)

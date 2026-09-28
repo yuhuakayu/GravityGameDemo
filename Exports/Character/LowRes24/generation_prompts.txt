@@ -1,0 +1,44 @@
+生成方式：内置 image_gen（设计稿，未替换游戏内角色）
+输出处理：限定用户指定的9色及二值透明度，导出24×24原稿，再按最近邻16倍放大。
+
+第 1 轮提示词：
+Use case: style-transfer. Asset: strict ultra-low-resolution pixel game sprite DESIGN APPROVAL sheet.
+Redraw this existing pink-haired astronaut girl as TWO simple tiny standing sprites. The supplied images are CHARACTER IDENTITY references only: pink blunt flat M-ish bangs inside a bubble helmet, pale spacesuit, tiny cyan accents and a compact jetpack. DO NOT reproduce their tall/detailed proportions or running pose.
+
+Output is a transparent sprite sheet: EXACTLY two aligned 24 by 24 logical-pixel cells side by side, front-facing standing on the LEFT and true right-facing profile standing on the RIGHT. Each logical cell must be 24x24; the sheet is 48x24 logical pixels, shown at a large uniform integer nearest-neighbor scale. Both feet touch the BOTTOM ROW of the cells; each character is 23 logical pixels tall (top at row1, soles on row23), same head/collar/belt/knee/foot heights in the two views. Leave transparent empty space to the left/right inside each cell. NO text, labels, lines, grid overlay, floor, background color, shadows, or checkerboard artwork.
+
+CRITICAL pixel construction: compose as if drawing directly in a 24x24 pixel editor. Every colored element is an aligned WHOLE square logical pixel in the same grid, including facial details. No features smaller than a logical pixel. Do NOT draw a detailed character and merely apply a pixel filter. Deliberately sparse, readable small platform-game sprite precision, similar level of abstraction to Celeste's playable sprite. Blocky small chibi anatomy, short simple limbs. Strict 1-logical-pixel dark outer outline. NO antialiasing, smoothing, gradients, dithering, blurry or partially transparent edges.
+
+Proportions: helmet INCLUDING head about8 logical pixels tall, maximum9; the remaining14-15 logical rows are torso and short legs. DO NOT make a bobble head occupying half the body. Head must have enough pale skin to read as a face. Front has TWO eyes each ONE pixel wide and TWO pixels tall, dark outline color, no nose, mouth omit or single pixel. Profile ONE1x2 eye and flat skin outline NO projecting nose. Pink straight FLAT bangs, no pointed center M spike, solid stepped lower edge. Just two pink hair colors, no individual strands. Hair entirely within the helmet and above collar, absolutely no long hair outside it.
+
+Helmet: circular stepped1-pixel cyan glass rim with dark exterior outline; clear interior shows hair and face, no tinted translucent fill. Only1-2 WHITE logical pixels near upper right rim as highlights. Collar a single pixel row, waist belt one row, knee pads one row. Hands and feet tiny squared1-2-pixel blocks, NO fingers. Arms about2 pixels thick, legs2-3 thick, use sparse deliberate edge pixels. Spacesuit light lavender-white with just ONE flat shadow color. Small backpack on rear LEFT of right-facing profile protrudes2-3 logical pixels, do not make it a large tank. No neckties, flags, brands, weapons, stars, decorations.
+
+ONLY these9 opaque RGB colors, plus completely transparent background:
+outline AND eyes #12131F;
+suit light #D8D9EC, suit shadow #9A9CC4;
+hair light #F28AA0, hair shadow #B85C7A;
+skin #F6D9CC;
+glass edge #8FD3E6; highlight #FFFFFF;
+accent #3FD6E0.
+No other colors whatsoever. Both views must represent the identical character with identical small scale. Prioritize clean recognizable 24x24 anatomy and square grid consistency. This is only a design preview, NOT an animation.
+
+第 2 轮提示词：
+Edit this existing two-sprite pixel sheet. It is a STRICT 48x24 logical-pixel sheet: left half24x24 front, right half24x24 right-facing profile. KEEP THE EXISTING VERY COARSE PIXEL GRID AND CHARACTER HEIGHT EXACTLY. Each square currently visible is ONE logical pixel. Do not subdivide or add finer pixels. Keep same canvas aspect2:1 with feet on bottom row23, first body pixels on row1. Preserve the two cell centers, head heights, and identical foot baseline. This is an ultra low resolution game sprite, NOT a high-detail illustration.
+
+Fix the FACE READABILITY and restore the missing simple outline from reduction:
+Front face must clearly show TWO DARK EYES, each exactly1 logical pixel wide and2 logical pixels tall. Place eyes at local column10 and13, rows6 AND7, color#12131F. Pale skin#F6D9CC around them; tiny face occupies central four-six pixels wide. No nose, no lashes, no eyebrow strokes, no mouth required.
+Front pink FLAT blunt bangs above eyes, use solid pink blocks, no pointed center spike. Recolor the erroneous peach-colored stripe near the forehead into PINK HAIR; ALL hair highlights must be pink, never skin-color. All hair must stay inside bubble helmet. Hair uses ONLY #F28AA0 and#B85C7A.
+Profile face must be plainly visible on the RIGHT, one DARK eye1x2 near its right edge, two vertical black pixels, SKIN rectangle around it and pink hair behind. No projecting nose. Helmet rim continuous cyan and1px dark outer boundary,1-2 white logical pixels at upper right as glass highlights.
+Improve the compact suit silhouette with dark1px perimeter, short2px-wide arms and2-3px legs. Keep neck ring, waist belt and knee bands each ONE row, feet simple square blocks on BOTTOM ROW. No fine shading. Small rectangular backpack protrudes2-3pixels toward LEFT of profile torso. Do not expand the helmet: maximum9logical pixels high out of23tall body.
+
+Exact restricted palette9opaque colors: #12131F outline/eyes; #D8D9EC suit light; #9A9CC4 suit shadow; #F28AA0 hair light; #B85C7A hair dark; #F6D9CC skin; #8FD3E6 glass rim; #FFFFFF1-2highlight squares; #3FD6E0 tiny suit accent. Completely transparent background, no partial alpha. NO gradients/dithering/antialiasing, NO white rectangular background, NO text/grid/checkerboard. Every mark must occupy a whole SAME-SIZED logical square. Output this exact very-low-res design enlarged with nearest-neighbor blocks, retaining2:1sheet arrangement.
+
+第 3 轮提示词：
+Precise edit of this very tiny pixel-art sprite sheet, NOT a redesign. Preserve the two astronaut girls, pink blunt bangs, each visible eye as a1x2 DARK logical pixel column, front view and right profile, matching size and bottom baseline. KEEP the existing extremely coarse grid. There are EXACTLY48x24logical pixels on this sheet (24x24each), and a colored square must be exactly ONE unit of this grid. Do not add subpixels or extra detail.
+
+Final cleanup only:
+1) Add a clear consistent ONE FULL LOGICAL PIXEL WIDTH outline in #12131F along the OUTSIDE edge of the entire character, including the curved helmet, shoulders, both arms, legs and feet. The soles of BOTH characters must be a solid one-logical-pixel-thick DARK row on the BOTTOMMOST row23 of their cells; bright boot colors sit above it, not on the bottom edge. Outline pixels must be as big as the other block pixels, never hairline borders. Preserve height24 logical rows including this outline.
+2) Keep the suit lavender-white (#D8D9EC/#9A9CC4). Make the WAIST BELT a simple one-row #12131F band with just one central #3FD6E0 cyan pixel buckle. Remove the stray pink/magenta block on front waist and on profile suit/backpack. Pink ONLY belongs inside the helmet.
+3) Restore the front view's two separate short legs and tiny squared boots. A one-pixel transparent gap between the legs is enough. Legs 2-3 logical pixels wide. Do not make a long black skirt.
+4) Helmet glass edge one row/pixel thick cyan#8FD3E6 inside its dark boundary, one white#FFFFFF highlighter square on upper right; face visible skin#F6D9CC, dark1x2eyes, pink flat bangs#F28AA0/#B85C7A. Head including helmet about8-9pixels high, body tofeet remaining15.
+ONLY9 exact opaque colors total:12131F,D8D9EC,9A9CC4,F28AA0,B85C7A,F6D9CC,8FD3E6,FFFFFF,3FD6E0. Transparent background. No gradients, shading between those values, smoothing, partial opacity, ground shadows, floor lines, grids, text or extra objects. Keep whole sheet aspect2:1, and same pixel-grid alignment. Retain the intentionally crude/readable tiny platformer-sprite style; no painted illustration detail.

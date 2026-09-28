@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Resource.Scripts.Gyro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -29,6 +30,7 @@ namespace Resource.Scripts
         private GameObject  _pausePanelRoot;
         private CanvasGroup _pauseCanvasGroup;
         private bool _isPaused;
+        private float _timeScaleBeforePause = 1f;
         private readonly List<Button> _pauseButtons = new List<Button>();
         private int _pauseSelectedIndex;
         private readonly Dictionary<Button, Image[]> _buttonBorders = new Dictionary<Button, Image[]>();
@@ -36,6 +38,7 @@ namespace Resource.Scripts
         private GameObject  _settingsPanelRoot;
         private CanvasGroup _settingsCanvasGroup;
         private bool _isSettingsOpen;
+        private float _timeScaleBeforeSettings = 1f;
         private readonly List<Image> _settingsRowBg = new List<Image>();
         private int _settingsSelectedIndex;
         private DebugSliderDrag _masterDrag, _musicDrag, _sfxDrag;
@@ -45,6 +48,9 @@ namespace Resource.Scripts
         private LocalizationManager _loc;
         private readonly List<(Text text, string key)> _localizedTexts = new List<(Text, string)>();
         private Text _settingsLanguageLabel;
+
+        public bool IsPaused => _isPaused;
+        public bool IsSettingsOpen => _isSettingsOpen;
 
         void Start()
         {
@@ -80,6 +86,7 @@ namespace Resource.Scripts
 
         void Update()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             if (_isSettingsOpen)
             {
                 HandleSettingsInput();
@@ -102,12 +109,15 @@ namespace Resource.Scripts
 
         private void TogglePause()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             if (_isPaused) ClosePause();
             else OpenPause();
         }
 
         private void OpenPause()
         {
+            if (_isPaused || GyroRuntime.ConsoleCapturesInput) return;
+            _timeScaleBeforePause = _isSettingsOpen ? _timeScaleBeforeSettings : Time.timeScale;
             _isPaused = true;
             Time.timeScale = 0f;
             _pausePanelRoot.SetActive(true);
@@ -119,8 +129,9 @@ namespace Resource.Scripts
 
         private void ClosePause()
         {
+            if (!_isPaused || GyroRuntime.ConsoleCapturesInput) return;
             _isPaused = false;
-            Time.timeScale = 1f;
+            Time.timeScale = _isSettingsOpen ? 0f : _timeScaleBeforePause;
             var root = _pausePanelRoot;
             StartCoroutine(FadeCanvasGroup(_pauseCanvasGroup, 1f, 0f, 0.2f, () => root.SetActive(false)));
             SfxManager.Instance.PlayButtonClick();
@@ -172,6 +183,7 @@ namespace Resource.Scripts
 
         private void OnRestartClicked()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             Time.timeScale = 1f;
             _isPaused = false;
             _pausePanelRoot.SetActive(false);
@@ -182,6 +194,9 @@ namespace Resource.Scripts
         // ── 设置面板（手柄 Start 键直接打开，也可以从暂停菜单里点进来；十字键/摇杆上下选行，左右改值）──
         private void OpenSettings()
         {
+            if (_isSettingsOpen || GyroRuntime.ConsoleCapturesInput) return;
+            // 保存底层玩法倍率，而不是嵌套暂停产生的 0；两层关闭顺序都能正确恢复。
+            _timeScaleBeforeSettings = _isPaused ? _timeScaleBeforePause : Time.timeScale;
             _isSettingsOpen = true;
             Time.timeScale = 0f;
             _settingsPanelRoot.SetActive(true);
@@ -193,8 +208,9 @@ namespace Resource.Scripts
 
         private void CloseSettings()
         {
+            if (!_isSettingsOpen || GyroRuntime.ConsoleCapturesInput) return;
             _isSettingsOpen = false;
-            if (!_isPaused) Time.timeScale = 1f; // 从暂停菜单里打开的话，关掉设置要回到暂停状态而不是直接恢复游戏
+            Time.timeScale = _isPaused ? 0f : _timeScaleBeforeSettings;
             var root = _settingsPanelRoot;
             StartCoroutine(FadeCanvasGroup(_settingsCanvasGroup, 1f, 0f, 0.2f, () => root.SetActive(false)));
             SfxManager.Instance.PlayButtonClick();
@@ -303,6 +319,7 @@ namespace Resource.Scripts
 
         private void OnReturnToMainMenuClicked()
         {
+            if (GyroRuntime.ConsoleCapturesInput) return;
             Time.timeScale = 1f;
             _isPaused = false;
             _pausePanelRoot.SetActive(false);
