@@ -4,15 +4,9 @@ using UnityEngine;
 namespace Resource.Scripts
 {
     /// <summary>
-    /// 音效管理器（运行时程序化合成版）
+    /// 音效管理器：已确认音效使用素材，保留摆板、悬停、转场和火把的合成声音。
     ///
-    /// 项目里目前没有任何音频素材文件，所以这里不加载 wav/mp3，
-    /// 而是用波形函数在运行时直接生成 AudioClip（正弦波/方波/噪声混合），
-    /// 音量、音高都能跟游戏状态（速度、冲击力）实时联动。
-    /// 后续如果有美术/音效外包资源，直接把 PlayXxx 里的 AudioClip.PlayOneShot
-    /// 换成加载好的素材即可，调用方（PlayerController/WorldRoot/PivotPendulum）不用改。
-    ///
-    /// 用法：SfxManager.Instance.PlayJump(); 首次访问会自动创建常驻 GameObject。
+    /// 首次访问会自动创建常驻 GameObject。
     /// </summary>
     public class SfxManager : MonoBehaviour
     {
@@ -23,40 +17,77 @@ namespace Resource.Scripts
             {
                 if (_instance == null)
                 {
-                    var go = new GameObject("SfxManager (Auto)");
-                    go.AddComponent<SfxManager>(); // Awake 里会赋值 _instance
+                    var prefab = Resources.Load<GameObject>("SfxManager");
+                    if (prefab != null) Instantiate(prefab);
+                    else new GameObject("SfxManager (Auto)").AddComponent<SfxManager>();
                 }
                 return _instance;
             }
         }
 
         [Header("总开关")]
-        [Tooltip("关闭后所有音效不播放（包括正在淡出的旋转吱呀声），合成逻辑保留，随时可以重新打开")]
+        [Tooltip("关闭后不再播放音效，并立即停止所有世界旋转音源")]
         public bool sfxEnabled = false;
         [Tooltip("主音量倍率（0~1），由 SettingsManager 的 Master/SFX 音量滑条驱动")]
         [Range(0f, 1f)] public float masterVolume = 1f;
+
+        [Header("世界旋转音效")]
+        [SerializeField] private AudioClip[] worldRotateClickClips = new AudioClip[0];
+        [SerializeField] private AudioClip worldRotateLoopClip;
+        [SerializeField] private AudioClip worldRotateStopClip;
+        [SerializeField, Min(0.1f)] private float clickDegrees = 8f;
+        [SerializeField, Min(0.035f)] private float minClickInterval = 0.035f;
+        [SerializeField] private Vector2 clickPitchRange = new Vector2(0.97f, 1.03f);
+        [SerializeField] private Vector2 clickVolumeRange = new Vector2(0.8f, 1f);
+        [SerializeField, Min(0f)] private float loopStartSpeed = 90f;
+        [SerializeField, Min(0f)] private float loopFullSpeed = 150f;
+        [SerializeField, Range(0f, 1f)] private float loopMaxVolume = 0.8f;
+        [SerializeField, Min(0f)] private float rotationFadeIn = 0.05f;
+        [SerializeField, Min(0f)] private float rotationFadeOut = 0.12f;
+        [SerializeField, Min(0f)] private float rotationStopDelay = 0.1f;
+
+        [Header("玩法与界面音效")]
+        [SerializeField] private AudioClip _landClip;
+        [SerializeField] private AudioClip _heavyLandClip;
+        [Tooltip("重落地的下落速度阈值，12.5 约为标准重力下下落 4 格（8 单位）的速度")]
+        [SerializeField, Min(0f)] private float heavyLandSpeed = 12.5f;
+        [SerializeField] private AudioClip _wallBumpClip;
+        [SerializeField] private AudioClip _playerDeathClip;
+        [SerializeField] private AudioClip _doorOpenClip;
+        [SerializeField] private AudioClip _oxygenPickupClip;
+        [SerializeField] private AudioClip _buttonClickClip;
+        [SerializeField] private AudioClip _uiMoveClip;
+        [SerializeField] private AudioClip _uiBackClip;
+        [SerializeField] private AudioClip _uiErrorClip;
+        [SerializeField] private AudioClip _stageCompleteClip;
+        [Header("关卡循环音效")]
+        [SerializeField] private AudioClip ambientCaveClip;
+        [SerializeField] private AudioClip fallWindClip;
+        [SerializeField] private AudioClip doorHumClip;
+        [SerializeField] private AudioClip laserHumClip;
 
         private const int SampleRate = 44100;
         private const int OneShotPoolSize = 4;
 
         private AudioSource[] _oneShotPool;
         private int _poolCursor;
-        private AudioSource _creakSource;
+        private AudioSource _rotateClickSource;
+        private AudioSource _rotateLoopSource;
+        private AudioSource _rotateStopSource;
+        private WorldRotator _rotationWorld;
+        private float _rotationSpeed;
+        private float _pendingRotationDegrees;
+        private float _clickAngle;
+        private float _rotationDegrees;
+        private double _lastClickTime = double.NegativeInfinity;
+        private float _rotationEnvelope;
+        private float _quietSeconds;
+        private bool _rotationActive;
 
-        private AudioClip _footstepClip;
-        private AudioClip _jumpClip;
-        private AudioClip _landClip;
-        private AudioClip _wallBumpClip;
         private AudioClip _pivotClackClip;
-        private AudioClip _creakLoopClip;
-        private AudioClip _buttonClickClip;
         private AudioClip _buttonHoverClip;
-        private AudioClip _doorOpenClip;
         private AudioClip _transitionWhooshClip;
         private AudioClip _torchLoopClip;
-        private AudioClip _gearClickClip;
-        private AudioClip _stageCompleteClip;
-        private AudioClip _playerDeathClip;
 
         void Awake()
         {
@@ -77,41 +108,105 @@ namespace Resource.Scripts
                 _oneShotPool[i] = src;
             }
 
-            _creakSource = gameObject.AddComponent<AudioSource>();
-            _creakSource.playOnAwake  = false;
-            _creakSource.spatialBlend = 0f;
-            _creakSource.loop         = true;
-            _creakSource.volume       = 0f;
+            _rotateClickSource = gameObject.AddComponent<AudioSource>();
+            _rotateClickSource.playOnAwake = false;
+            _rotateClickSource.spatialBlend = 0f;
+
+            _rotateLoopSource = gameObject.AddComponent<AudioSource>();
+            _rotateLoopSource.playOnAwake = false;
+            _rotateLoopSource.spatialBlend = 0f;
+            _rotateLoopSource.loop = true;
+            _rotateLoopSource.volume = 0f;
+            _rotateLoopSource.clip = worldRotateLoopClip;
+
+            _rotateStopSource = gameObject.AddComponent<AudioSource>();
+            _rotateStopSource.playOnAwake = false;
+            _rotateStopSource.spatialBlend = 0f;
+            _rotateStopSource.clip = worldRotateStopClip;
 
             BuildClips();
-
-            _creakSource.clip = _creakLoopClip;
-            _creakSource.Play();
+            gameObject.AddComponent<GameplayLoopAudio>().Configure(ambientCaveClip, fallWindClip, doorHumClip, laserHumClip);
         }
+
+        private void LateUpdate()
+        {
+            // 在所有玩法 Update 之后再次检查，暂停或死亡当帧就静音。
+            if (_rotationWorld == null || !sfxEnabled || masterVolume <= 0f ||
+                _rotationWorld.RotationInput.IsGameplayBlocked(_rotationWorld))
+            {
+                StopWorldRotation();
+                return;
+            }
+
+            float dt = Time.unscaledDeltaTime;
+            float loopTarget = _rotationWorld.IsRotating
+                ? Mathf.InverseLerp(loopStartSpeed, Mathf.Max(loopStartSpeed + 0.01f, loopFullSpeed), _rotationSpeed)
+                : 0f;
+            float fadeTime = loopTarget > _rotationEnvelope ? rotationFadeIn : rotationFadeOut;
+            _rotationEnvelope = Mathf.MoveTowards(_rotationEnvelope, loopTarget, fadeTime > 0f ? dt / fadeTime : 1f);
+            _rotateLoopSource.volume = _rotationEnvelope * loopMaxVolume * masterVolume;
+            if (_rotationEnvelope > 0f && !_rotateLoopSource.isPlaying && worldRotateLoopClip != null)
+            {
+                _rotateLoopSource.timeSamples = UnityEngine.Random.Range(0, worldRotateLoopClip.samples);
+                _rotateLoopSource.Play();
+            }
+            else if (_rotationEnvelope <= 0f && _rotateLoopSource.isPlaying) _rotateLoopSource.Stop();
+
+            if (_rotationWorld.IsRotating)
+            {
+                if (!_rotationActive)
+                {
+                    _rotationActive = true;
+                    _rotateStopSource.Stop();
+                }
+                _quietSeconds = 0f;
+                _rotationDegrees += _pendingRotationDegrees;
+                _clickAngle += _pendingRotationDegrees;
+            }
+            else if (_rotationActive) _quietSeconds += dt;
+
+            // 最后一步可能跨过多个齿，停转确认期间仍按最小间隔播完已累计的咔嚓。
+            if (_rotationActive)
+            {
+                double now = Time.realtimeSinceStartupAsDouble;
+                if (_clickAngle >= Mathf.Max(0.1f, clickDegrees) &&
+                    now - _lastClickTime >= Mathf.Max(0.035f, minClickInterval))
+                {
+                    _clickAngle -= Mathf.Max(0.1f, clickDegrees);
+                    _lastClickTime = now;
+                    if (worldRotateClickClips.Length > 0)
+                    {
+                        var clip = worldRotateClickClips[UnityEngine.Random.Range(0, worldRotateClickClips.Length)];
+                        _rotateClickSource.pitch = UnityEngine.Random.Range(clickPitchRange.x, clickPitchRange.y);
+                        float volume = UnityEngine.Random.Range(clickVolumeRange.x, clickVolumeRange.y);
+                        _rotateClickSource.PlayOneShot(clip, volume * (1f - 0.5f * _rotationEnvelope) * masterVolume);
+                    }
+                }
+                if (!_rotationWorld.IsRotating && _quietSeconds >= rotationStopDelay)
+                {
+                    if (_rotationDegrees >= clickDegrees && worldRotateStopClip != null)
+                    {
+                        _rotateStopSource.volume = masterVolume;
+                        _rotateStopSource.Play();
+                    }
+                    _rotationActive = false;
+                    _rotationDegrees = 0f;
+                    _clickAngle = 0f;
+                }
+            }
+            _pendingRotationDegrees = 0f;
+        }
+
+        private void OnDisable() => StopWorldRotation();
 
         // ── 对外接口 ─────────────────────────────────────────────
-        public void PlayFootstep(float speed01)
+        public void PlayLand(float landingSpeed, float impact01)
         {
             if (!sfxEnabled) return;
             var src = NextOneShotSource();
-            src.pitch = 1f + UnityEngine.Random.Range(-0.08f, 0.08f);
-            src.PlayOneShot(_footstepClip, Mathf.Lerp(0.15f, 0.4f, Mathf.Clamp01(speed01)) * masterVolume);
-        }
-
-        public void PlayJump()
-        {
-            if (!sfxEnabled) return;
-            var src = NextOneShotSource();
-            src.pitch = 1f;
-            src.PlayOneShot(_jumpClip, 0.5f * masterVolume);
-        }
-
-        public void PlayLand(float impact01)
-        {
-            if (!sfxEnabled) return;
-            var src = NextOneShotSource();
-            src.pitch = 1f;
-            src.PlayOneShot(_landClip, Mathf.Lerp(0.2f, 0.7f, Mathf.Clamp01(impact01)) * masterVolume);
+            src.pitch = UnityEngine.Random.Range(0.95f, 1.05f);
+            src.PlayOneShot(landingSpeed > heavyLandSpeed ? _heavyLandClip : _landClip,
+                Mathf.Lerp(0.4f, 1f, Mathf.Clamp01(impact01)) * masterVolume);
         }
 
         public void PlayWallBump()
@@ -130,18 +225,32 @@ namespace Resource.Scripts
             src.PlayOneShot(_pivotClackClip, Mathf.Lerp(0.25f, 0.8f, Mathf.Clamp01(impact01)) * masterVolume);
         }
 
-        /// <summary>世界旋转的"吱呀"摩擦音，每帧调用，音量/音高跟旋转速度联动，无输入时自动淡出（不停止播放，避免每次重启有起音瞬态）</summary>
-        public void UpdateRotateCreak(float speed01)
+        /// <summary>接收各物理步累计的绝对转角及实际角速度，不能用首尾角度相减抵消往返转动。</summary>
+        public void UpdateWorldRotation(WorldRotator world, float traveledDegrees, float angularSpeed)
         {
-            if (!sfxEnabled)
+            _rotationWorld = world;
+            _pendingRotationDegrees += traveledDegrees;
+            _rotationSpeed = angularSpeed;
+        }
+
+        /// <summary>预览、暂停、死亡及切场景直接静音，不触发停转收尾声。</summary>
+        public void StopWorldRotation()
+        {
+            if (_rotateClickSource != null) _rotateClickSource.Stop();
+            if (_rotateLoopSource != null)
             {
-                _creakSource.volume = 0f;
-                return;
+                _rotateLoopSource.Stop();
+                _rotateLoopSource.volume = 0f;
             }
-            speed01 = Mathf.Clamp01(speed01);
-            float targetVol = (speed01 > 0.02f ? Mathf.Lerp(0.05f, 0.5f, speed01) : 0f) * masterVolume;
-            _creakSource.volume = Mathf.Lerp(_creakSource.volume, targetVol, Time.deltaTime * 8f);
-            _creakSource.pitch  = Mathf.Lerp(0.7f, 1.4f, speed01);
+            if (_rotateStopSource != null) _rotateStopSource.Stop();
+            _rotationWorld = null;
+            _rotationActive = false;
+            _quietSeconds = 0f;
+            _rotationEnvelope = 0f;
+            _rotationSpeed = 0f;
+            _pendingRotationDegrees = 0f;
+            _clickAngle = 0f;
+            _rotationDegrees = 0f;
         }
 
         public void PlayButtonClick()
@@ -160,16 +269,20 @@ namespace Resource.Scripts
             src.PlayOneShot(_buttonHoverClip, 0.2f * masterVolume);
         }
 
-        /// <summary>世界旋转每转过 90° 播放一次的机械"咔嚓"声，impact01 可以传旋转速度来控制音量</summary>
-        public void PlayGearClick(float impact01 = 1f)
+        public void PlayUIMove() => PlayClip(_uiMoveClip);
+        public void PlayUIBack() => PlayClip(_uiBackClip);
+        public void PlayUIError() => PlayClip(_uiErrorClip);
+        public void PlayOxygenPickup() => PlayClip(_oxygenPickupClip);
+
+        private void PlayClip(AudioClip clip)
         {
             if (!sfxEnabled) return;
             var src = NextOneShotSource();
-            src.pitch = 1f + UnityEngine.Random.Range(-0.03f, 0.03f);
-            src.PlayOneShot(_gearClickClip, Mathf.Lerp(0.3f, 0.7f, Mathf.Clamp01(impact01)) * masterVolume);
+            src.pitch = 1f;
+            src.PlayOneShot(clip, masterVolume);
         }
 
-        /// <summary>通关时的上升音阶提示音</summary>
+        /// <summary>开门声开始约 0.3 秒后播放的通关声。</summary>
         public void PlayStageComplete()
         {
             if (!sfxEnabled) return;
@@ -178,7 +291,7 @@ namespace Resource.Scripts
             src.PlayOneShot(_stageCompleteClip, 0.6f * masterVolume);
         }
 
-        /// <summary>玩家死亡（撞到尖刺等致命物体）时的下坠音效</summary>
+        /// <summary>所有死因统一使用同一段死亡素材。</summary>
         public void PlayPlayerDeath()
         {
             if (!sfxEnabled) return;
@@ -243,32 +356,13 @@ namespace Resource.Scripts
         // ── 波形合成 ─────────────────────────────────────────────
         private void BuildClips()
         {
-            _footstepClip   = CreateClip("Footstep",   0.08f, t => NoiseBurst(t, 0.08f, 0.005f));
-            _jumpClip       = CreateClip("Jump",       0.15f, t => SineSweep(t, 0.15f, 300f, 900f) * EnvAD(t, 0.15f, 0.01f));
-            _landClip       = CreateClip("Land",       0.14f, t => Sine(t, 90f) * EnvAD(t, 0.14f, 0.002f));
-            _wallBumpClip   = CreateClip("WallBump",   0.06f, t => Square(t, 220f) * EnvAD(t, 0.06f, 0.002f));
             _pivotClackClip = CreateClip("PivotClack", 0.09f, t => (NoiseRaw() * 0.6f + Sine(t, 180f) * 0.6f) * EnvAD(t, 0.09f, 0.001f));
-            // 循环用素材：分量频率都取 1/duration 的整数倍，保证首尾波形连续、循环无爆音
-            _creakLoopClip  = CreateClip("CreakLoop",  0.5f,  WoodCreak);
-
-            _buttonClickClip     = CreateClip("ButtonClick", 0.05f, t => Sine(t, 1200f) * EnvAD(t, 0.05f, 0.002f));
             _buttonHoverClip     = CreateClip("ButtonHover", 0.06f, t => Sine(t, 700f) * EnvAD(t, 0.06f, 0.015f));
-            _doorOpenClip        = CreateClip("DoorOpen", 0.6f,
-                t => (SineSweep(t, 0.6f, 500f, 120f) * 0.7f + NoiseRaw() * 0.2f) * EnvAD(t, 0.6f, 0.05f));
             _transitionWhooshClip = CreateClip("TransitionWhoosh", 0.3f,
                 t => (NoiseRaw() * 0.6f + SineSweep(t, 0.3f, 800f, 150f) * 0.5f) * EnvAD(t, 0.3f, 0.02f));
             // 火堆噼啪声循环：稀疏的"啪"声事件，不是持续的沙沙噪声
             _torchLoopClip = BuildTorchLoopClip();
 
-            // 齿轮"咔嚓"：短促噪声 + 低频闷响叠在一起，模拟机械阻尼感
-            _gearClickClip = CreateClip("GearClick", 0.14f,
-                t => NoiseRaw() * 0.6f * EnvAD(t, 0.04f, 0.001f) + Sine(t, 65f) * 0.8f * EnvAD(t, 0.14f, 0.005f));
-            // 通关上升音阶：四个音依次播放，each note 用自己的局部时间起相位，避免音符之间相位跳变的爆音
-            _stageCompleteClip = CreateClip("StageComplete", 0.56f, StageCompleteArp);
-            // 死亡音效：下坠音阶 + 噪声，短促但明显区别于普通撞墙声
-            _playerDeathClip = CreateClip("PlayerDeath", 0.45f,
-                t => SineSweep(t, 0.4f, 500f, 90f) * 0.7f * EnvAD(t, 0.4f, 0.01f)
-                   + NoiseRaw() * 0.35f * EnvAD(t, 0.1f, 0.002f));
         }
 
         private AudioClip CreateClip(string name, float duration, Func<float, float> waveform)
@@ -286,11 +380,7 @@ namespace Resource.Scripts
         }
 
         private static float Sine(float t, float freq)   => Mathf.Sin(2f * Mathf.PI * freq * t);
-        private static float Square(float t, float freq) => Mathf.Sign(Sine(t, freq));
         private static float NoiseRaw()                  => UnityEngine.Random.Range(-1f, 1f);
-
-        private static float NoiseBurst(float t, float duration, float attack) =>
-            NoiseRaw() * EnvAD(t, duration, attack);
 
         /// <summary>线性调频正弦扫频（f0→f1），相位用积分保证连续不跳变</summary>
         private static float SineSweep(float t, float duration, float f0, float f1)
@@ -308,14 +398,6 @@ namespace Resource.Scripts
             if (rel <= 0f) return 0f;
             float decayT = Mathf.Clamp01((t - attack) / rel);
             return Mathf.Pow(1f - decayT, 2f);
-        }
-
-        private static float WoodCreak(float t)
-        {
-            float tone = Sine(t, 40f) * 0.25f + Sine(t, 180f) * 0.35f
-                       + Sine(t, 220f) * 0.25f + Sine(t, 260f) * 0.15f;
-            float noise = NoiseRaw() * 0.18f;
-            return tone + noise;
         }
 
         /// <summary>
@@ -362,18 +444,5 @@ namespace Resource.Scripts
             return clip;
         }
 
-        /// <summary>四音上升琶音（C5-E5-G5-C6），每个音符独立起相位，避免拼接处爆音</summary>
-        private static float StageCompleteArp(float t)
-        {
-            const float noteDur = 0.14f;
-            if (t < noteDur * 1f) return NoteEnv(t - noteDur * 0f, noteDur, 523f);
-            if (t < noteDur * 2f) return NoteEnv(t - noteDur * 1f, noteDur, 659f);
-            if (t < noteDur * 3f) return NoteEnv(t - noteDur * 2f, noteDur, 784f);
-            if (t < noteDur * 4f) return NoteEnv(t - noteDur * 3f, noteDur, 1047f);
-            return 0f;
-        }
-
-        private static float NoteEnv(float localT, float duration, float freq) =>
-            Sine(localT, freq) * EnvAD(localT, duration, 0.005f);
     }
 }

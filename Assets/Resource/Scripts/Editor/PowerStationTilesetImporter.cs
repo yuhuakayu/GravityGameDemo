@@ -65,6 +65,8 @@ namespace Resource.Scripts.Editor
             { Root + "/Animated/Card.png", new Sheet(24, 24, 10f) },
             { CaveRoot + "/tileset.png", new Sheet(16, 16, 0f) },
             { CaveRoot + "/vegetation.png", new Sheet(16, 16, 0f) },
+            { CaveRoot + "/Door/door_idle.png", new Sheet(32, 32, 7f) },
+            { CaveRoot + "/Door/door_open.png", new Sheet(32, 32, 12f) },
         };
 
         private void OnPreprocessTexture()
@@ -102,7 +104,7 @@ namespace Resource.Scripts.Editor
             Debug.Log($"[PowerStationTileset] 已重新应用导入设置：{guids.Length} 张图片。");
         }
 
-        private static void ApplyBaseSettings(TextureImporter importer, string path)
+        internal static void ApplyBaseSettings(TextureImporter importer, string path)
         {
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = Sheets.ContainsKey(path) ? SpriteImportMode.Multiple : SpriteImportMode.Single;
@@ -116,7 +118,7 @@ namespace Resource.Scripts.Editor
             if (Borders.TryGetValue(path, out Vector4 border)) importer.spriteBorder = border;
         }
 
-        private static void SliceAndAnimate(string path, bool force)
+        internal static void SliceAndAnimate(string path, bool force)
         {
             if (!Sheets.TryGetValue(path, out var sheet)) return;
             if (!(AssetImporter.GetAtPath(path) is TextureImporter importer)) return;
@@ -178,16 +180,18 @@ namespace Resource.Scripts.Editor
             if (sprites.Length == 0) return;
 
             var clip = new AnimationClip { frameRate = fps };
-            var keys = new ObjectReferenceKeyframe[sprites.Length + 1];
+            bool isDoor = sheetPath == CaveRoot + "/Door/door_idle.png" || sheetPath == CaveRoot + "/Door/door_open.png";
+            var keys = new ObjectReferenceKeyframe[sprites.Length + (isDoor ? 0 : 1)];
             for (int i = 0; i < sprites.Length; i++)
                 keys[i] = new ObjectReferenceKeyframe { time = i / fps, value = sprites[i] };
-            keys[sprites.Length] = new ObjectReferenceKeyframe { time = sprites.Length / fps, value = sprites[sprites.Length - 1] };
+            if (!isDoor)
+                keys[sprites.Length] = new ObjectReferenceKeyframe { time = sprites.Length / fps, value = sprites[sprites.Length - 1] };
 
             var binding = EditorCurveBinding.PPtrCurve("", typeof(SpriteRenderer), "m_Sprite");
             AnimationUtility.SetObjectReferenceCurve(clip, binding, keys);
 
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = true;
+            settings.loopTime = sheetPath != CaveRoot + "/Door/door_open.png";
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
             AssetDatabase.CreateAsset(clip, clipPath);

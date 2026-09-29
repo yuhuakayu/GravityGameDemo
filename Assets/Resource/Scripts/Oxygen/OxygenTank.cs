@@ -72,6 +72,7 @@ namespace Resource.Scripts
                 trigger.enabled = false;
 
             oxygen.AddOxygen(restoreAmount);
+            SfxManager.Instance.PlayOxygenPickup();
             if (pickupDuration <= 0f)
                 Destroy(gameObject);
             else

@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &690584328932166601
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1241800002570137222}
+  - component: {fileID: 4748072864574597803}
+  m_Layer: 0
+  m_Name: SfxManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1241800002570137222
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 690584328932166601}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4748072864574597803
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 690584328932166601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9241b5dee11c41d4383aa14028599394, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sfxEnabled: 0
+  masterVolume: 1
+  worldRotateClickClips:
+  - {fileID: 8300000, guid: 52da22f094865464195988c15d9ba1ff, type: 3}
+  - {fileID: 8300000, guid: 1e9bffef88332c346bd50fdb5671dc43, type: 3}
+  - {fileID: 8300000, guid: 236e9448cc035be41b1f9d769da5d07d, type: 3}
+  - {fileID: 8300000, guid: b347d5cd11e8ec949aa3f9e593c57cd7, type: 3}
+  - {fileID: 8300000, guid: 8001465ab584a034e99796d5ed46cdfc, type: 3}
+  - {fileID: 8300000, guid: 1c1dd29ed95959a4081ba28b9e5212fd, type: 3}
+  worldRotateLoopClip: {fileID: 8300000, guid: 4c5322540ba6300499cb3ed0255893ed, type: 3}
+  worldRotateStopClip: {fileID: 8300000, guid: f2b7ccdd528429d49aece07939ddc184, type: 3}
+  clickDegrees: 8
+  minClickInterval: 0.035
+  clickPitchRange: {x: 0.97, y: 1.03}
+  clickVolumeRange: {x: 0.8, y: 1}
+  loopStartSpeed: 90
+  loopFullSpeed: 150
+  loopMaxVolume: 0.8
+  rotationFadeIn: 0.05
+  rotationFadeOut: 0.12
+  rotationStopDelay: 0.1
+  _landClip: {fileID: 8300000, guid: d9b529188e351a441ab015c32a190175, type: 3}
+  _heavyLandClip: {fileID: 8300000, guid: a17d5d1cef66137449bf0c0b0f253644, type: 3}
+  heavyLandSpeed: 12.5
+  _wallBumpClip: {fileID: 8300000, guid: f307424dbffd8a24194189ab21960ee8, type: 3}
+  _playerDeathClip: {fileID: 8300000, guid: 26aa19dbd1b125746ab6d7c7e8a3a0cc, type: 3}
+  _doorOpenClip: {fileID: 8300000, guid: 4ca279697281d6441857445afff1aef5, type: 3}
+  _oxygenPickupClip: {fileID: 8300000, guid: 2a4458dda9f30b94d8213908d1d51b82, type: 3}
+  _buttonClickClip: {fileID: 8300000, guid: 190e5c0bacddb95459cb6f17f8ce34ed, type: 3}
+  _uiMoveClip: {fileID: 8300000, guid: 81642553d09e8f841b7046a9ca6b39f2, type: 3}
+  _uiBackClip: {fileID: 8300000, guid: 4680cc0103b1adf4cbff2dc918f7a3bd, type: 3}
+  _uiErrorClip: {fileID: 8300000, guid: 2bd810b4a4499eb429ae9d803ad5687e, type: 3}
+  _stageCompleteClip: {fileID: 8300000, guid: cd59e9257dd621044afa17cd152c0b75, type: 3}
+  ambientCaveClip: {fileID: 8300000, guid: 8d039fac855174f49a93e9a7ef49799f, type: 3}
+  fallWindClip: {fileID: 8300000, guid: 591af86e26fff5343948faa6c62edaab, type: 3}
+  doorHumClip: {fileID: 8300000, guid: 8cbcc44b51e96d645b540ae877fc940e, type: 3}
+  laserHumClip: {fileID: 8300000, guid: 071c756c44138244384c40aeb349e27a, type: 3}

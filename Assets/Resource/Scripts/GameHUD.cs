@@ -133,7 +133,7 @@ namespace Resource.Scripts
             Time.timeScale = _isSettingsOpen ? 0f : _timeScaleBeforePause;
             var root = _pausePanelRoot;
             StartCoroutine(FadeCanvasGroup(_pauseCanvasGroup, 1f, 0f, 0.2f, () => root.SetActive(false)));
-            SfxManager.Instance.PlayButtonClick();
+            SfxManager.Instance.PlayUIBack();
         }
 
         private void UpdatePauseButtonHighlight()
@@ -170,7 +170,7 @@ namespace Resource.Scripts
                 {
                     _pauseSelectedIndex = newIndex;
                     UpdatePauseButtonHighlight();
-                    SfxManager.Instance.PlayButtonHover();
+                    SfxManager.Instance.PlayUIMove();
                 }
             }
 
@@ -212,7 +212,7 @@ namespace Resource.Scripts
             Time.timeScale = _isPaused ? 0f : _timeScaleBeforeSettings;
             var root = _settingsPanelRoot;
             StartCoroutine(FadeCanvasGroup(_settingsCanvasGroup, 1f, 0f, 0.2f, () => root.SetActive(false)));
-            SfxManager.Instance.PlayButtonClick();
+            SfxManager.Instance.PlayUIBack();
         }
 
         private void UpdateSettingsRowHighlight()
@@ -247,7 +247,7 @@ namespace Resource.Scripts
                 {
                     _settingsSelectedIndex = newIndex;
                     UpdateSettingsRowHighlight();
-                    SfxManager.Instance.PlayButtonHover();
+                    SfxManager.Instance.PlayUIMove();
                 }
             }
 
@@ -275,20 +275,20 @@ namespace Resource.Scripts
             switch (_settingsSelectedIndex)
             {
                 case 0:
-                    if (adjustPressed) { _masterDrag.SetValue(_masterDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayButtonHover(); }
+                    if (adjustPressed) { _masterDrag.SetValue(_masterDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayUIMove(); }
                     break;
                 case 1:
-                    if (adjustPressed) { _musicDrag.SetValue(_musicDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayButtonHover(); }
+                    if (adjustPressed) { _musicDrag.SetValue(_musicDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayUIMove(); }
                     break;
                 case 2:
-                    if (adjustPressed) { _sfxDrag.SetValue(_sfxDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayButtonHover(); }
+                    if (adjustPressed) { _sfxDrag.SetValue(_sfxDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayUIMove(); }
                     break;
                 case 3:
                     if (adjustPressed)
                     {
                         int dir = adjustAxis > 0f ? 1 : -1;
                         ChangeResolution(dir);
-                        SfxManager.Instance.PlayButtonHover();
+                        SfxManager.Instance.PlayUIMove();
                     }
                     break;
                 case 4:
@@ -303,7 +303,7 @@ namespace Resource.Scripts
                     {
                         int dir = adjustAxis > 0f ? 1 : -1;
                         LocalizationManager.Instance.CycleLanguage(dir);
-                        SfxManager.Instance.PlayButtonHover();
+                        SfxManager.Instance.PlayUIMove();
                     }
                     break;
                 case 6:
@@ -318,7 +318,7 @@ namespace Resource.Scripts
             Time.timeScale = 1f;
             _isPaused = false;
             _pausePanelRoot.SetActive(false);
-            SfxManager.Instance.PlayButtonClick();
+            SfxManager.Instance.PlayUIBack();
             GameFlowState.HasEnteredGame = false; // 主菜单现在是独立场景，回去就用不上这个标记了，保留只是不影响其它地方的判断
             SceneTransition.Instance.LoadScene("MainMenu");
         }
@@ -370,10 +370,11 @@ namespace Resource.Scripts
             overlayImage.color = OverlayColor;
 
             var panel = CreatePanel(canvas.transform, new Vector2(420f, 440f));
-            var title = CreateSettingsText(panel, "已暂停", new Vector2(0f, 1f), Vector2.one, TextAnchor.MiddleCenter, 34, "Title");
+            var title = CreateLocalizedText(panel, "pause.title", new Vector2(0f, 1f), Vector2.one, TextAnchor.MiddleCenter, 34, "Title");
             PositionTitle(title.GetComponent<RectTransform>(), 60f);
 
-            var resumeBtn = CreateButton(panel, "继续", new Vector2(300f, 54f));
+            var resumeBtn = CreateButton(panel, LocalizationManager.Instance.Get("pause.resume"), new Vector2(300f, 54f), "Button_Resume", "Button_继续");
+            _localizedTexts.Add((resumeBtn.GetComponentInChildren<TextMeshProUGUI>(), "pause.resume"));
             PositionInPanel(resumeBtn.GetComponent<RectTransform>(), 0);
             resumeBtn.onClick.AddListener(ClosePause);
 
@@ -382,11 +383,13 @@ namespace Resource.Scripts
             settingsBtn.onClick.AddListener(OpenSettings);
             _localizedTexts.Add((settingsBtn.GetComponentInChildren<TextMeshProUGUI>(), "settings.title"));
 
-            var restartBtn = CreateButton(panel, "重新开始", new Vector2(300f, 54f));
+            var restartBtn = CreateButton(panel, LocalizationManager.Instance.Get("pause.restart"), new Vector2(300f, 54f), "Button_Restart", "Button_重新开始");
+            _localizedTexts.Add((restartBtn.GetComponentInChildren<TextMeshProUGUI>(), "pause.restart"));
             PositionInPanel(restartBtn.GetComponent<RectTransform>(), 2);
             restartBtn.onClick.AddListener(OnRestartClicked);
 
-            var exitBtn = CreateButton(panel, "返回主菜单", new Vector2(300f, 54f));
+            var exitBtn = CreateButton(panel, LocalizationManager.Instance.Get("pause.main_menu"), new Vector2(300f, 54f), "Button_MainMenu", "Button_返回主菜单");
+            _localizedTexts.Add((exitBtn.GetComponentInChildren<TextMeshProUGUI>(), "pause.main_menu"));
             PositionInPanel(exitBtn.GetComponent<RectTransform>(), 3);
             exitBtn.onClick.AddListener(OnReturnToMainMenuClicked);
 
@@ -644,8 +647,13 @@ namespace Resource.Scripts
         }
 
         // 保留场景物体名称和事件入口，对已有 UI 同样应用字体、尺寸和贴图。
-        private Button CreateButton(Transform parent, string label, Vector2 size, string goName = null)
+        private Button CreateButton(Transform parent, string label, Vector2 size, string goName = null, string legacyName = null)
         {
+            if (legacyName != null && parent.Find(goName) == null)
+            {
+                var legacy = parent.Find(legacyName);
+                if (legacy != null) legacy.name = goName;
+            }
             var rt = EnsureRect(parent, goName ?? $"Button_{label}");
             rt.sizeDelta = size;
             rt.localScale = Vector3.one;

@@ -48,8 +48,8 @@ namespace Resource.Scripts.Editor
             string[] sources = { "LocalizationManager.cs", "MainMenuUI.cs", "GameHUD.cs", "LevelIntroUI.cs", "Oxygen/OxygenHUD.cs" };
             string characters = new string(string.Concat(sources.Select(path => File.ReadAllText("Assets/Resource/Scripts/" + path)))
                 .Where(c => !char.IsControl(c)).Distinct().ToArray());
-            theme.regularFont = CreateFont("NotoSerifSC-Regular-GB2312", characters);
-            theme.boldFont = CreateFont("NotoSerifSC-Bold-GB2312", characters);
+            theme.regularFont = CreateUIFont("NotoSerifSC-Regular-GB2312", CreateFont("NotoSerifSC-Regular-GB2312", characters));
+            theme.boldFont = CreateUIFont("NotoSerifSC-Bold-GB2312", CreateFont("NotoSerifSC-Bold-GB2312", characters));
             theme.titleFont = CreateTitleFont();
             EditorUtility.SetDirty(theme);
             AssetDatabase.SaveAssets();
@@ -57,6 +57,32 @@ namespace Resource.Scripts.Editor
         }
 
         private static Sprite LoadSprite(string name) => AssetDatabase.LoadAssetAtPath<Sprite>(ArtRoot + name + ".png");
+
+        private static TMP_FontAsset CreateUIFont(string name, TMP_FontAsset fallback)
+        {
+            string path = FontRoot + name + " UI Pixel.asset";
+            var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(path);
+            if (font != null) return font;
+
+            var source = AssetDatabase.LoadAssetAtPath<Font>(FontRoot + name + ".otf");
+            // 12px 位图以按钮的 24px 字号整倍放大，避免细衬线挤在一个屏幕像素中。
+            font = TMP_FontAsset.CreateFontAsset(source, 12, 1, GlyphRenderMode.RASTER_HINTED,
+                256, 256, AtlasPopulationMode.Dynamic, false);
+            font.name = name + " UI Pixel";
+            font.TryAddCharacters(new string(Enumerable.Range(32, 95).Select(c => (char)c).ToArray()));
+            font.atlasPopulationMode = AtlasPopulationMode.Static;
+            font.fallbackFontAssetTable = new System.Collections.Generic.List<TMP_FontAsset> { fallback };
+            AssetDatabase.CreateAsset(font, path);
+            AssetDatabase.AddObjectToAsset(font.material, font);
+            foreach (var atlas in font.atlasTextures)
+            {
+                atlas.name = name + " UI Atlas";
+                atlas.filterMode = FilterMode.Point;
+                AssetDatabase.AddObjectToAsset(atlas, font);
+            }
+            EditorUtility.SetDirty(font);
+            return font;
+        }
 
         private static TMP_FontAsset CreateTitleFont()
         {

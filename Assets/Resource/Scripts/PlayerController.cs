@@ -16,6 +16,8 @@ namespace Resource.Scripts
         public bool isDebugGizmos = false;   // Scene 画图
 
         [Header("移动设置")]
+        [Tooltip("是否允许键盘和手柄控制横向移动；关闭时保留重力、碰撞与自动移动模式。")]
+        public bool manualMoveEnabled = false;
         public float maxMoveSpeed = 6f;
         public float jumpForce = 12f;
         [Tooltip("关闭后禁用键盘和手柄跳跃，保留正常移动与重力。")]
@@ -38,6 +40,8 @@ namespace Resource.Scripts
         private bool _physicsStepPending;
         private Vector2 _stepStartPosition;
         private Vector2 _submittedVelocity;
+        private readonly HashSet<Collider2D> _landingContacts = new HashSet<Collider2D>();
+        private bool _landingSoundArmed;
         private Coroutine _afterPhysics;
 
         public float SimulatedGravityScale
@@ -65,8 +69,8 @@ namespace Resource.Scripts
         [Header("落地音效")]
         public float maxLandImpactSpeed = 15f;
 
-        [Header("脚步声 / 扬尘")]
-        [Tooltip("每移动这么多世界单位触发一次脚步声 + 扬尘")]
+        [Header("行走扬尘")]
+        [Tooltip("每移动这么多世界单位触发一次扬尘")]
         public float footstepInterval = 1.4f;
 
         [Header("手柄震动（走路时）")]
@@ -115,6 +119,7 @@ namespace Resource.Scripts
         public void EnterPreview()
         {
             _gameplayStarted = false;
+            _landingSoundArmed = false;
             intendedVelocity = Vector2.zero;
             _jumpQueued = false;
             _physicsStepPending = false;
@@ -278,6 +283,9 @@ namespace Resource.Scripts
             else
                 HandleMovement();
             _submittedVelocity = _selfVelocityActive ? intendedVelocity : rb.linearVelocity;
+            // 防挤压修正可能暂时断开物理接触；脚底仍有支撑时不算新的下落。
+            if (!isGrounded && _landingContacts.Count == 0 && _submittedVelocity.y < -0.01f)
+                _landingSoundArmed = true;
             if (_selfVelocityActive) _crushGuard.CaptureBeforePhysics(deltaTime);
             _physicsStepPending = true;
             if (autoMoveMode) CheckAutoMoveFootContact();
@@ -322,7 +330,7 @@ namespace Resource.Scripts
 
         public float ReadMoveInput()
         {
-            if (Gyro.GyroRuntime.ConsoleCapturesInput) return 0f;
+            if (!manualMoveEnabled || Gyro.GyroRuntime.ConsoleCapturesInput) return 0f;
             float input = 0f;
             var keyboard = Keyboard.current;
             if (keyboard != null)
@@ -458,8 +466,8 @@ namespace Resource.Scripts
                 );
             }
 
-            if ((isTouchingWallLeft && !wasTouchingLeft) ||
-                (isTouchingWallRight && !wasTouchingRight))
+            if (!isGrounded && ((isTouchingWallLeft && !wasTouchingLeft) ||
+                (isTouchingWallRight && !wasTouchingRight)))
                 SfxManager.Instance.PlayWallBump();
         }
 
@@ -475,9 +483,11 @@ namespace Resource.Scripts
 
             float moveInput = 0f;
 
-            if (Gyro.GyroRuntime.ConsoleCapturesInput)
+            if (!manualMoveEnabled || Gyro.GyroRuntime.ConsoleCapturesInput)
             {
                 rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+                UpdateFootsteps(0f);
+                UpdateRumble(0f);
                 return;
             }
 
@@ -576,7 +586,6 @@ namespace Resource.Scripts
                     else rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
                     if (isDebugLog) Debug.Log("跳跃成功！");
 
-                    SfxManager.Instance.PlayJump();
                     EmitDust(2);
                 }
             }
@@ -584,26 +593,44 @@ namespace Resource.Scripts
 
         void OnCollisionEnter2D(Collision2D col)
         {
-            // 自动移动模式下，撞墙转向/触雷死亡改成只认脚底（见 CheckAutoMoveFootContact），
-            // 身体其它部位撞上不算，这里直接跳过。
+            bool hasGroundContact = UpdateLandingAudio(col);
+
+            // 自动移动模式的玩法接地仍只使用脚底检测。
             if (autoMoveMode) return;
+            if (hasGroundContact) isGrounded = true;
+        }
 
-            bool wasGrounded = isGrounded;
+        void OnCollisionStay2D(Collision2D col) => UpdateLandingAudio(col);
 
+        private bool UpdateLandingAudio(Collision2D col)
+        {
+            bool hasGroundContact = false;
             foreach (ContactPoint2D contact in col.contacts)
                 if (contact.normal.y > 0.5f)
-                    isGrounded = true;
+                    hasGroundContact = true;
 
-            if (isGrounded && !wasGrounded)
+            if (!hasGroundContact)
             {
+                _landingContacts.Remove(col.collider);
+                return false;
+            }
+
+            _landingContacts.Add(col.collider);
+            if (_landingSoundArmed && IsGameplayActive)
+            {
+                _landingSoundArmed = false;
+                float landingSpeed = Mathf.Max(0f, -_submittedVelocity.y);
                 float impact01 = Mathf.Clamp01(Mathf.Abs(col.relativeVelocity.y) / maxLandImpactSpeed);
-                SfxManager.Instance.PlayLand(impact01);
+                SfxManager.Instance.PlayLand(landingSpeed, impact01);
                 EmitDust(3);
             }
+
+            return true;
         }
 
         void OnCollisionExit2D(Collision2D col)
         {
+            _landingContacts.Remove(col.collider);
             if (autoMoveMode) return;
             isGrounded = false;
         }
@@ -668,7 +695,6 @@ namespace Resource.Scripts
             if (redirect != null)
             {
                 _autoMoveDir = redirect.RedirectDirection;
-                SfxManager.Instance.PlayWallBump();
             }
         }
 
@@ -725,7 +751,7 @@ namespace Resource.Scripts
             return _deathFlashMaterial;
         }
 
-        // ── 跑步手感 / 脚步声 / 扬尘（项目里没有现成的沙尘美术资源，用运行时生成的 ParticleSystem）──
+        // ── 扬尘（项目里没有现成的沙尘美术资源，用运行时生成的 ParticleSystem）──
         void BuildDustTrail()
         {
             var existing = transform.Find("DustTrail (Auto)");
@@ -830,7 +856,6 @@ namespace Resource.Scripts
                 if (_footstepDistance >= footstepInterval)
                 {
                     _footstepDistance = 0f;
-                    SfxManager.Instance.PlayFootstep(Mathf.Abs(moveInput));
                     EmitDust(UnityEngine.Random.Range(1, 3));
                 }
             }
@@ -857,6 +882,8 @@ namespace Resource.Scripts
 
         void OnDisable()
         {
+            _landingContacts.Clear();
+            _landingSoundArmed = false;
             if (_afterPhysics != null) StopCoroutine(_afterPhysics);
             _afterPhysics = null;
             _physicsStepPending = false;

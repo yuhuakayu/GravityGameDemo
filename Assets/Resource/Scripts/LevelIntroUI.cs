@@ -1,4 +1,5 @@
 using Resource.Scripts.Gyro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -38,6 +39,8 @@ namespace Resource.Scripts
         private CameraZoomController _camZoom;
         private bool _isPreviewing;
         private GameObject _canvasGO;
+        private LocalizationManager _loc;
+        private TextMeshProUGUI _startLabel;
 
         public bool IsPreviewing => _isPreviewing;
 
@@ -54,7 +57,9 @@ namespace Resource.Scripts
 
             EnsureEventSystem();
             FreezeGameplay();
+            _loc = LocalizationManager.Instance;
             BuildUI();
+            _loc.OnLanguageChanged += RefreshLocalizedTexts;
 
             _camFollow = _cam.GetComponent<FollowTarget2D>();
             if (_camFollow != null) _camFollow.enabled = false;
@@ -67,6 +72,16 @@ namespace Resource.Scripts
             _cam.transform.position = new Vector3(boundsCenter.x, boundsCenter.y, _cam.transform.position.z);
 
             _isPreviewing = true;
+        }
+
+        void OnDestroy()
+        {
+            if (_loc != null) _loc.OnLanguageChanged -= RefreshLocalizedTexts;
+        }
+
+        private void RefreshLocalizedTexts()
+        {
+            if (_startLabel != null) _startLabel.text = _loc.Get("menu.start");
         }
 
         void Update()
@@ -211,31 +226,17 @@ namespace Resource.Scripts
             _canvasGO = canvasGO;
             canvasGO.SetActive(true);
 
-            var hintPanel = canvasGO.transform.Find("HintPanel");
-            if (hintPanel == null)
+            foreach (string hintName in new[] { "HintPanel", "Row_Stick", "Row_Trigger" })
             {
-                hintPanel = new GameObject("HintPanel", typeof(RectTransform), typeof(Image)).transform;
-                hintPanel.SetParent(canvasGO.transform, false);
+                var hint = canvasGO.transform.Find(hintName);
+                if (hint == null) continue;
+                hint.gameObject.SetActive(false);
+                Destroy(hint.gameObject);
             }
-            var hintRT = hintPanel.GetComponent<RectTransform>();
-            hintRT.anchorMin = hintRT.anchorMax = hintRT.pivot = new Vector2(0f, 1f);
-            hintRT.anchoredPosition = new Vector2(24f, -78f);
-            hintRT.sizeDelta = new Vector2(426f, 132f);
-            var hintImage = hintPanel.GetComponent<Image>();
-            hintImage.sprite = PixelUI.Theme.panel;
-            hintImage.type = Image.Type.Sliced;
-            hintImage.color = Color.white;
-            hintImage.raycastTarget = false;
-            hintPanel.SetAsFirstSibling();
-
-            // 操作提示（左上角）：图标 + 文字两行。摇杆和扳机图标都用美术自己做的手柄按键图
-            // （Resources/Icons/ControllerButtons/ 下），不再是程序生成的占位图形
-            var stickIcon = Resources.Load<Sprite>(ControllerIconResourceDir + "ls_icon_32");
-            BuildHintRow(canvasGO.transform, "Row_Stick", stickIcon, "左摇杆：移动视角", 0);
-            BuildTriggerHintRow(canvasGO.transform, "Row_Trigger", "左右扳机：缩放视野", 1);
 
             // 开始游戏按钮（右下角）
-            var startBtn = CreateButton(canvasGO.transform, "开始游戏", new Vector2(300f, 54f));
+            var startBtn = CreateButton(canvasGO.transform, _loc.Get("menu.start"), new Vector2(300f, 54f));
+            _startLabel = startBtn.GetComponentInChildren<TextMeshProUGUI>();
             var startRT = startBtn.GetComponent<RectTransform>();
             startRT.anchorMin = startRT.anchorMax = new Vector2(1f, 0f);
             startRT.pivot = new Vector2(1f, 0f);
@@ -244,134 +245,6 @@ namespace Resource.Scripts
             startBtn.onClick.AddListener(OnStartGameClicked);
             if (EventSystem.current != null)
                 EventSystem.current.SetSelectedGameObject(startBtn.gameObject);
-        }
-
-        /// <summary>一行操作提示：左边一个图标，右边文字，rowIndex 决定竖直排布的第几行（0 在最上面）。</summary>
-        private void BuildHintRow(Transform parent, string rowName, Sprite icon, string label, int rowIndex)
-        {
-            var existingRow = parent.Find(rowName);
-            GameObject rowGO;
-            if (existingRow != null)
-            {
-                rowGO = existingRow.gameObject;
-            }
-            else
-            {
-                rowGO = new GameObject(rowName, typeof(RectTransform));
-                rowGO.transform.SetParent(parent, false);
-            }
-            LayoutHintRow(rowGO.GetComponent<RectTransform>(), rowIndex);
-
-            var existingIcon = rowGO.transform.Find("Icon");
-            Image iconImg;
-            if (existingIcon != null)
-            {
-                iconImg = existingIcon.GetComponent<Image>();
-            }
-            else
-            {
-                var iconGO = new GameObject("Icon", typeof(RectTransform));
-                iconGO.transform.SetParent(rowGO.transform, false);
-                iconImg = iconGO.AddComponent<Image>();
-            }
-            var iconRT = iconImg.rectTransform;
-            iconRT.anchorMin = iconRT.anchorMax = iconRT.pivot = new Vector2(0f, 0.5f);
-            iconRT.anchoredPosition = Vector2.zero;
-            iconRT.sizeDelta = new Vector2(56f, 56f);
-            iconImg.sprite = icon;
-            iconImg.color = Color.white;
-            iconImg.preserveAspect = true;
-            iconImg.raycastTarget = false;
-
-            var labelGO = CreateText(rowGO.transform, "Text_Label", label,
-                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), TextAnchor.MiddleLeft, 18);
-            var labelRT = labelGO.GetComponent<RectTransform>();
-            labelRT.pivot = new Vector2(0f, 0.5f);
-            labelRT.anchoredPosition = new Vector2(72f, 0f);
-            labelRT.sizeDelta = new Vector2(300f, 36f);
-        }
-
-        private static void LayoutHintRow(RectTransform row, int rowIndex)
-        {
-            row.anchorMin = row.anchorMax = row.pivot = new Vector2(0f, 1f);
-            row.anchoredPosition = new Vector2(42f, -90f - rowIndex * 54f);
-            row.sizeDelta = new Vector2(390f, 54f);
-        }
-
-        /// <summary>手柄按键美术图（美术自己截图做的，不是程序生成的），放在 Resources 下按名字加载。
-        /// 图本身已经画好了黑底白字的徽标+字母，不用再叠字 Text。</summary>
-        private const string ControllerIconResourceDir = "Icons/ControllerButtons/";
-
-        /// <summary>扳机提示行：跟通用 BuildHintRow 不一样，这一行要并排放 L2/R2 两个徽标图标（美术素材图），
-        /// 再接说明文字，所以单独写一个方法。两个徽标按各自贴图的宽高比顺序排布，不挤成正方形。</summary>
-        private void BuildTriggerHintRow(Transform parent, string rowName, string label, int rowIndex)
-        {
-            var existingRow = parent.Find(rowName);
-            GameObject rowGO;
-            if (existingRow != null)
-            {
-                rowGO = existingRow.gameObject;
-            }
-            else
-            {
-                rowGO = new GameObject(rowName, typeof(RectTransform));
-                rowGO.transform.SetParent(parent, false);
-            }
-            LayoutHintRow(rowGO.GetComponent<RectTransform>(), rowIndex);
-
-            const float badgeHeight = 30f;
-            const float badgeGap = 8f;
-            float x = 0f;
-            x += BuildIconBadge(rowGO.transform, "Badge_L2", "L2", x, badgeHeight) + badgeGap;
-            x += BuildIconBadge(rowGO.transform, "Badge_R2", "R2", x, badgeHeight) + badgeGap;
-
-            var labelGO = CreateText(rowGO.transform, "Text_Label", label,
-                new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), TextAnchor.MiddleLeft, 18);
-            // 每次都重新摆放到两个徽标算出来的实际宽度之后（徽标宽度是贴图决定的，不是写死的常量）
-            var labelRTAlways = labelGO.GetComponent<RectTransform>();
-            labelRTAlways.pivot = new Vector2(0f, 0.5f);
-            labelRTAlways.sizeDelta = new Vector2(390f - x - 4f, 36f);
-            labelRTAlways.anchoredPosition = new Vector2(x + 4f, 0f);
-        }
-
-        /// <summary>单个手柄按键徽标：从 Resources/Icons/ControllerButtons/ 下加载同名贴图，
-        /// 按贴图原始宽高比缩放到指定高度。返回这个徽标实际占用的宽度，方便调用方摆下一个的位置。</summary>
-        private float BuildIconBadge(Transform parent, string goName, string iconName, float xOffset, float height)
-        {
-            var sprite = Resources.Load<Sprite>(ControllerIconResourceDir + iconName);
-            if (sprite == null)
-            {
-                Debug.LogWarning($"[LevelIntroUI] 找不到手柄按键图标：{ControllerIconResourceDir}{iconName}");
-                return height; // 找不到就退化成方形占位，好歹不会把后面的东西叠一起
-            }
-            float width = height * (sprite.rect.width / sprite.rect.height);
-
-            var existing = parent.Find(goName);
-            GameObject badgeGO;
-            Image img;
-            if (existing != null)
-            {
-                badgeGO = existing.gameObject;
-                img = badgeGO.GetComponent<Image>();
-            }
-            else
-            {
-                badgeGO = new GameObject(goName, typeof(RectTransform));
-                badgeGO.transform.SetParent(parent, false);
-                img = badgeGO.AddComponent<Image>();
-                img.color = Color.white;
-                img.raycastTarget = false;
-            }
-
-            var rt = badgeGO.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0f, 0.5f);
-            rt.anchorMax = new Vector2(0f, 0.5f);
-            rt.pivot = new Vector2(0f, 0.5f);
-            rt.anchoredPosition = new Vector2(xOffset, 0f);
-            rt.sizeDelta = new Vector2(width, height);
-            img.sprite = sprite;
-
-            return width;
         }
 
         private GameObject CreateText(Transform parent, string goName, string text, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align, int fontSize)
@@ -391,8 +264,8 @@ namespace Resource.Scripts
 
         private Button CreateButton(Transform parent, string label, Vector2 size)
         {
-            string goName = $"Button_{label}";
-            var existing = parent.Find(goName);
+            const string goName = "Button_StartGame";
+            var existing = parent.Find(goName) ?? parent.Find("Button_开始游戏");
             GameObject go;
             Image img;
             Button btn;
@@ -400,6 +273,7 @@ namespace Resource.Scripts
             if (existing != null)
             {
                 go = existing.gameObject;
+                go.name = goName;
                 img = go.GetComponent<Image>();
                 btn = go.GetComponent<Button>();
             }

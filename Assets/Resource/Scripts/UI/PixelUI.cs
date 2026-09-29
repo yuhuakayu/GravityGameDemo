@@ -19,6 +19,8 @@ namespace Resource.Scripts
 
         public static void ConfigureCanvas(Canvas canvas)
         {
+            canvas.pixelPerfect = true;
+            canvas.pixelPerfect = true;
             var scaler = canvas.GetComponent<CanvasScaler>();
             if (scaler == null) scaler = canvas.gameObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -38,6 +40,8 @@ namespace Resource.Scripts
             if (previousText != null) text.text = previousText;
             text.font = bold ? Theme.boldFont : Theme.regularFont;
             text.fontStyle = FontStyles.Normal;
+            text.fontFeatures.Clear(); // 位图字形不使用会产生小数间距的矢量字距调整。
+            text.fontFeatures.Clear(); // 位图字形不使用会产生小数间距的矢量字距调整。
             text.fontSize = size;
             text.enableAutoSizing = false;
             text.color = color;

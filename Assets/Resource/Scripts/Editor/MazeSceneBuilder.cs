@@ -30,6 +30,24 @@ namespace Resource.Scripts.Editor
             new[] { "########", "#P..#D##", "###.v.v#", "###....#", "###.#..#", "###....#", "####.###", "########" }
         };
 
+        private static readonly RectInt[][] FarRegions =
+        {
+            new[] { new RectInt(4, 2, 2, 5), new RectInt(2, 7, 3, 1) },
+            new[] { new RectInt(2, 2, 2, 4), new RectInt(6, 2, 1, 1) },
+            new[] { new RectInt(9, 2, 2, 3), new RectInt(3, 9, 2, 3), new RectInt(10, 11, 4, 1) },
+            new[] { new RectInt(3, 8, 1, 4), new RectInt(6, 4, 2, 1) },
+            new[] { new RectInt(10, 6, 2, 3), new RectInt(11, 4, 1, 2) }
+        };
+
+        private static readonly RectInt[][] MidRegions =
+        {
+            new[] { new RectInt(8, 4, 2, 2), new RectInt(6, 4, 2, 1) },
+            new[] { new RectInt(2, 6, 3, 1), new RectInt(7, 7, 3, 1), new RectInt(8, 6, 2, 1) },
+            new[] { new RectInt(2, 6, 2, 1), new RectInt(12, 9, 2, 2), new RectInt(6, 11, 2, 3) },
+            new[] { new RectInt(2, 11, 1, 2), new RectInt(4, 6, 1, 1) },
+            new[] { new RectInt(6, 10, 2, 1), new RectInt(12, 9, 2, 2), new RectInt(7, 6, 1, 2) }
+        };
+
         [MenuItem("Tools/Gravity Game/Levels/Build Five Maze Scenes")]
         public static void BuildAll()
         {
@@ -141,6 +159,12 @@ namespace Resource.Scripts.Editor
             if (walls.GetUsedTilesCount() == 0 || composite.pathCount == 0)
                 throw new InvalidOperationException(scenePath + " 未生成有效墙体碰撞，停止保存。");
 
+            BuildDecoration(grid.transform, tiles, map, index, Solid);
+            foreach (var renderer in player.GetComponentsInChildren<SpriteRenderer>(true))
+                renderer.sortingOrder = Mathf.Max(renderer.sortingOrder, 2);
+            foreach (var renderer in door.GetComponentsInChildren<Renderer>(true))
+                renderer.sortingOrder = Mathf.Max(renderer.sortingOrder, 2);
+
             door.transform.SetParent(grid.transform, false);
             door.transform.localRotation = Quaternion.identity;
             door.nextSceneName = index < Maps.Length - 1 ? "Maze_" + (index + 2).ToString("00") : "MainMenu";
@@ -182,6 +206,91 @@ namespace Resource.Scripts.Editor
             EditorSceneManager.SaveScene(scene, scenePath);
         }
 
+        private static void BuildDecoration(Transform parent, Tile[] tiles, string[] map, int index, Func<int, int, bool> solid)
+        {
+            int width = map[0].Length * TilesPerCell, height = map.Length * TilesPerCell;
+            Vector3Int Position(int x, int y) => new Vector3Int(x - width / 2, height / 2 - y - 1, 0);
+
+            void FillSpace(string name, int order, Color color, RectInt[] regions)
+            {
+                var layer = MakeTilemap(parent, name, order);
+                layer.color = color;
+                bool InRegion(int x, int y) => regions.Any(r => r.Contains(new Vector2Int(x, y)));
+                bool Connected(int x, int y) => solid(x, y) || InRegion(x, y);
+                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    if (InRegion(x, y) && !solid(x, y))
+                        layer.SetTile(Position(x, y), tiles[CaveReplicaSceneBuilder.AutoIndex(x, y, Connected)]);
+            }
+
+            FillSpace("BackgroundFar", -2, new Color(0.75f, 0.75f, 0.75f, 0.30f), FarRegions[index]);
+            FillSpace("BackgroundMid", -1, new Color(0.85f, 0.85f, 0.85f, 0.55f), MidRegions[index]);
+            var decoration = MakeTilemap(parent, "Decoration", 1);
+            var sprites = AssetDatabase.LoadAllAssetsAtPath(PowerStationTilesetImporter.CaveRoot + "/vegetation.png")
+                .OfType<Sprite>().ToDictionary(s => s.name);
+            var vegetation = new Tile[32];
+            for (int i = 0; i < vegetation.Length; i++)
+            {
+                string name = "vegetation_" + i.ToString("00");
+                string path = PowerStationTilesetImporter.CaveRoot + "/tiles/" + name + ".asset";
+                vegetation[i] = AssetDatabase.LoadAssetAtPath<Tile>(path);
+                if (vegetation[i] != null) continue;
+                var tile = ScriptableObject.CreateInstance<Tile>();
+                tile.sprite = sprites[name];
+                tile.colliderType = Tile.ColliderType.None;
+                AssetDatabase.CreateAsset(tile, path);
+                vegetation[i] = tile;
+            }
+
+            var blocked = new bool[width, height];
+            void BlockCell(int column, int row)
+            {
+                for (int y = 0; y < TilesPerCell; y++)
+                for (int x = 0; x < TilesPerCell; x++)
+                    blocked[column * TilesPerCell + x, row * TilesPerCell + y] = true;
+            }
+            for (int row = 0; row < map.Length; row++)
+            for (int column = 0; column < map[row].Length; column++)
+            {
+                char cell = map[row][column];
+                if (cell != '.' && cell != '#') BlockCell(column, row);
+                int dx = cell == '>' ? 1 : cell == '<' ? -1 : 0;
+                int dy = cell == 'v' ? 1 : cell == '^' ? -1 : 0;
+                if (dx == 0 && dy == 0) continue;
+                // 光束位于 2x2 格的中线，宽度覆盖中线两侧的地砖；一直排除到真墙。
+                for (int x = column + dx, y = row + dy;
+                    x >= 0 && y >= 0 && x < map[0].Length && y < map.Length && map[y][x] != '#';
+                    x += dx, y += dy)
+                    BlockCell(x, y);
+            }
+
+            var random = new System.Random(index + 1);
+            int[] plants = { 16, 17, 24, 25, 18, 19, 22, 23, 27, 30, 31, 26 };
+            int[] vines = { 0, 1, 2, 3, 6, 7 };
+            bool Available(int x, int y) => x >= 0 && y >= 0 && x < width && y < height
+                && !solid(x, y) && !blocked[x, y] && !decoration.HasTile(Position(x, y));
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                if (!Available(x, y)) continue;
+                bool above = solid(x, y - 1), below = solid(x, y + 1);
+                bool left = solid(x - 1, y), right = solid(x + 1, y);
+                int sprite;
+                if (above && left && random.NextDouble() < 0.80) sprite = 20;
+                else if (above && right && random.NextDouble() < 0.80) sprite = 21;
+                else if (below && left && random.NextDouble() < 0.70) sprite = 28;
+                else if (below && right && random.NextDouble() < 0.70) sprite = 29;
+                else if (below && random.NextDouble() < 0.60) sprite = plants[random.Next(plants.Length)];
+                else if (above && Available(x, y + 1) && random.NextDouble() < 0.45)
+                {
+                    sprite = vines[random.Next(vines.Length)];
+                    decoration.SetTile(Position(x, y + 1), vegetation[sprite + 8]);
+                }
+                else continue;
+                decoration.SetTile(Position(x, y), vegetation[sprite]);
+            }
+        }
+
         private static void PlacePlayer(PlayerController player, Vector2 center)
         {
             player.transform.position = Vector3.zero;
@@ -200,6 +309,17 @@ namespace Resource.Scripts.Editor
         private static void PlaceDoor(GoalDoor door, Vector2 center)
         {
             door.transform.localPosition = Vector3.zero;
+            var visual = door.transform.Find("DoorVisual");
+            var renderer = visual != null ? visual.GetComponent<SpriteRenderer>() : null;
+            if (renderer != null)
+            {
+                Bounds spriteBounds = renderer.localBounds;
+                Vector3 bottom = visual.TransformPoint(new Vector3(spriteBounds.center.x, spriteBounds.min.y, spriteBounds.center.z));
+                Vector3 localBottom = door.transform.parent.InverseTransformPoint(bottom);
+                door.transform.localPosition = new Vector3(center.x - localBottom.x, center.y - 1f - localBottom.y, 0f);
+                return;
+            }
+
             var map = door.GetComponent<Tilemap>();
             map.CompressBounds();
             Bounds bounds = map.localBounds;
@@ -295,7 +415,9 @@ namespace Resource.Scripts.Editor
             try
             {
                 go.layer = LayerMask.NameToLayer("Wall");
-                go.AddComponent<LaserEmitter>().Configure(AssetDatabase.LoadAssetAtPath<Sprite>(spritePath), material, LayerMask.GetMask("Wall", "Box"));
+                var emitter = go.AddComponent<LaserEmitter>();
+                go.GetComponent<SpriteRenderer>().sortingOrder = 2;
+                emitter.Configure(AssetDatabase.LoadAssetAtPath<Sprite>(spritePath), material, LayerMask.GetMask("Wall", "Box"));
                 return PrefabUtility.SaveAsPrefabAsset(go, LaserPrefabPath);
             }
             finally { Object.DestroyImmediate(go); }

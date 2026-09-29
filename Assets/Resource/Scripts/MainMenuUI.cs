@@ -48,6 +48,10 @@ namespace Resource.Scripts
         private CanvasGroup   _levelSelectGroup;
         private RectTransform _optionsRoot;
         private CanvasGroup   _optionsGroup;
+        private CanvasGroup _menuGroup;
+        private SceneTransition _sceneTransition;
+        private bool MenuInputBlocked => GyroRuntime.ConsoleCapturesInput
+            || (_sceneTransition != null && _sceneTransition.IsTransitioning);
 
         private static readonly Color LockedLevelText = new Color32(0x5A, 0x58, 0x7C, 255);
         private readonly List<RectTransform> _levelCards = new List<RectTransform>();
@@ -82,6 +86,10 @@ namespace Resource.Scripts
             EnsureEventSystem();
             FreezeGameplay();
             BuildUI();
+            _sceneTransition = SceneTransition.Instance;
+            _sceneTransition.TransitionStateChanged += SetTransitionInputLocked;
+            _sceneTransition.PlayStartupOpening();
+            SetTransitionInputLocked(_sceneTransition.IsTransitioning);
             _loc = LocalizationManager.Instance;
             _loc.OnLanguageChanged += RefreshLocalizedTexts;
             StartCoroutine(PauseAmbientAudioNextFrame());
@@ -109,7 +117,18 @@ namespace Resource.Scripts
 
         void OnDestroy()
         {
+            if (_sceneTransition != null) _sceneTransition.TransitionStateChanged -= SetTransitionInputLocked;
             if (_loc != null) _loc.OnLanguageChanged -= RefreshLocalizedTexts;
+        }
+
+        private void SetTransitionInputLocked(bool locked)
+        {
+            _menuGroup.interactable = !locked;
+            _menuGroup.blocksRaycasts = !locked;
+            // 自定义滑条不继承 Selectable，禁用它们也阻止已经开始的拖动。
+            _optionsMasterDrag.enabled = !locked;
+            _optionsMusicDrag.enabled = !locked;
+            _optionsSfxDrag.enabled = !locked;
         }
 
         /// <summary>用 Localization 表里的 key 建文字，并且登记下来，语言切换时统一刷新</summary>
@@ -130,7 +149,7 @@ namespace Resource.Scripts
 
         void Update()
         {
-            if (GyroRuntime.ConsoleCapturesInput) return;
+            if (MenuInputBlocked) return;
             if (_titlePanelRoot != null && _titlePanelRoot.gameObject.activeSelf)
                 HandleTitleInput();
 
@@ -163,6 +182,7 @@ namespace Resource.Scripts
         {
             _localizedTexts.Clear();
             var canvasRT = GetRect(transform, "MainMenuCanvas (Auto)");
+            _menuGroup = GetGroup(canvasRT);
             var canvas = canvasRT.GetComponent<Canvas>();
             if (canvas == null) canvas = canvasRT.gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -247,7 +267,7 @@ namespace Resource.Scripts
                     SetButtonFocused(_titleButtons[_titleSelectedIndex], false);
                     _titleSelectedIndex = newIndex;
                     SetButtonFocused(_titleButtons[_titleSelectedIndex], true);
-                    SfxManager.Instance.PlayButtonHover();
+                    SfxManager.Instance.PlayUIMove();
                 }
             }
 
@@ -266,7 +286,7 @@ namespace Resource.Scripts
 
         private void OnStartGameClicked()
         {
-            if (GyroRuntime.ConsoleCapturesInput) return;
+            if (MenuInputBlocked) return;
             if (_navLocked) return;
             _navLocked = true;
             SfxManager.Instance.PlayButtonClick();
@@ -276,7 +296,7 @@ namespace Resource.Scripts
 
         private void OnOptionsClicked()
         {
-            if (GyroRuntime.ConsoleCapturesInput) return;
+            if (MenuInputBlocked) return;
             if (_navLocked) return;
             _navLocked = true;
             SfxManager.Instance.PlayButtonClick();
@@ -286,7 +306,7 @@ namespace Resource.Scripts
 
         private void OnQuitClicked()
         {
-            if (GyroRuntime.ConsoleCapturesInput) return;
+            if (MenuInputBlocked) return;
             SfxManager.Instance.PlayButtonClick();
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -297,10 +317,10 @@ namespace Resource.Scripts
 
         private void BackToTitle(RectTransform fromRoot, CanvasGroup fromGroup, Vector2 fromExitOffset)
         {
-            if (GyroRuntime.ConsoleCapturesInput) return;
+            if (MenuInputBlocked) return;
             if (_navLocked) return;
             _navLocked = true;
-            SfxManager.Instance.PlayButtonClick();
+            SfxManager.Instance.PlayUIBack();
             StartCoroutine(SwapPanels(fromRoot, fromGroup, fromExitOffset,
                                        _titlePanelRoot, _titleGroup, new Vector2(0f, -150f)));
         }
@@ -458,7 +478,7 @@ namespace Resource.Scripts
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() =>
             {
-                if (GyroRuntime.ConsoleCapturesInput || _navLocked) return;
+                if (MenuInputBlocked || _navLocked) return;
                 _selectedLevelIndex = index;
                 UpdateCardHighlight();
                 ConfirmLevelSelection();
@@ -516,7 +536,7 @@ namespace Resource.Scripts
                 {
                     _selectedLevelIndex = newIndex;
                     UpdateCardHighlight();
-                    SfxManager.Instance.PlayButtonHover();
+                    SfxManager.Instance.PlayUIMove();
                 }
             }
 
@@ -531,14 +551,14 @@ namespace Resource.Scripts
 
         private void ConfirmLevelSelection()
         {
-            if (GyroRuntime.ConsoleCapturesInput) return;
+            if (MenuInputBlocked) return;
             if (_navLocked) return;
             if (_levelCards.Count == 0 || _selectedLevelIndex >= levels.Count) return;
 
             var level = levels[_selectedLevelIndex];
             if (!level.unlocked)
             {
-                SfxManager.Instance.PlayWallBump(); // 借用撞墙音效当"选不了"的提示
+                SfxManager.Instance.PlayUIError();
                 return;
             }
 
@@ -593,7 +613,7 @@ namespace Resource.Scripts
                 {
                     _optionsSelectedIndex = newIndex;
                     UpdateOptionsRowHighlight();
-                    SfxManager.Instance.PlayButtonHover();
+                    SfxManager.Instance.PlayUIMove();
                 }
             }
 
@@ -622,13 +642,13 @@ namespace Resource.Scripts
             switch (_optionsSelectedIndex)
             {
                 case 0:
-                    if (adjustPressed) { _optionsMasterDrag.SetValue(_optionsMasterDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayButtonHover(); }
+                    if (adjustPressed) { _optionsMasterDrag.SetValue(_optionsMasterDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayUIMove(); }
                     break;
                 case 1:
-                    if (adjustPressed) { _optionsMusicDrag.SetValue(_optionsMusicDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayButtonHover(); }
+                    if (adjustPressed) { _optionsMusicDrag.SetValue(_optionsMusicDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayUIMove(); }
                     break;
                 case 2:
-                    if (adjustPressed) { _optionsSfxDrag.SetValue(_optionsSfxDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayButtonHover(); }
+                    if (adjustPressed) { _optionsSfxDrag.SetValue(_optionsSfxDrag.Value + adjustAxis * 0.1f); SfxManager.Instance.PlayUIMove(); }
                     break;
                 case 3:
                     if (adjustPressed)
@@ -636,7 +656,7 @@ namespace Resource.Scripts
                         int dir = adjustAxis > 0f ? 1 : -1;
                         settings.SetResolutionIndex(Mathf.Clamp(settings.resolutionIndex + dir, 0, settings.CommonResolutions.Length - 1));
                         RefreshResolutionRow(settings);
-                        SfxManager.Instance.PlayButtonHover();
+                        SfxManager.Instance.PlayUIMove();
                     }
                     break;
                 case 4:
@@ -651,7 +671,7 @@ namespace Resource.Scripts
                     {
                         int dir = adjustAxis > 0f ? 1 : -1;
                         LocalizationManager.Instance.CycleLanguage(dir);
-                        SfxManager.Instance.PlayButtonHover();
+                        SfxManager.Instance.PlayUIMove();
                     }
                     break;
             }

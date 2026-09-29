@@ -17,6 +17,7 @@ namespace Resource.Scripts
     public class SceneTransition : MonoBehaviour
     {
         private static SceneTransition _instance;
+        private static bool _startupOpeningPlayed;
         public static SceneTransition Instance
         {
             get
@@ -45,6 +46,13 @@ namespace Resource.Scripts
 
         /// <summary>从虹膜合拢到新场景完全展开期间，玩法输入应保持锁定。</summary>
         public bool IsTransitioning => _isTransitioning;
+        public event Action<bool> TransitionStateChanged;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStartupOpening()
+        {
+            _startupOpeningPlayed = false;
+        }
 
         void Awake()
         {
@@ -57,6 +65,30 @@ namespace Resource.Scripts
             DontDestroyOnLoad(gameObject);
 
             BuildUI();
+        }
+
+        /// <summary>首次显示主菜单时，从全遮盖状态静音张开一次。</summary>
+        public void PlayStartupOpening()
+        {
+            if (_startupOpeningPlayed) return;
+            _startupOpeningPlayed = true;
+            if (_isTransitioning) return;
+            StartCoroutine(DoStartupOpening());
+        }
+
+        private IEnumerator DoStartupOpening()
+        {
+            _iris.localScale = new Vector3(_maxScale, _maxScale, 1f);
+            SetTransitioning(true);
+            yield return null; // 先绘制完整遮盖的一帧，再开始张开。
+            yield return AnimateIris(_maxScale, 0f, openDuration);
+            SetTransitioning(false);
+        }
+
+        private void SetTransitioning(bool transitioning)
+        {
+            _isTransitioning = transitioning;
+            TransitionStateChanged?.Invoke(transitioning);
         }
 
         /// <summary>加载新场景并播放虹膜转场。onComplete 会在虹膜完全张开后调用（适合在里面恢复玩家操作）。</summary>
@@ -72,7 +104,7 @@ namespace Resource.Scripts
 
         private IEnumerator DoTransition(string sceneName, Action onComplete)
         {
-            _isTransitioning = true;
+            SetTransitioning(true);
 
             SfxManager.Instance.PlaySceneTransition();
 
@@ -84,7 +116,7 @@ namespace Resource.Scripts
 
             yield return AnimateIris(_maxScale, 0f, openDuration);
 
-            _isTransitioning = false;
+            SetTransitioning(false);
             onComplete?.Invoke();
         }
 
@@ -113,7 +145,9 @@ namespace Resource.Scripts
             var existingCanvas = transform.Find("TransitionCanvas");
             if (existingCanvas != null)
             {
-                PixelUI.ConfigureCanvas(existingCanvas.GetComponent<Canvas>());
+                var transitionCanvas = existingCanvas.GetComponent<Canvas>();
+                transitionCanvas.sortingOrder = 3000; // 主菜单为 2000，转场必须覆盖它。
+                PixelUI.ConfigureCanvas(transitionCanvas);
                 _iris = existingCanvas.Find("Iris").GetComponent<RectTransform>();
                 _iris.GetComponent<Image>().color = IrisColor;
                 _iris.localScale = Vector3.zero; // 默认全开，不挡屏幕
@@ -124,7 +158,7 @@ namespace Resource.Scripts
             canvasGO.transform.SetParent(transform, false);
             var canvas = canvasGO.AddComponent<Canvas>();
             canvas.renderMode   = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 1000; // 盖在 HUD / 暂停菜单之上
+            canvas.sortingOrder = 3000; // 盖在主菜单 / HUD / 暂停菜单之上
 
             PixelUI.ConfigureCanvas(canvas);
             canvasGO.AddComponent<GraphicRaycaster>();

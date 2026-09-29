@@ -12,8 +12,8 @@ namespace Resource.Scripts
     }
 
     /// <summary>
-    /// 极简中/日/英切换，只覆盖设置相关的文字（主菜单 Options 面板 + 游戏内设置面板），
-    /// 不是全项目的完整本地化系统。PlayerPrefs 记住上次选的语言，下次进游戏自动生效。
+    /// 菜单、设置和关卡预览的中/日/英切换。每次启动默认英语，
+    /// 本次运行内的语言选择跨场景保留。
     /// </summary>
     public class LocalizationManager : MonoBehaviour
     {
@@ -30,8 +30,6 @@ namespace Resource.Scripts
                 return _instance;
             }
         }
-
-        private const string KeyLanguage = "Settings_Language";
 
         public GameLanguage CurrentLanguage { get; private set; } = GameLanguage.English;
 
@@ -56,6 +54,10 @@ namespace Resource.Scripts
             { "menu.start",          new[] { "开始游戏", "ゲーム開始", "Start Game" } },
             { "menu.quit",           new[] { "退出", "終了", "Quit Game" } },
             { "menu.levels",         new[] { "选择关卡", "ステージ選択", "Select Level" } },
+            { "pause.title",         new[] { "已暂停", "一時停止", "Paused" } },
+            { "pause.resume",        new[] { "继续", "再開", "Resume" } },
+            { "pause.restart",       new[] { "重新开始", "リトライ", "Restart" } },
+            { "pause.main_menu",     new[] { "返回主菜单", "メインメニュー", "Main Menu" } },
             { "settings.group.audio",    new[] { "音频", "オーディオ", "Audio" } },
             { "settings.group.display",  new[] { "显示", "画面", "Display" } },
             { "settings.group.language", new[] { "语言", "言語", "Language" } },
@@ -71,7 +73,7 @@ namespace Resource.Scripts
             _instance = this;
             DontDestroyOnLoad(gameObject);
 
-            CurrentLanguage = (GameLanguage)PlayerPrefs.GetInt(KeyLanguage, (int)GameLanguage.English);
+            CurrentLanguage = GameLanguage.English;
         }
 
         public string Get(string key) => Table.TryGetValue(key, out var arr) ? arr[(int)CurrentLanguage] : key;
@@ -81,7 +83,6 @@ namespace Resource.Scripts
         public void SetLanguage(GameLanguage lang)
         {
             CurrentLanguage = lang;
-            PlayerPrefs.SetInt(KeyLanguage, (int)lang);
             OnLanguageChanged?.Invoke();
         }
 

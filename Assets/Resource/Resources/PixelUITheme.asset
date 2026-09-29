@@ -33,6 +33,6 @@ MonoBehaviour:
   levelLock: {fileID: 21300000, guid: c6b611082f3b2d4459aa56347715fe24, type: 3}
   levelCheck: {fileID: 21300000, guid: afa98b7b82a564545a0666caf717f9eb, type: 3}
   levelTitle: {fileID: 21300000, guid: 1cc9fdc97ba636c4fb67a6d8521de578, type: 3}
-  regularFont: {fileID: 11400000, guid: a1a42b7a3378e1a49a38edafa01bf743, type: 2}
-  boldFont: {fileID: 11400000, guid: 3fc1b0458ba3cee48993c1eafa6ffc0d, type: 2}
+  regularFont: {fileID: 11400000, guid: b6a1914d22c626b4dadb1be3867f58fb, type: 2}
+  boldFont: {fileID: 11400000, guid: 186ee35c924f9d24aa3bfb983394a5b4, type: 2}
   titleFont: {fileID: 11400000, guid: f523fa38c353c51478fd547b4eb27550, type: 2}

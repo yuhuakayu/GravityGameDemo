@@ -39,7 +39,6 @@ namespace Resource.Scripts
         private double _lastIncrementalInputTime;
         private bool _angleInitialized;
         private int _inputRevision = -1;
-        private float _requestedOutput;
         private readonly List<AttachedGeometryBody> _attachedBodies = new List<AttachedGeometryBody>();
         private Collider2D[] _movingGeometry;
         private bool _hasIndependentPendulumGeometry;
@@ -83,7 +82,7 @@ namespace Resource.Scripts
 
         [Header("方向盘范围")]
         [Tooltip("不勾选 = 无限旋转，不做范围限制")]
-        public bool limitSteeringRange = true;
+        public bool limitSteeringRange = false;
         [Tooltip("方向盘总转角（720 = 左右各 360°），仅在 limitSteeringRange 打开时生效")]
         public float steeringRange = 720f;
 
@@ -96,9 +95,10 @@ namespace Resource.Scripts
         public float ClockwiseAngleReadout => -SteeringAngleReadout;
         public float TargetClockwiseAngleReadout => _targetClockwiseAngle;
         public WorldRotationInput RotationInput => _rotationInput;
-        private float _lastGearTickAngle;
         private double _lastRotationTime = double.NegativeInfinity;
-        private float _lastRotateSpeed01;
+        private float _lastRotateSpeed;
+        private float _pendingAudioDegrees;
+        private SfxManager _rotationAudio;
 
         /// <summary>实际旋转与本步旋转请求；自动移动可在玩家侧按此信号暂停。</summary>
         public bool IsRotating { get; private set; }
@@ -128,7 +128,8 @@ namespace Resource.Scripts
         {
             IsRotating = false;
             _lastRotationTime = double.NegativeInfinity;
-            _lastRotateSpeed01 = 0f;
+            _lastRotateSpeed = 0f;
+            if (_rotationAudio != null) _rotationAudio.StopWorldRotation();
             DiscardPendingRotation();
             if (_rotationInput != null) _rotationInput.ResetContinuity();
         }
@@ -139,7 +140,6 @@ namespace Resource.Scripts
             _lastBodyAngle = _body.rotation;
             _steeringAngle = Mathf.DeltaAngle(0f, _lastBodyAngle);
             _targetClockwiseAngle = -_steeringAngle;
-            _lastGearTickAngle = _steeringAngle;
             _angleInitialized = true;
         }
 
@@ -158,27 +158,26 @@ namespace Resource.Scripts
                 if (command.HasTarget) SetTargetAngle(command.TargetAngle);
                 else QueueClockwiseDelta(command.ClockwiseDelta);
             }
-            _requestedOutput = command.Output;
             double now = Time.realtimeSinceStartupAsDouble;
             if (command.Blocked)
             {
                 _lastRotationTime = double.NegativeInfinity;
-                _lastRotateSpeed01 = 0f;
+                _lastRotateSpeed = 0f;
             }
             // Keep audio and parallax rotation state across sensor gaps, without freezing gameplay
             // or adding any transform movement or extra gyro integration time.
             IsRotating = !command.Blocked && now - _lastRotationTime <= GyroProcessor.HoldSeconds;
 
-            // 旋转"吱呀"摩擦音：音量/音调跟旋转速度联动
-            float rotateSpeed01 = IsRotating ? _lastRotateSpeed01 : 0f;
-            SfxManager.Instance.UpdateRotateCreak(rotateSpeed01);
-
-            // 每转过 90° 播放一次齿轮"咔嚓"声
-            if (Mathf.Abs(_steeringAngle - _lastGearTickAngle) >= 90f)
+            if (command.Blocked)
             {
-                _lastGearTickAngle = _steeringAngle;
-                SfxManager.Instance.PlayGearClick(rotateSpeed01);
+                if (_rotationAudio != null) _rotationAudio.StopWorldRotation();
             }
+            else
+            {
+                if (_rotationAudio == null) _rotationAudio = SfxManager.Instance;
+                _rotationAudio.UpdateWorldRotation(this, _pendingAudioDegrees, IsRotating ? _lastRotateSpeed : 0f);
+            }
+            _pendingAudioDegrees = 0f;
 
             // Keep the airborne pivot history advancing on frames without a sensor callback.
             ResolveFramePivot();
@@ -290,6 +289,8 @@ namespace Resource.Scripts
             LastAppliedStepAngle = 0f;
             _incrementalTarget = false;
             SynchronizeActualAngle();
+            _pendingAudioDegrees = 0f;
+            _lastRotateSpeed = 0f;
             _targetClockwiseAngle = -_steeringAngle;
             if (_body == null) return;
             NextPosition = _body.position;
@@ -374,8 +375,8 @@ namespace Resource.Scripts
                 DiscardPendingRotation();
                 IsRotating = false;
                 _lastRotationTime = double.NegativeInfinity;
-                _lastRotateSpeed01 = 0f;
-                SfxManager.Instance.UpdateRotateCreak(0f);
+                _lastRotateSpeed = 0f;
+                if (_rotationAudio != null) _rotationAudio.StopWorldRotation();
             }
         }
 
@@ -412,9 +413,9 @@ namespace Resource.Scripts
             _steeringAngle += actualDelta;
             if (Mathf.Abs(actualDelta) <= 0.00001f) return;
             _lastRotationTime = Time.realtimeSinceStartupAsDouble;
-            _lastRotateSpeed01 = Mathf.Clamp01(Mathf.Max(Mathf.Abs(_requestedOutput),
-                rotateSpeed > 0f && Time.fixedDeltaTime > 0f
-                    ? Mathf.Abs(actualDelta) / (rotateSpeed * Time.fixedDeltaTime) : 0f));
+            _pendingAudioDegrees += Mathf.Abs(actualDelta);
+            _lastRotateSpeed = Time.fixedDeltaTime > 0f
+                ? Mathf.Abs(actualDelta) / Time.fixedDeltaTime : 0f;
         }
 
         private Vector3? ResolveFramePivot()
