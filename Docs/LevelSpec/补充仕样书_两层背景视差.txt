@@ -1,0 +1,55 @@
+补充仕样书：两层背景 + 背景视差
+
+这份是《仕样书_场景动效与外圈前景》的补充。那份如果还没做，先做那份，再做这份。
+参考图：Docs/LevelSpec/images/scene_fx_Maze_01.png ～ scene_fx_Maze_05.png（已经换成最终效果）
+范围：Maze_01～05，改 MazeSceneBuilder 后重新生成。玩法和碰撞不改。
+
+====================================
+一、已经准备好的文件（不用再做）
+====================================
+
+  Assets/Resource/Scripts/SceneFX/BackgroundParallax.cs              背景视差脚本（直接用，编译不过就修）
+  Assets/Resource/Mode/Cave Tileset/Background/bg_mid_Maze_0X.png    中背景，每关 1 张（原来的空间层方块，深蓝色，花纹很淡）
+  Assets/Resource/Mode/Cave Tileset/Background/bg_far_Maze_0X.png    远背景，每关 1 张（几块分开的岩石，比中背景更暗更淡）
+颜色已经画进图里（不透明），不用再调 SpriteRenderer 的颜色。
+另外两处只换了图（文件名、尺寸、切图都不变，不用改代码）：
+  Assets/Resource/Mode/Cave Tileset/tileset.png                        墙砖贴着空气的一圈加了 1 像素亮边（原图备份：Docs/LevelSpec/backup/tileset_original.png）
+  Assets/Resource/Mode/Cave Tileset/Exterior/exterior_shade_Maze_0X.png 外圈暗角改成平滑渐变，没有网点
+
+====================================
+二、导入设置
+====================================
+
+Background/ 里的图和 Exterior/ 一样：单张，PPU 16，Point，不压缩，枢轴左上角（SpriteAlignment.TopLeft）。
+
+====================================
+三、MazeSceneBuilder 要改的地方
+====================================
+
+1. 不再生成 BackgroundFar、BackgroundMid 两个 Tilemap（FillSpace、FarRegions、MidRegions 不用了，可以删）。
+2. 改成两个 SpriteRenderer，放在 MazeGrid 下：
+     "BackgroundFar"：bg_far_场景名.png，sortingOrder -3
+     "BackgroundMid"：bg_mid_场景名.png，sortingOrder -2
+   本地位置都是 (-12 - W/2, H/2 + 12)，和 ExteriorShade 一样（图的左上角对齐地图坐标 (-12, -12)）。
+3. MazeGrid 上加 BackgroundParallax：
+     mapCenter = MazeGrid
+     layers[0]：target = BackgroundFar，factor 0.18，maxOffset 2
+     layers[1]：target = BackgroundMid，factor 0.072，maxOffset 0.9
+
+====================================
+四、效果说明（脚本里已经实现）
+====================================
+
+两层背景都比关卡移动得慢：中背景是关卡速度的 93%，远背景 82%（最慢）。
+以地图中心为基准，玩家在关卡正中间时完全对齐；镜头离中心越远，背景往同一方向错开越多。
+中背景贴墙的一侧图里已经往墙里多画了 1 格，错开时边缘藏在墙后面；最多错开 0.9 格。
+世界旋转时一样有效（偏移按屏幕方向算）。
+
+====================================
+五、验证和汇报（只做这些）
+====================================
+
+1. 编译无错误，重新生成 Maze_01～05。
+2. 5 关各截一张图和参考图对照。
+3. Maze_03 里让玩家从上面掉到下面：两层背景和墙的相对位置会慢慢错开，远背景错开得更多，墙边没有露出断口。
+4. 汇报 3 到 5 行，不写报告文件。

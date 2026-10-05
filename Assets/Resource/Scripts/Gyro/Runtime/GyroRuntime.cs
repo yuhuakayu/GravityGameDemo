@@ -147,7 +147,7 @@ namespace Resource.Scripts.Gyro
         private void ProcessSensorSample(GyroSample sample)
         {
             if (!Processor.ProcessSample(sample)) return;
-            float mapped = _mapper.Map(Processor.LastSteering.AngularSpeed, Settings);
+            float mapped = _mapper.Map(Processor.GatedSpeed, Settings);
             FrameCombinedIntegral += Mathf.Clamp(mapped + PhysicalRightStickX, -1f, 1f) * sample.DeltaTime;
             SampleProcessed?.Invoke(sample);
         }

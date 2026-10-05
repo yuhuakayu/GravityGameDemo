@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Newtonsoft.Json;
+using Resource.Scripts.SceneFX;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -18,6 +20,7 @@ namespace Resource.Scripts.Editor
         private const string TemplateScene = "Assets/Scenes/Stage2.unity";
         private const string ArtRoot = "Assets/Resource/Art/Maze";
         private const string LaserPrefabPath = "Assets/Resource/Prefabs/LaserEmitter.prefab";
+        private const string CameraSettingsPath = "Assets/Resource/Settings/MazeCameraSettings.asset";
         private const int TilesPerCell = 2;
         private const int MarginCells = 3;
 
@@ -28,24 +31,6 @@ namespace Resource.Scripts.Editor
             new[] { "########", "#.P....#", "#..##>.#", "#......#", "#<####.#", "#......#", "#D.....#", "########" },
             new[] { "#######", "##XD.X#", "##...##", "#..####", "#..####", "#..####", "#.P####", "#######" },
             new[] { "########", "#P..#D##", "###.v.v#", "###....#", "###.#..#", "###....#", "####.###", "########" }
-        };
-
-        private static readonly RectInt[][] FarRegions =
-        {
-            new[] { new RectInt(4, 2, 2, 5), new RectInt(2, 7, 3, 1) },
-            new[] { new RectInt(2, 2, 2, 4), new RectInt(6, 2, 1, 1) },
-            new[] { new RectInt(9, 2, 2, 3), new RectInt(3, 9, 2, 3), new RectInt(10, 11, 4, 1) },
-            new[] { new RectInt(3, 8, 1, 4), new RectInt(6, 4, 2, 1) },
-            new[] { new RectInt(10, 6, 2, 3), new RectInt(11, 4, 1, 2) }
-        };
-
-        private static readonly RectInt[][] MidRegions =
-        {
-            new[] { new RectInt(8, 4, 2, 2), new RectInt(6, 4, 2, 1) },
-            new[] { new RectInt(2, 6, 3, 1), new RectInt(7, 7, 3, 1), new RectInt(8, 6, 2, 1) },
-            new[] { new RectInt(2, 6, 2, 1), new RectInt(12, 9, 2, 2), new RectInt(6, 11, 2, 3) },
-            new[] { new RectInt(2, 11, 1, 2), new RectInt(4, 6, 1, 1) },
-            new[] { new RectInt(6, 10, 2, 1), new RectInt(12, 9, 2, 2), new RectInt(7, 6, 1, 2) }
         };
 
         [MenuItem("Tools/Gravity Game/Levels/Build Five Maze Scenes")]
@@ -61,6 +46,13 @@ namespace Resource.Scripts.Editor
             try
             {
                 EnsureFolder(ArtRoot);
+                EnsureFolder("Assets/Resource/Settings");
+                var cameraSettings = AssetDatabase.LoadAssetAtPath<MazeCameraSettings>(CameraSettingsPath);
+                if (cameraSettings == null)
+                {
+                    cameraSettings = ScriptableObject.CreateInstance<MazeCameraSettings>();
+                    AssetDatabase.CreateAsset(cameraSettings, CameraSettingsPath);
+                }
                 CreateMazeTiles();
                 CreateLaserPrefab();
                 AssetDatabase.SaveAssets();
@@ -80,6 +72,7 @@ namespace Resource.Scripts.Editor
         {
             // 先另存副本；以下编辑只会写入新的 Maze 场景。
             var scene = EditorSceneManager.OpenScene(TemplateScene, OpenSceneMode.Single);
+            var cameraSettings = AssetDatabase.LoadAssetAtPath<MazeCameraSettings>(CameraSettingsPath);
             // Single 模式切场景会卸载上一场景用过的 Tile 实例，必须在打开场景后重新加载。
             Tile[] tiles = Enumerable.Range(0, 15).Select(i => AssetDatabase.LoadAssetAtPath<Tile>(
                 ArtRoot + "/Tiles/tileset_" + i.ToString("00") + ".asset")).ToArray();
@@ -89,6 +82,15 @@ namespace Resource.Scripts.Editor
             EditorSceneManager.SaveScene(scene, scenePath);
             var roots = scene.GetRootGameObjects();
             var player = roots.SelectMany(r => r.GetComponentsInChildren<PlayerController>(true)).Single();
+            var grade = player.GetComponent<PlayerColorGrade>() ?? player.gameObject.AddComponent<PlayerColorGrade>();
+            string playerMaterialPath = "Assets/Resource/Art/Character/Player/PlayerUnlit.mat";
+            var playerMaterial = AssetDatabase.LoadAssetAtPath<Material>(playerMaterialPath);
+            if (playerMaterial == null)
+            {
+                playerMaterial = new Material(Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default"));
+                AssetDatabase.CreateAsset(playerMaterial, playerMaterialPath);
+            }
+            grade.Configure(playerMaterial);
             var world = roots.SelectMany(r => r.GetComponentsInChildren<WorldRotator>(true)).Single();
             var door = roots.SelectMany(r => r.GetComponentsInChildren<GoalDoor>(true)).Single();
             var camera = roots.SelectMany(r => r.GetComponentsInChildren<Camera>(true)).Single(c => c.CompareTag("MainCamera"));
@@ -159,7 +161,8 @@ namespace Resource.Scripts.Editor
             if (walls.GetUsedTilesCount() == 0 || composite.pathCount == 0)
                 throw new InvalidOperationException(scenePath + " 未生成有效墙体碰撞，停止保存。");
 
-            BuildDecoration(grid.transform, tiles, map, index, Solid);
+            BuildDecoration(grid.transform, map, index, Solid);
+            BuildSceneEffects(grid.transform, walls, index, width, height);
             foreach (var renderer in player.GetComponentsInChildren<SpriteRenderer>(true))
                 renderer.sortingOrder = Mathf.Max(renderer.sortingOrder, 2);
             foreach (var renderer in door.GetComponentsInChildren<Renderer>(true))
@@ -188,59 +191,50 @@ namespace Resource.Scripts.Editor
                 }
             }
 
+            GravityLockDoorSetup.Apply(door);
+
             var intro = roots.SelectMany(r => r.GetComponentsInChildren<LevelIntroUI>(true)).Single();
             intro.boundsCenter = Vector2.zero;
             intro.boundsSize = new Vector2(width, height);
-            intro.maxOrthoSize = Mathf.Max(intro.maxOrthoSize, height);
+            intro.minOrthoSize = 4f;
+            intro.maxOrthoSize = 20f;
             camera.transform.SetPositionAndRotation(new Vector3(0f, 0f, -10f), Quaternion.identity);
             camera.orthographic = true;
-            camera.orthographicSize = Mathf.Max(height * 0.5f + 0.5f, (width * 0.5f + 0.5f) / camera.aspect);
-            intro.maxOrthoSize = Mathf.Max(intro.maxOrthoSize, camera.orthographicSize);
+            var fit = camera.GetComponent<MazeCameraFit>() ?? camera.gameObject.AddComponent<MazeCameraFit>();
+            fit.world = world.transform;
+            fit.mazeSize = new Vector2(width, height);
+            fit.settings = cameraSettings;
+            fit.RestoreDefault();
+            fit.FitImmediate();
+            var zoom = camera.GetComponent<CameraZoomController>() ?? camera.gameObject.AddComponent<CameraZoomController>();
+            zoom.enabled = false;
+            zoom.minOrthoSize = 4f;
+            zoom.maxOrthoSize = 20f;
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = new Color32(19, 18, 31, 255);
+            camera.backgroundColor = new Color32(20, 19, 36, 255);
             var follow = camera.GetComponent<FollowTarget2D>();
-            if (follow != null) { follow.target = player.transform; follow.offset = Vector2.zero; }
-            ExteriorTilePadding.Apply(walls, tiles[8], camera, intro.boundsSize, intro.maxOrthoSize);
+            if (follow != null)
+            {
+                follow.target = world.transform;
+                follow.offset = Vector2.zero;
+                follow.smoothTime = 0.1f;
+            }
+            ExteriorTilePadding.Apply(walls, tiles[8], camera, intro.boundsSize, 20f);
+            walls.transform.Find("Outer Fill").GetComponent<Tilemap>().color = new Color(0.513f, 0.487f, 0.529f, 1f);
             Physics2D.SyncTransforms();
             foreach (var emitter in emitters) emitter.RefreshBeam();
             EditorSceneManager.SaveScene(scene, scenePath);
         }
 
-        private static void BuildDecoration(Transform parent, Tile[] tiles, string[] map, int index, Func<int, int, bool> solid)
+        private static void BuildDecoration(Transform parent, string[] map, int index, Func<int, int, bool> solid)
         {
             int width = map[0].Length * TilesPerCell, height = map.Length * TilesPerCell;
-            Vector3Int Position(int x, int y) => new Vector3Int(x - width / 2, height / 2 - y - 1, 0);
-
-            void FillSpace(string name, int order, Color color, RectInt[] regions)
-            {
-                var layer = MakeTilemap(parent, name, order);
-                layer.color = color;
-                bool InRegion(int x, int y) => regions.Any(r => r.Contains(new Vector2Int(x, y)));
-                bool Connected(int x, int y) => solid(x, y) || InRegion(x, y);
-                for (int y = 0; y < height; y++)
-                for (int x = 0; x < width; x++)
-                    if (InRegion(x, y) && !solid(x, y))
-                        layer.SetTile(Position(x, y), tiles[CaveReplicaSceneBuilder.AutoIndex(x, y, Connected)]);
-            }
-
-            FillSpace("BackgroundFar", -2, new Color(0.75f, 0.75f, 0.75f, 0.30f), FarRegions[index]);
-            FillSpace("BackgroundMid", -1, new Color(0.85f, 0.85f, 0.85f, 0.55f), MidRegions[index]);
-            var decoration = MakeTilemap(parent, "Decoration", 1);
-            var sprites = AssetDatabase.LoadAllAssetsAtPath(PowerStationTilesetImporter.CaveRoot + "/vegetation.png")
-                .OfType<Sprite>().ToDictionary(s => s.name);
-            var vegetation = new Tile[32];
-            for (int i = 0; i < vegetation.Length; i++)
-            {
-                string name = "vegetation_" + i.ToString("00");
-                string path = PowerStationTilesetImporter.CaveRoot + "/tiles/" + name + ".asset";
-                vegetation[i] = AssetDatabase.LoadAssetAtPath<Tile>(path);
-                if (vegetation[i] != null) continue;
-                var tile = ScriptableObject.CreateInstance<Tile>();
-                tile.sprite = sprites[name];
-                tile.colliderType = Tile.ColliderType.None;
-                AssetDatabase.CreateAsset(tile, path);
-                vegetation[i] = tile;
-            }
+            var decoration = new GameObject("Decorations").transform;
+            decoration.SetParent(parent, false);
+            var occupied = new bool[width, height];
+            var frames = Directory.GetFiles(PowerStationTilesetImporter.CaveRoot + "/Sway", "sway_veg_*_f*.png")
+                .ToDictionary(p => int.Parse(Path.GetFileName(p).Split('_')[2]), p => LoadSwayFrames(p.Replace('\\', '/')));
+            var phaseRandom = new System.Random(1000 + index);
 
             var blocked = new bool[width, height];
             void BlockCell(int column, int row)
@@ -268,7 +262,7 @@ namespace Resource.Scripts.Editor
             int[] plants = { 16, 17, 24, 25, 18, 19, 22, 23, 27, 30, 31, 26 };
             int[] vines = { 0, 1, 2, 3, 6, 7 };
             bool Available(int x, int y) => x >= 0 && y >= 0 && x < width && y < height
-                && !solid(x, y) && !blocked[x, y] && !decoration.HasTile(Position(x, y));
+                && !solid(x, y) && !blocked[x, y] && !occupied[x, y];
             for (int y = 0; y < height; y++)
             for (int x = 0; x < width; x++)
             {
@@ -284,10 +278,107 @@ namespace Resource.Scripts.Editor
                 else if (above && Available(x, y + 1) && random.NextDouble() < 0.45)
                 {
                     sprite = vines[random.Next(vines.Length)];
-                    decoration.SetTile(Position(x, y + 1), vegetation[sprite + 8]);
+                    occupied[x, y + 1] = true;
                 }
                 else continue;
-                decoration.SetTile(Position(x, y), vegetation[sprite]);
+                occupied[x, y] = true;
+                if (sprite == 7) continue;
+                var plant = new GameObject("Veg_" + sprite.ToString("00"));
+                plant.transform.SetParent(decoration, false);
+                plant.transform.localPosition = new Vector3(x - width / 2f + 0.5f, height / 2f - y, 0f);
+                var renderer = plant.AddComponent<SpriteRenderer>();
+                renderer.sprite = frames[sprite][frames[sprite].Length / 2];
+                renderer.sortingOrder = -1;
+                var sway = plant.AddComponent<SwayItem>();
+                sway.frames = frames[sprite];
+                sway.phase = (float)(phaseRandom.NextDouble() * 1.2 - 0.6);
+                var kind = sprite < 8 ? SwayKind.Vine
+                    : sprite == 16 || sprite == 17 || sprite == 24 || sprite == 25 ? SwayKind.Grass
+                    : sprite == 26 ? SwayKind.Mushroom
+                    : sprite == 20 || sprite == 21 || sprite == 28 || sprite == 29 ? SwayKind.Corner
+                    : SwayKind.Bush;
+                sway.ApplyPreset(kind);
+            }
+        }
+
+        private static Sprite[] LoadSwayFrames(string path)
+        {
+            var frames = AssetDatabase.LoadAllAssetsAtPath(path).OfType<Sprite>().OrderBy(s => s.name).ToArray();
+            if (frames.Length == 0) throw new InvalidOperationException("未切分摆动素材：" + path);
+            return frames;
+        }
+
+        private sealed class ForegroundPlacement
+        {
+            public string file, kind;
+            public float x, y, phase;
+            public bool flip, back;
+        }
+
+        private static void BuildSceneEffects(Transform grid, Tilemap walls, int index, int width, int height)
+        {
+            string sceneName = "Maze_" + (index + 1).ToString("00");
+            string root = PowerStationTilesetImporter.CaveRoot;
+            var parallax = grid.gameObject.AddComponent<BackgroundParallax>();
+            parallax.mapCenter = grid;
+            parallax.layers = new BackgroundParallax.Layer[2];
+            for (int i = 0; i < parallax.layers.Length; i++)
+            {
+                var background = new GameObject(i == 0 ? "BackgroundFar" : "BackgroundMid");
+                background.transform.SetParent(grid, false);
+                background.transform.localPosition = new Vector3(-12f - width / 2f, height / 2f + 12f, 0f);
+                var renderer = background.AddComponent<SpriteRenderer>();
+                renderer.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(root + "/Background/bg_" +
+                    (i == 0 ? "far_" : "mid_") + sceneName + ".png");
+                renderer.sortingOrder = -3 + i;
+                parallax.layers[i] = new BackgroundParallax.Layer
+                {
+                    target = background.transform,
+                    factor = i == 0 ? 0.18f : 0.072f,
+                    maxOffset = i == 0 ? 2f : 0.9f
+                };
+            }
+
+            var spores = new GameObject("Spores");
+            spores.transform.SetParent(grid, false);
+            spores.AddComponent<SporeField>().walls = walls;
+
+            var shade = new GameObject("ExteriorShade");
+            shade.transform.SetParent(grid, false);
+            shade.transform.localPosition = new Vector3(-12f - width / 2f, height / 2f + 12f, 0f);
+            var shadeRenderer = shade.AddComponent<SpriteRenderer>();
+            shadeRenderer.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(root + "/Exterior/exterior_shade_" + sceneName + ".png");
+            shadeRenderer.sortingOrder = 1;
+
+            var foreground = new GameObject("Foreground");
+            foreground.transform.SetParent(grid, false);
+            var layer = foreground.AddComponent<ForegroundLayer>();
+            layer.back = new GameObject("FgBack").transform;
+            layer.front = new GameObject("FgFront").transform;
+            layer.back.SetParent(foreground.transform, false);
+            layer.front.SetParent(foreground.transform, false);
+            layer.mapCenter = grid;
+            var layout = JsonConvert.DeserializeObject<Dictionary<string, ForegroundPlacement[]>>(
+                File.ReadAllText(root + "/Foreground/fg_layout.json"));
+            foreach (var entry in layout[sceneName])
+            {
+                var plant = new GameObject(entry.file);
+                plant.transform.SetParent(entry.back ? layer.back : layer.front, false);
+                plant.transform.localPosition = new Vector3(entry.x - width / 2f, height / 2f - entry.y, 0f);
+                var frames = LoadSwayFrames(root + "/Foreground/" + entry.file + ".png");
+                var renderer = plant.AddComponent<SpriteRenderer>();
+                renderer.sprite = frames[frames.Length / 2];
+                renderer.flipX = entry.flip;
+                renderer.sortingOrder = entry.back ? 10 : 11;
+                var sway = plant.AddComponent<SwayItem>();
+                sway.frames = frames;
+                sway.mirrored = entry.flip;
+                sway.phase = entry.phase;
+                var kind = entry.kind == "vine" ? SwayKind.FgVine
+                    : entry.kind == "roots" ? SwayKind.FgRoots
+                    : entry.kind == "moss" ? SwayKind.FgMoss
+                    : entry.kind == "clump" ? SwayKind.FgClump : SwayKind.FgCorner;
+                sway.ApplyPreset(kind);
             }
         }
 

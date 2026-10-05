@@ -11,6 +11,9 @@ namespace Resource.Scripts.Debugging
         private PlayerController _player;
         private PlayerOxygen _oxygen;
         private CrushGuard _crushGuard;
+        private GoalDoor _door;
+        private PlayerColorGrade _colorGrade;
+        private MazeCameraFit _camera;
         private GUIStyle _descriptionStyle;
         private readonly List<OxygenTank> _tanks = new List<OxygenTank>();
 
@@ -25,10 +28,17 @@ namespace Resource.Scripts.Debugging
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("刷新场景对象", GUILayout.Width(140f))) Refresh(scene);
             GUILayout.EndHorizontal();
-            GUILayout.Label("参数立即生效，仅用于当前运行；重开关卡后恢复场景和预制体设置。控制台的保存按钮不保存本页参数。", _descriptionStyle);
+#if UNITY_EDITOR
+            GUILayout.Label("参数立即生效。镜头可用本区的保存按钮设为本关默认；其他参数仅用于当前运行，重开关卡后恢复。控制台的通用保存按钮不保存本页参数。", _descriptionStyle);
+#else
+            GUILayout.Label("参数立即生效，仅用于当前运行；重开关卡后恢复默认设置。控制台的保存按钮不保存本页参数。", _descriptionStyle);
+#endif
             GUILayout.Space(8f);
 
+            if (_camera != null && _camera.settings != null) DrawCamera();
             if (_player != null) DrawAntiPush();
+            if (_door != null) DrawGravityLock();
+            if (_colorGrade != null) DrawColorGrade();
 
             if (_player == null || _oxygen == null)
             {
@@ -49,6 +59,35 @@ namespace Resource.Scripts.Debugging
 
             GUILayout.Space(8f);
             DrawTanks();
+        }
+
+        private void DrawCamera()
+        {
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("镜头");
+            float size = ConsoleUi.Slider("镜头大小", _camera.CurrentSize, 4f, 20f, "F2");
+            if (size != _camera.CurrentSize) _camera.SetSize(size);
+#if UNITY_EDITOR
+            if (GUILayout.Button("保存为本关默认"))
+            {
+                MazeCameraSettings settings = _camera.settings;
+                settings.SetSize(_camera.gameObject.scene.name, _camera.CurrentSize);
+                UnityEditor.EditorUtility.SetDirty(settings);
+                UnityEditor.AssetDatabase.SaveAssets();
+            }
+#endif
+            if (GUILayout.Button("恢复默认"))
+            {
+                MazeCameraSettings settings = _camera.settings;
+                settings.ClearSize(_camera.gameObject.scene.name);
+                _camera.RestoreDefault();
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(settings);
+                UnityEditor.AssetDatabase.SaveAssets();
+#endif
+            }
+            GUILayout.EndVertical();
+            GUILayout.Space(8f);
         }
 
         private void DrawAntiPush()
@@ -76,6 +115,32 @@ namespace Resource.Scripts.Debugging
                 if (_crushGuard.IsCrushed) GUILayout.Label("夹死保护已触发：" + _crushGuard.crushResponse);
             }
             else GUILayout.Label("当前玩家没有 CrushGuard 组件。", _descriptionStyle);
+            GUILayout.EndVertical();
+            GUILayout.Space(8f);
+        }
+
+        private void DrawGravityLock()
+        {
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label($"重力锁出口 · 门歪 {_door.TiltAngle:F0}°   {(_door.IsUnlocked ? "解锁" : "锁住")}");
+            _door.gravityLock = GUILayout.Toggle(_door.gravityLock, "门正立才能打开（关掉 = 碰到就过关）");
+            float angle = ConsoleUi.Slider("解锁角度", _door.unlockAngle, 1f, 60f, "F0", "°");
+            if (angle != _door.unlockAngle) _door.unlockAngle = Mathf.Round(angle);
+            GUILayout.Label("门歪的角度不超过这个值就解锁。只对本次运行有效；要改默认值，改 GoalDoor.cs 里 unlockAngle 的 20。", _descriptionStyle);
+            GUILayout.EndVertical();
+            GUILayout.Space(8f);
+        }
+
+        private void DrawColorGrade()
+        {
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("人物滤镜");
+            float brightness = ConsoleUi.Slider("人物亮度", _colorGrade.Brightness, 0.6f, 1f, "F2");
+            if (brightness != _colorGrade.Brightness) _colorGrade.Brightness = brightness;
+            float coolness = ConsoleUi.Slider("人物偏冷", _colorGrade.Coolness, 0f, 0.15f, "F2");
+            if (coolness != _colorGrade.Coolness) _colorGrade.Coolness = coolness;
+            float lampIntensity = ConsoleUi.Slider("周围灯光", _colorGrade.LampIntensity, 0f, 1.2f, "F2");
+            if (lampIntensity != _colorGrade.LampIntensity) _colorGrade.LampIntensity = lampIntensity;
             GUILayout.EndVertical();
             GUILayout.Space(8f);
         }
@@ -123,7 +188,17 @@ namespace Resource.Scripts.Debugging
             _player = null;
             _oxygen = null;
             _crushGuard = null;
+            _door = null;
+            _colorGrade = null;
+            _camera = null;
             _tanks.Clear();
+            foreach (MazeCameraFit candidate in Object.FindObjectsByType<MazeCameraFit>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (candidate.gameObject.scene.handle != _sceneHandle || candidate.settings == null) continue;
+                if (_camera == null) _camera = candidate;
+                if (candidate.gameObject.activeInHierarchy) { _camera = candidate; break; }
+            }
             foreach (PlayerController candidate in Object.FindObjectsByType<PlayerController>(
                 FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
@@ -135,7 +210,11 @@ namespace Resource.Scripts.Debugging
             {
                 _oxygen = _player.GetComponent<PlayerOxygen>();
                 _crushGuard = _player.GetComponent<CrushGuard>();
+                _colorGrade = _player.GetComponent<PlayerColorGrade>();
             }
+            foreach (GoalDoor door in Object.FindObjectsByType<GoalDoor>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (door.gameObject.scene.handle == _sceneHandle) { _door = door; break; }
             foreach (OxygenTank tank in Object.FindObjectsByType<OxygenTank>(
                 FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (tank.gameObject.scene.handle == _sceneHandle) _tanks.Add(tank);

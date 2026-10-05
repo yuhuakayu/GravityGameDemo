@@ -37,6 +37,7 @@ namespace Resource.Scripts
         private Camera _cam;
         private FollowTarget2D _camFollow;
         private CameraZoomController _camZoom;
+        private MazeCameraFit _camFit;
         private bool _isPreviewing;
         private GameObject _canvasGO;
         private LocalizationManager _loc;
@@ -68,8 +69,11 @@ namespace Resource.Scripts
             _camZoom = _cam.GetComponent<CameraZoomController>();
             if (_camZoom == null) _camZoom = _cam.gameObject.AddComponent<CameraZoomController>();
             _camZoom.enabled = false;
+            _camFit = _cam.GetComponent<MazeCameraFit>();
+            if (_camFit != null) _camFit.enabled = false;
 
             _cam.transform.position = new Vector3(boundsCenter.x, boundsCenter.y, _cam.transform.position.z);
+            if (_camFit != null) _camFit.RestoreDefault();
 
             _isPreviewing = true;
         }
@@ -190,8 +194,21 @@ namespace Resource.Scripts
             var rotator = FindObjectOfType<WorldRotator>();
             if (rotator != null) rotator.enabled = true;
 
+            if (_camFit != null)
+            {
+                if (_camFollow != null && _camFollow.target != null)
+                {
+                    Vector3 center = _camFollow.target.position;
+                    _cam.transform.position = new Vector3(
+                        center.x + _camFollow.offset.x,
+                        center.y + _camFollow.offset.y,
+                        _cam.transform.position.z);
+                }
+                _camFit.RestoreDefault();
+                _camFit.enabled = true;
+            }
+            if (_camZoom != null) _camZoom.enabled = _camFit == null;
             if (_camFollow != null) _camFollow.enabled = true;
-            if (_camZoom != null) _camZoom.enabled = true;
 
             if (_canvasGO != null) _canvasGO.SetActive(false);
         }

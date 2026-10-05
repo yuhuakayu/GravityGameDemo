@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace Resource.Scripts
 {
+    [DefaultExecutionOrder(100)]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Rigidbody2D), typeof(PlayerController))]
     public sealed class PlayerMovementAnimation : MonoBehaviour
@@ -13,7 +14,10 @@ namespace Resource.Scripts
 
         private static readonly int IsFloatingId = Animator.StringToHash("IsFloating");
         private static readonly int IdleStateId = Animator.StringToHash("Base Layer.Idle");
+        private static readonly int LandStateId = Animator.StringToHash("Base Layer.Land");
         private float _airborneTime;
+        private bool _pausedForDeath;
+        private float _speedBeforeDeath;
 
         public bool IsFloating { get; private set; }
 
@@ -25,8 +29,14 @@ namespace Resource.Scripts
 
         private void OnEnable()
         {
+            if (UpdateDeathPause()) return;
             _airborneTime = 0f;
             SetFloating(false, true);
+        }
+
+        private void Update()
+        {
+            UpdateDeathPause();
         }
 
         private void LateUpdate()
@@ -36,7 +46,15 @@ namespace Resource.Scripts
 
         public void SampleGrounded(bool grounded, float deltaTime)
         {
-            if (player == null || !player.IsGameplayActive || grounded)
+            if (UpdateDeathPause()) return;
+            if (player == null || !player.IsGameplayActive)
+            {
+                _airborneTime = 0f;
+                if (IsFloating) SetFloating(false, true);
+                return;
+            }
+
+            if (grounded)
             {
                 _airborneTime = 0f;
                 SetFloating(false);
@@ -47,8 +65,29 @@ namespace Resource.Scripts
             if (_airborneTime >= airborneDelay) SetFloating(true);
         }
 
+        private bool UpdateDeathPause()
+        {
+            bool dead = player != null && player.IsDead;
+            if (animator != null)
+            {
+                if (dead && !_pausedForDeath)
+                {
+                    _speedBeforeDeath = animator.speed;
+                    animator.speed = 0f;
+                    _pausedForDeath = true;
+                }
+                else if (!dead && _pausedForDeath)
+                {
+                    animator.speed = _speedBeforeDeath;
+                    _pausedForDeath = false;
+                }
+            }
+            return dead;
+        }
+
         private void SetFloating(bool floating, bool reset = false)
         {
+            if (player != null && player.IsDead) return;
             if (IsFloating == floating && !reset) return;
             IsFloating = floating;
             if (animator == null || animator.runtimeAnimatorController == null) return;
@@ -56,8 +95,8 @@ namespace Resource.Scripts
             animator.SetBool(IsFloatingId, floating);
             if (!floating && animator.isActiveAndEnabled)
             {
-                // Landing must display the first breathing frame before this render.
-                animator.Play(IdleStateId, 0, 0f);
+                // Display the first landing frame before this render; resets still use Idle.
+                animator.Play(reset ? IdleStateId : LandStateId, 0, 0f);
                 animator.Update(0f);
             }
         }

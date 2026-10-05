@@ -112,11 +112,21 @@ namespace Resource.Scripts.Debugging
             GUILayout.Label("回正按键");
             settings.recenterButton = (GyroRecenterButton)GUILayout.SelectionGrid((int)settings.recenterButton,
                 RecenterLabels, 4, GUILayout.Height(54f));
-            GUILayout.Label("回正保留世界当前朝向。角度测量范围：−90° ～ +90°。");
+            GUILayout.Label("回正保留世界当前朝向。角度连续累计，支持跨越 ±180°。");
             GUILayout.Space(8f);
             DrawCalibration();
             GUILayout.EndVertical();
             if (wide) GUILayout.EndHorizontal();
+
+            GUILayout.Space(5f);
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("防前后晃动");
+            settings.shakeReject = GUILayout.Toggle(settings.shakeReject, "启用防前后晃动");
+            settings.purityLow = ConsoleUi.Slider("纯度下限", settings.purityLow, 0.2f, 0.9f, "F2");
+            settings.purityHigh = ConsoleUi.Slider("纯度上限", settings.purityHigh, settings.purityLow + 0.05f, 1f, "F2");
+            settings.shakeHoldTime = ConsoleUi.Slider("晃动保持时间", settings.shakeHoldTime, 0f, 0.3f, "F2", "s");
+            settings.offAxisTrigger = ConsoleUi.Slider("偏轴触发", settings.offAxisTrigger, 5f, 100f, "F1", "°/s");
+            GUILayout.EndVertical();
             settings.Validate();
 
             GUILayout.Space(5f);
@@ -215,6 +225,8 @@ namespace Resource.Scripts.Debugging
             GUILayout.Label($"握持姿势：{grip}");
             GUILayout.Label($"原始：X {raw.x:F2}    Y {raw.y:F2}    Z {raw.z:F2} °/s");
             GUILayout.Label($"方向盘 ωs：{reading.AngularSpeed:F2} °/s    被过滤：{reading.FilteredSpeed:F2} °/s");
+            GUILayout.Label($"纯度 {processor.Purity:F2} · 权重 {processor.ShakeWeight:F2}"
+                + (processor.IsShakeHolding ? " · 晃动保持中" : string.Empty));
             GUILayout.Label($"θ：{reading.Angle:F2}°    回正基准：{processor.AngleMapper.CenterAngle:F2}°");
             GUILayout.Label(world != null ? $"世界当前角度（顺时针）：{world.ClockwiseAngleReadout:F2}°" : "世界当前角度：当前场景不可用");
             float output = world != null && world.RotationInput != null ?

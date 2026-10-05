@@ -1,0 +1,96 @@
+仕样书：场景动效（装饰摆动、漂浮孢子）+ 外圈（暗角、前景植物）
+
+参考图：Docs/LevelSpec/images/scene_fx_Maze_01.png ～ scene_fx_Maze_05.png（设计定稿截图）
+交互版设计图（可选，用浏览器打开）：Docs/LevelSpec/scene_motion_design.html
+范围：Maze_01～05。修改 MazeSceneBuilder 后重新生成这 5 关。Stage1、Stage2 不动。玩法和碰撞都不改。
+
+====================================
+一、已经准备好的文件（不用再做）
+====================================
+
+运行脚本（直接用，编译不过就修）：
+  Assets/Resource/Scripts/SceneFX/SwayWorld.cs       摆动共用数据（世界角速度、玩家、落地）
+  Assets/Resource/Scripts/SceneFX/SwayItem.cs        装饰摆动（按摆动量换帧），ApplyPreset(种类) 填好全部参数
+  Assets/Resource/Scripts/SceneFX/SporeField.cs      漂浮孢子
+  Assets/Resource/Scripts/SceneFX/ForegroundLayer.cs 前景视差 + 玩家靠近变淡
+素材（都在 Assets/Resource/Mode/Cave Tileset/ 下）：
+  Sway/sway_veg_编号_fN.png              关卡内装饰的摆动帧，21 张（编号 = vegetation 编号）
+  Foreground/fg_名字_fN.png              外圈前景，前排 18 张
+  Foreground/fg_名字_back_fN.png         外圈前景，后排 18 张（颜色浅一点）
+  Foreground/fg_layout.json              每关前景的摆放位置
+  Exterior/exterior_shade_Maze_0X.png    每关的外圈暗角图，5 张
+
+====================================
+二、导入设置（改 PowerStationTilesetImporter）
+====================================
+
+1. Sway/ 和 Foreground/ 里的 png：文件名结尾 _fN 表示横排 N 帧。切成 N 个等宽的帧（帧宽 = 图宽 / N，帧高 = 图高），
+   名字 基础名_00、_01……，枢轴改成上边中点（SpriteAlignment.TopCenter）。
+   中间那一帧 (N-1)/2 是原样，往两边每一帧多偏 1 像素。
+2. Exterior/ 里的 png：单张，枢轴左上角（SpriteAlignment.TopLeft）。
+3. PPU 16、Point、不压缩沿用 Cave Tileset 现有设置。
+
+====================================
+三、坐标换算
+====================================
+
+fg_layout.json 和本文件的坐标都是「地图地砖坐标」：(0,0) 是地图文字左上角那个 # 的左上角，x 向右、y 向下，1 = 1 块地砖。
+换成 MazeGrid 本地坐标：(x - W/2, H/2 - y)。W、H = 地图字符数 × 2（和 MazeSceneBuilder 里的 width、height 一样）。
+
+====================================
+四、MazeSceneBuilder 要改的地方
+====================================
+
+1. 排序：BackgroundFar 改成 -3，BackgroundMid 改成 -2（给装饰让出 -1）。
+
+2. 关卡内装饰：BuildDecoration 选位置、选编号的规则和随机数都不变，只是不再放进 Decoration Tilemap（这个 Tilemap 删掉），
+   改成每株建一个物体：
+   放在 MazeGrid 下新建的 "Decorations" 里，名字 Veg_编号。
+   位置：装饰所在地砖 (x, y) 的上边中点 → 本地坐标 (x - W/2 + 0.5, H/2 - y)。
+   藤蔓（0 1 2 3 6）本来占上下两格，现在只建一个物体，放在上面那格，下面那格不建。
+   选到 7 号藤蔓时什么都不建（7 和 15 是空图）。
+   SpriteRenderer：sprite = 中间帧，sortingOrder -1（画在墙后面）。
+   SwayItem：frames = 对应 sway_veg 图的全部帧（按名字顺序），phase = 随机 -0.6～0.6（另开一个 System.Random，
+   不要影响原来选位置的随机数），然后调用 ApplyPreset：
+     0 1 2 3 6 → Vine；18 19 22 23 27 30 31 → Bush；16 17 24 25 → Grass；26 → Mushroom；20 21 28 29 → Corner。
+
+3. 漂浮孢子：MazeGrid 下建 "Spores"（本地位置 0），加 SporeField，walls = Walls Tilemap。
+
+4. 外圈暗角：
+   MazeGrid 下建 "ExteriorShade"，SpriteRenderer 用 Exterior/exterior_shade_场景名.png，
+   本地位置 (-12 - W/2, H/2 + 12)（图的左上角对齐地图坐标 (-12, -12)），sortingOrder 1（盖在墙上，在玩家下面）。
+   ExteriorTilePadding 生成的 "Outer Fill" 的 Tilemap.color 改成 (0.513, 0.487, 0.529, 1)，和暗角图最外圈的颜色 #141324 接上。
+   摄像机背景色也改成 #141324。
+
+5. 外圈前景：
+   MazeGrid 下建 "Foreground"（本地位置 0），加 ForegroundLayer；它下面建 "FgBack" 和 "FgFront" 两个空物体。
+   读 fg_layout.json 里本场景的列表，每一项建一个物体：
+     back = true 放 FgBack（sortingOrder 10），false 放 FgFront（sortingOrder 11）。都在玩家和门前面。
+     位置 = (x, y) 换算后的本地坐标（这是图的上边中点）。
+     SpriteRenderer：sprite = 中间帧，flipX = flip。
+     SwayItem：frames = file 那张图的全部帧，mirrored = flip，phase = phase，ApplyPreset：
+       vine → FgVine；roots → FgRoots；moss → FgMoss；clump → FgClump；corner → FgCorner。
+   ForegroundLayer：front = FgFront，back = FgBack，mapCenter = MazeGrid。
+   前景不要碰撞。
+
+6. 其他不动：墙、空间层、门、激光、尖刺、玩家。
+
+====================================
+五、效果说明（脚本里已经实现，调参用）
+====================================
+
+幅度已经按 200% 定好（SwayItem.ApplyPreset 里的数值）。
+关卡内装饰：微风一阵一阵摆；世界转了以后倒向屏幕的「下」（藤蔓最多 16 像素，花丛 6，草 4，蘑菇和墙角 2）；
+转得快会被甩开，停下来回弹；玩家经过会被推开，从高处落地会把附近的草震开。
+外圈前景：同样摆动，更大更慢；前排视差 0.12、后排 0.06；玩家走到某一株后面时，那一株变成 30% 不透明。
+漂浮孢子：数量 = 空气格子数 × 0.18，1 像素，粉 / 蓝，5～10 秒一轮，慢慢往屏幕下方飘，画在墙后面。
+不要发光效果。
+
+====================================
+六、验证和汇报（只做这些）
+====================================
+
+1. 编译无错误，重新生成 Maze_01～05，场景里没有丢失脚本。
+2. 5 关各截一张图和参考图 scene_fx_Maze_0X.png 对照（关卡外变暗、外圈有前景植物、空气里有小光点）。
+3. Maze_03 里转一下世界：装饰会倒向下方并回弹，前景跟着世界转，孢子在飘，玩家走到前景后面时前景变淡。
+4. 汇报 3 到 5 行，不写报告文件。

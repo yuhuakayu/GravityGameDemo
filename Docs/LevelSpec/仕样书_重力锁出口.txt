@@ -1,0 +1,61 @@
+仕样书：重力锁出口（门正立才能打开）+ 天花板门、墙上的门
+
+设计图：Docs/LevelSpec/images/gravity_lock_door_design.png
+可试玩的设计页（可选，用浏览器打开）：Docs/LevelSpec/gravity_lock_door.html
+范围：改 MazeSceneBuilder 后重新生成 Maze_01～05。现有 5 张地图的门都还是 D（在地上），地图内容不改。
+
+====================================
+一、已经准备好的文件（不用再做）
+====================================
+
+  Assets/Resource/Scripts/GoalDoor.cs                       已改好：加了重力锁。gravityLock 默认关闭，所以别的场景的门行为不变
+  Assets/Resource/Scripts/Editor/GravityLockDoorSetup.cs    新文件：GravityLockDoorSetup.Apply(door) 给门装表盘和指针，并打开重力锁
+  Assets/Resource/Scripts/Debug/Tabs/GameParamTab.cs        已改好：调试控制台「参数」页多了重力锁开关和解锁角度滑条
+  Assets/Resource/Mode/Cave Tileset/Door/door_lock_open.png     表盘（解锁，青色）
+  Assets/Resource/Mode/Cave Tileset/Door/door_lock_locked.png   表盘（锁住，门缝灯熄灭）
+  Assets/Resource/Mode/Cave Tileset/Door/door_lock_hint.png     表盘（玩家碰到锁住的门时闪红）
+  Assets/Resource/Mode/Cave Tileset/Door/door_lock_needle.png   指针
+这 4 张图是单张 Sprite，PPU 16，Point，不压缩，枢轴中心。Cave Tileset 现有导入设置会自动处理，不用改导入脚本。
+脚本编译不过就修。
+
+====================================
+二、MazeSceneBuilder 要改的地方
+====================================
+
+1. 地图新字母（门装在哪一面）：
+     D = 门在地上（原来的）
+     U = 门在天花板上，倒挂（上面那格必须是 #）
+     [ = 门在左边墙上（左边那格必须是 #）
+     ] = 门在右边墙上（右边那格必须是 #）
+   BuildScene 里原来 cell == 'D' 时调用 PlaceDoor(door, center)，改成这 4 个字母都调用 PlaceDoor(door, center, cell)。
+
+2. PlaceDoor 加参数 cell：
+   先设门的旋转 door.transform.localRotation = Quaternion.Euler(0, 0, z)，z：D 为 0，U 为 180，[ 为 -90，] 为 90。
+   再用原来的算法求门图底边中点（旋转以后的位置），让它对齐到这一格靠墙那一边的中点：
+     center + (Vector2)(Quaternion.Euler(0, 0, z) * Vector2.down)
+   D 的结果和原来一样（center.y - 1）。没有 DoorVisual 的旧 Tilemap 分支保持原样，只支持 D。
+
+3. 门放好以后调用 GravityLockDoorSetup.Apply(door)，放在把门的渲染顺序设成 2 以上那段代码之后。
+   它会在 DoorVisual 上加 SortingGroup，所以门和玩家的前后关系跟原来一样。
+
+4. 其他不动。装饰生成本来就跳过不是 . 和 # 的格子，新字母不用特殊处理。
+
+====================================
+三、效果说明（脚本里已经实现，调参用）
+====================================
+
+门正立时（门的朝上方向和屏幕朝上方向夹角不超过 20 度）解锁：表盘和门缝亮青色，玩家碰到门就过关（流程和原来一样）。
+门歪着时锁住：表盘暗、门缝熄灭。玩家碰到时表盘闪红 1 秒，不过关；玩家还在门里时把世界转正，门马上打开。
+解锁以后要歪到 23 度才重新锁上，避免在边缘来回闪。
+指针是一个小钟摆，永远指向屏幕下方；世界转得快时会晃一下再停住。
+天花板门要把世界翻过来 180 度才算正，墙上的门要转 90 度。
+解锁角度：GoalDoor 的 unlockAngle（默认 20），relockMargin（默认 3）。运行时也可以在调试控制台「参数」页拖动。
+
+====================================
+四、验证和汇报（只做这些）
+====================================
+
+1. 编译无错误，重新生成 Maze_01～05。
+2. Maze_01：把世界转歪约 40 度，让玩家滑到门口：不过关，表盘闪红。转回 20 度以内：过关。
+3. 临时把 Maze_01 地图第 2 行改成 #...U#、第 5 行改成 #.P..#，生成一次：门倒挂在天花板上，世界翻 180 度后能过关。测完改回原地图再生成一次。
+4. 汇报 3 到 5 行，不写报告文件。

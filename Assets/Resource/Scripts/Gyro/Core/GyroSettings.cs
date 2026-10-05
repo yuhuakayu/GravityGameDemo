@@ -21,6 +21,11 @@ namespace Resource.Scripts.Gyro
         public float outputCurve = 1f;
         public float speedDeadzone = 1f;
         public float precisionSpeed = 0f;
+        public bool shakeReject = true;
+        public float purityLow = 0.5f;
+        public float purityHigh = 0.8f;
+        public float shakeHoldTime = 0.12f;
+        public float offAxisTrigger = 30f;
         public bool invertDirection;
         public float angleMultiplier = 1f;
         public float angleSmoothTime = 0.05f;
@@ -51,6 +56,10 @@ namespace Resource.Scripts.Gyro
             outputCurve = Clamp(outputCurve, 0.1f, 4f, 1f);
             speedDeadzone = Clamp(speedDeadzone, 0f, 20f, 1f);
             precisionSpeed = Clamp(precisionSpeed, 0f, 2000f, 0f);
+            purityLow = Clamp(purityLow, 0.2f, 0.9f, 0.5f);
+            purityHigh = Clamp(purityHigh, purityLow + 0.05f, 1f, 0.8f);
+            shakeHoldTime = Clamp(shakeHoldTime, 0f, 0.3f, 0.12f);
+            offAxisTrigger = Clamp(offAxisTrigger, 5f, 100f, 30f);
             angleMultiplier = Clamp(angleMultiplier, 0.5f, 4f, 1f);
             angleSmoothTime = Clamp(angleSmoothTime, 0f, 1f, 0.05f);
             angleDeadzone = Clamp(angleDeadzone, 0f, 20f, 1f);

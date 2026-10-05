@@ -58,18 +58,24 @@ namespace Resource.Scripts.Gyro
                     candidate = -candidate;
                 if (_hasAxis)
                 {
-                    // A pitched grip can roll past sideways without entering the singular cone.
-                    // Compare both axes against this sample's gyro so a real input reversal is
-                    // still accepted, while a change of projection hemisphere cannot reverse it.
-                    float previousSpeed = Vector3.Dot(calibratedGyro, _lastAxis);
-                    float candidateSpeed = Vector3.Dot(calibratedGyro, candidate);
-                    if (Mathf.Abs(candidateSpeed) < 0.00001f && Mathf.Abs(previousSpeed) > 0.00001f)
-                        candidate = _lastAxis; // Preserve the reference at an exact zero crossing.
-                    else if (previousSpeed * candidateSpeed < 0f)
+                    float magnitude = calibratedGyro.magnitude;
+                    float wheelPlaneSpeed = Mathf.Sqrt(calibratedGyro.y * calibratedGyro.y + calibratedGyro.z * calibratedGyro.z);
+                    if (magnitude >= 20f && wheelPlaneSpeed >= 0.5f * magnitude)
                     {
-                        candidate = -candidate;
-                        _crossedDegeneracy = true; // Keep this hemisphere through zero-rate samples.
+                        // A pitched grip can roll past sideways without entering the singular cone.
+                        // Only meaningful wheel rotation can choose the projection hemisphere.
+                        float previousSpeed = Vector3.Dot(calibratedGyro, _lastAxis);
+                        float candidateSpeed = Vector3.Dot(calibratedGyro, candidate);
+                        if (Mathf.Abs(candidateSpeed) < 0.00001f && Mathf.Abs(previousSpeed) > 0.00001f)
+                            candidate = _lastAxis; // Preserve the reference at an exact zero crossing.
+                        else if (previousSpeed * candidateSpeed < 0f)
+                        {
+                            candidate = -candidate;
+                            _crossedDegeneracy = true; // Keep this hemisphere through zero-rate samples.
+                        }
                     }
+                    else if (Vector3.Dot(candidate, _lastAxis) < 0f)
+                        candidate = -candidate;
                 }
                 _lastAxis = candidate;
                 _hasAxis = true;
@@ -80,7 +86,12 @@ namespace Resource.Scripts.Gyro
             }
 
             float horizontalLength = (Vector3.right - xDotG * g).magnitude;
-            _lastAngle = Mathf.Atan2(-xDotG, horizontalLength) * Mathf.Rad2Deg;
+            // Preserve the wheel hemisphere: an unsigned denominator folds a half-turn
+            // back toward zero. Unwrap the signed angle through +/-180 degrees.
+            if (_hasAxis && Vector3.Dot(Vector3.Cross(g, Vector3.right), _lastAxis) < 0f)
+                horizontalLength = -horizontalLength;
+            float wrappedAngle = Mathf.Atan2(-xDotG, horizontalLength) * Mathf.Rad2Deg;
+            _lastAngle += Mathf.DeltaAngle(_lastAngle, wrappedAngle);
             // On a singular first sample there is no measured axis to preserve, so output zero.
             float speed = _hasAxis ? Vector3.Dot(calibratedGyro, _lastAxis) : 0f;
             return new SteeringReading(_lastAxis, speed, _lastAngle,

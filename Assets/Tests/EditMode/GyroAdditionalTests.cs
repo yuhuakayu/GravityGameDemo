@@ -177,6 +177,82 @@ namespace Resource.Tests.Gyro
             Assert.That(processor.ConsumeStickIntegral(), Is.EqualTo(SampleDelta).Within(1e-9));
         }
 
+        [Test]
+        public void ShakeReject_UprightPitchWithTwelvePercentCrossAxisLeakPreservesNextWheelDirection()
+        {
+            var processor = new GyroProcessor(new GyroSettings());
+            var unshaken = new GyroProcessor(new GyroSettings());
+            processor.Calibration.SetInitialBias(Vector3.zero);
+            unshaken.Calibration.SetInitialBias(Vector3.zero);
+            unshaken.ProcessSample(Sample(30f, Vector3.down, SampleDelta));
+            float originalOutput = unshaken.EndFrame(SampleDelta);
+            Assert.That(originalOutput, Is.GreaterThan(0f));
+
+            // A fixed 12% sideways grip error tilts the pitch axis. Gravity and gyro
+            // describe the same rigid rotation, with no random noise or inconsistent poses.
+            Vector3 shakeAxis = new Vector3(1f, 0.12f, 0f).normalized;
+            const double frequency = 2.5;
+            double worldAngle = 0, maximumDeflection = 0;
+            for (int i = 1; i <= 500; ++i)
+            {
+                double now = i / 250.0;
+                double phase = 2.0 * Math.PI * frequency * now;
+                float pitch = (float)(25.0 * Math.Sin(phase));
+                float pitchRate = (float)(25.0 * 2.0 * Math.PI * frequency * Math.Cos(phase));
+                Vector3 gravity = Quaternion.AngleAxis(-pitch, shakeAxis) * Vector3.down;
+                Assert.That(processor.ProcessSample(new GyroSample(SampleDelta,
+                    shakeAxis * pitchRate, -gravity, gravity, now)), Is.True);
+                processor.EndFrame(now);
+                worldAngle += processor.ConsumeStickIntegral() * 90.0;
+                maximumDeflection = Math.Max(maximumDeflection, Math.Abs(worldAngle));
+            }
+            // Check the whole trace, not only the end of five cycles where turns could cancel.
+            Assert.That(maximumDeflection, Is.LessThan(1.0));
+
+            float recoveredOutput = 0f;
+            for (int i = 1; i <= 75; ++i)
+            {
+                double now = 2.0 + i / 250.0;
+                processor.ProcessSample(Sample(30f, GravityAt(30f * i * SampleDelta), now));
+                recoveredOutput = processor.EndFrame(now);
+                Assert.That(recoveredOutput * originalOutput, Is.GreaterThanOrEqualTo(0f),
+                    "The brief shake hold may output zero, but the next wheel turn must never reverse.");
+            }
+            Assert.That(recoveredOutput, Is.GreaterThan(0f), "The pure wheel turn must resume after the shake hold.");
+            TestContext.WriteLine($"2 s pitch +/-25 degrees at 2.5 Hz, 12% cross-axis grip: maximum world deflection={maximumDeflection:F9} degrees; wheel output before/after={originalOutput:F6}/{recoveredOutput:F6}.");
+        }
+
+        [TestCase(1)]
+        [TestCase(-1)]
+        public void ModeB_FullWheelTurnAndReturnKeepsContinuousAngle(int direction)
+        {
+            var processor = new GyroProcessor(new GyroSettings
+            {
+                mode = GyroControlMode.Angle, angleSmoothTime = 0f, angleDeadzone = 0f
+            });
+            processor.Calibration.SetInitialBias(Vector3.zero);
+            double now = 0;
+            for (int phase = 0; phase < 2; ++phase)
+            {
+                float speed = direction * (phase == 0 ? 60f : -60f);
+                for (int i = 0; i <= 1500; ++i)
+                {
+                    float angle = direction * (phase == 0 ? i : 1500 - i) * 0.24f;
+                    now += SampleDelta;
+                    processor.ProcessSample(Sample(speed, GravityAt(angle), now));
+                    Assert.That(processor.AngleMapper.OutputAngle, Is.EqualTo(angle).Within(0.01f),
+                        $"Angle mode folded at hand angle {angle:F2}, phase {phase}.");
+                    if (i != 750) continue;
+                    for (int hold = 0; hold < 25; ++hold)
+                    {
+                        now += SampleDelta;
+                        processor.ProcessSample(Sample(0f, GravityAt(angle), now));
+                        Assert.That(processor.AngleMapper.OutputAngle, Is.EqualTo(angle).Within(0.01f));
+                    }
+                }
+            }
+        }
+
         private static GyroSample Sample(float wheelSpeed, Vector3 gravity, double timestamp) =>
             new GyroSample(SampleDelta, Vector3.forward * wheelSpeed, -gravity.normalized, gravity, timestamp);
 

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.U2D.Sprites;
 using UnityEngine;
@@ -49,12 +50,14 @@ namespace Resource.Scripts.Editor
             public readonly int FrameWidth;
             public readonly int FrameHeight;
             public readonly float Fps; // 0 = no animation clip
+            public readonly int FrameCount;
 
-            public Sheet(int frameWidth, int frameHeight, float fps)
+            public Sheet(int frameWidth, int frameHeight, float fps, int frameCount = 0)
             {
                 FrameWidth = frameWidth;
                 FrameHeight = frameHeight;
                 Fps = fps;
+                FrameCount = frameCount;
             }
         }
 
@@ -69,6 +72,16 @@ namespace Resource.Scripts.Editor
             { CaveRoot + "/Door/door_open.png", new Sheet(32, 32, 12f) },
         };
 
+        private static bool TryGetSheet(string path, out Sheet sheet)
+        {
+            if (Sheets.TryGetValue(path, out sheet)) return true;
+            if (!path.StartsWith(CaveRoot + "/Sway/") && !path.StartsWith(CaveRoot + "/Foreground/")) return false;
+            var match = Regex.Match(Path.GetFileName(path), @"_f(\d+)\.png$");
+            if (!match.Success) return false;
+            sheet = new Sheet(0, 0, 0f, int.Parse(match.Groups[1].Value));
+            return true;
+        }
+
         private void OnPreprocessTexture()
         {
             if (FindRoot(assetPath) == null) return;
@@ -79,7 +92,7 @@ namespace Resource.Scripts.Editor
 
         private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
         {
-            var pending = imported.Where(p => Sheets.ContainsKey(p)).ToList();
+            var pending = imported.Where(p => TryGetSheet(p, out _)).ToList();
             if (pending.Count == 0) return;
             EditorApplication.delayCall += () =>
             {
@@ -100,14 +113,14 @@ namespace Resource.Scripts.Editor
                     importer.SaveAndReimport();
                 }
             }
-            foreach (var path in Sheets.Keys) SliceAndAnimate(path, true);
+            foreach (var guid in guids) SliceAndAnimate(AssetDatabase.GUIDToAssetPath(guid), true);
             Debug.Log($"[PowerStationTileset] 已重新应用导入设置：{guids.Length} 张图片。");
         }
 
         internal static void ApplyBaseSettings(TextureImporter importer, string path)
         {
             importer.textureType = TextureImporterType.Sprite;
-            importer.spriteImportMode = Sheets.ContainsKey(path) ? SpriteImportMode.Multiple : SpriteImportMode.Single;
+            importer.spriteImportMode = TryGetSheet(path, out _) ? SpriteImportMode.Multiple : SpriteImportMode.Single;
             importer.spritePixelsPerUnit = RootPixelsPerUnit[FindRoot(path)];
             importer.filterMode = FilterMode.Point;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
@@ -115,12 +128,20 @@ namespace Resource.Scripts.Editor
             importer.wrapMode = TextureWrapMode.Clamp;
             importer.alphaIsTransparency = true;
             importer.maxTextureSize = 2048;
+            if (path.StartsWith(CaveRoot + "/Exterior/") || path.StartsWith(CaveRoot + "/Background/"))
+            {
+                var settings = new TextureImporterSettings();
+                importer.ReadTextureSettings(settings);
+                settings.spriteAlignment = (int)SpriteAlignment.TopLeft;
+                settings.spritePivot = new Vector2(0f, 1f);
+                importer.SetTextureSettings(settings);
+            }
             if (Borders.TryGetValue(path, out Vector4 border)) importer.spriteBorder = border;
         }
 
         internal static void SliceAndAnimate(string path, bool force)
         {
-            if (!Sheets.TryGetValue(path, out var sheet)) return;
+            if (!TryGetSheet(path, out var sheet)) return;
             if (!(AssetImporter.GetAtPath(path) is TextureImporter importer)) return;
 
             var factory = new SpriteDataProviderFactories();
@@ -131,9 +152,12 @@ namespace Resource.Scripts.Editor
             if (force || provider.GetSpriteRects().Length == 0)
             {
                 provider.GetDataProvider<ITextureDataProvider>().GetTextureActualWidthAndHeight(out int width, out int height);
-                int columns = width / sheet.FrameWidth;
-                int rows = height / sheet.FrameHeight;
+                int frameWidth = sheet.FrameCount > 0 ? width / sheet.FrameCount : sheet.FrameWidth;
+                int frameHeight = sheet.FrameCount > 0 ? height : sheet.FrameHeight;
+                int columns = width / frameWidth;
+                int rows = height / frameHeight;
                 string baseName = Path.GetFileNameWithoutExtension(path);
+                if (sheet.FrameCount > 0) baseName = baseName.Substring(0, baseName.LastIndexOf("_f"));
 
                 // Keep existing sprite IDs when re-slicing so references in scenes/tiles survive.
                 var existing = provider.GetSpriteRects().ToDictionary(r => r.name, r => r.spriteID);
@@ -148,10 +172,10 @@ namespace Resource.Scripts.Editor
                         rects.Add(new SpriteRect
                         {
                             name = name,
-                            rect = new Rect(col * sheet.FrameWidth, height - (row + 1) * sheet.FrameHeight,
-                                sheet.FrameWidth, sheet.FrameHeight),
-                            alignment = SpriteAlignment.Center,
-                            pivot = new Vector2(0.5f, 0.5f),
+                            rect = new Rect(col * frameWidth, height - (row + 1) * frameHeight,
+                                frameWidth, frameHeight),
+                            alignment = sheet.FrameCount > 0 ? SpriteAlignment.TopCenter : SpriteAlignment.Center,
+                            pivot = new Vector2(0.5f, sheet.FrameCount > 0 ? 1f : 0.5f),
                             spriteID = existing.TryGetValue(name, out var id) ? id : GUID.Generate(),
                         });
                         index++;

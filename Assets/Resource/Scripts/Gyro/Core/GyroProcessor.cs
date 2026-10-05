@@ -13,6 +13,7 @@ namespace Resource.Scripts.Gyro
         private double _unconsumedStickIntegral;
         private double _lastSampleTime = double.NegativeInfinity;
         private double _sampleClock;
+        private float _shakeHoldRemaining;
 
         public GyroSettings Settings { get; }
         public GyroCalibration Calibration { get; } = new GyroCalibration();
@@ -20,6 +21,10 @@ namespace Resource.Scripts.Gyro
         public SteeringReading LastSteering { get; private set; }
         public GyroSample LastSample { get; private set; }
         public float StickOutput { get; private set; }
+        public float GatedSpeed { get; private set; }
+        public float Purity { get; private set; } = 1f;
+        public float ShakeWeight { get; private set; } = 1f;
+        public bool IsShakeHolding => _shakeHoldRemaining > 0f;
         public double IntegratedStickSeconds { get; private set; }
         public double IntegratedWheelDegrees { get; private set; }
         public long ProcessedSamples { get; private set; }
@@ -39,7 +44,25 @@ namespace Resource.Scripts.Gyro
             LastSample = sample;
             Vector3 corrected = Calibration.Process(sample);
             LastSteering = _extractor.Extract(corrected, sample.Gravity);
-            float value = _stickMapper.Map(LastSteering.AngularSpeed, Settings);
+            float speed = LastSteering.AngularSpeed;
+            float magnitude = corrected.magnitude;
+            Purity = magnitude < 0.001f ? 1f : Mathf.Abs(speed) / magnitude;
+            _shakeHoldRemaining = Mathf.Max(0f, _shakeHoldRemaining - sample.DeltaTime);
+            if (Settings.shakeReject)
+            {
+                float offAxis = Mathf.Sqrt(Mathf.Max(0f, corrected.sqrMagnitude - speed * speed));
+                if (offAxis > Settings.offAxisTrigger && Purity < Settings.purityLow)
+                    _shakeHoldRemaining = Settings.shakeHoldTime;
+                ShakeWeight = IsShakeHolding ? 0f : Mathf.Clamp01(
+                    (Purity - Settings.purityLow) / (Settings.purityHigh - Settings.purityLow));
+            }
+            else
+            {
+                _shakeHoldRemaining = 0f;
+                ShakeWeight = 1f;
+            }
+            GatedSpeed = speed * ShakeWeight;
+            float value = _stickMapper.Map(GatedSpeed, Settings);
             _frameWeightedOutput += value * sample.DeltaTime;
             _frameSampleSeconds += sample.DeltaTime;
             IntegratedStickSeconds += value * sample.DeltaTime;
@@ -47,7 +70,10 @@ namespace Resource.Scripts.Gyro
             IntegratedWheelDegrees += LastSteering.AngularSpeed * sample.DeltaTime;
             _sampleClock += sample.DeltaTime;
             _lastSampleTime = sample.TimestampSeconds > 0 ? sample.TimestampSeconds : _sampleClock;
-            AngleMapper.Evaluate(LastSteering.Angle, sample.DeltaTime);
+            float acceleration = sample.Acceleration.magnitude;
+            if (!Settings.shakeReject || (ShakeWeight >= 0.5f &&
+                (acceleration == 0f || Mathf.Abs(acceleration - 1f) <= 0.15f)))
+                AngleMapper.Evaluate(LastSteering.Angle, sample.DeltaTime);
             ++ProcessedSamples;
             return true;
         }
@@ -83,6 +109,9 @@ namespace Resource.Scripts.Gyro
         public void Disconnect()
         {
             StickOutput = 0f;
+            GatedSpeed = 0f;
+            Purity = ShakeWeight = 1f;
+            _shakeHoldRemaining = 0f;
             _frameWeightedOutput = 0;
             _frameSampleSeconds = 0;
             _unconsumedStickIntegral = 0;

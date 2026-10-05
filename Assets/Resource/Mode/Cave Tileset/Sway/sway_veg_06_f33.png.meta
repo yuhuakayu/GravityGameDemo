@@ -1,0 +1,1065 @@
+fileFormatVersion: 2
+guid: b0ac7cd959dd69f41b70f9754ae78858
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 69154369479734539
+    second: sway_veg_06_f33_0
+  - first:
+      213: -5308491955334759987
+    second: sway_veg_06_f33_1
+  - first:
+      213: -2089648139094875860
+    second: sway_veg_06_f33_2
+  - first:
+      213: -230972808442026637
+    second: sway_veg_06_f33_3
+  - first:
+      213: -3319026331928926872
+    second: sway_veg_06_f33_4
+  - first:
+      213: 5533726072998836713
+    second: sway_veg_06_f33_5
+  - first:
+      213: 3427190581980068973
+    second: sway_veg_06_f33_6
+  - first:
+      213: -5959498104815823584
+    second: sway_veg_06_f33_7
+  - first:
+      213: -2091062701190254453
+    second: sway_veg_06_f33_8
+  - first:
+      213: 7080056694124454024
+    second: sway_veg_06_f33_9
+  - first:
+      213: 4101513327579431394
+    second: sway_veg_06_f33_10
+  - first:
+      213: 5154271994867515108
+    second: sway_veg_06_f33_11
+  - first:
+      213: -4163353199726347693
+    second: sway_veg_06_f33_12
+  - first:
+      213: -5223582026596545548
+    second: sway_veg_06_f33_13
+  - first:
+      213: 2388603100013206905
+    second: sway_veg_06_f33_14
+  - first:
+      213: -2398640095799460873
+    second: sway_veg_06_f33_15
+  - first:
+      213: 7396711474874415917
+    second: sway_veg_06_f33_16
+  - first:
+      213: -4760005075464419976
+    second: sway_veg_06_f33_17
+  - first:
+      213: -3572959931764252634
+    second: sway_veg_06_f33_18
+  - first:
+      213: -6004941242888480438
+    second: sway_veg_06_f33_19
+  - first:
+      213: -8300937243595244457
+    second: sway_veg_06_f33_20
+  - first:
+      213: -3341326849615459682
+    second: sway_veg_06_f33_21
+  - first:
+      213: -4831671220743802882
+    second: sway_veg_06_f33_22
+  - first:
+      213: -244391134129046493
+    second: sway_veg_06_f33_23
+  - first:
+      213: -3090415170316699288
+    second: sway_veg_06_f33_24
+  - first:
+      213: 1018225028651280528
+    second: sway_veg_06_f33_25
+  - first:
+      213: 3073388498182593630
+    second: sway_veg_06_f33_26
+  - first:
+      213: -6144306187357843185
+    second: sway_veg_06_f33_27
+  - first:
+      213: 1646553408639904409
+    second: sway_veg_06_f33_28
+  - first:
+      213: 4235266338727724701
+    second: sway_veg_06_f33_29
+  - first:
+      213: -2830791603135712404
+    second: sway_veg_06_f33_30
+  - first:
+      213: -8424825270575189500
+    second: sway_veg_06_f33_31
+  - first:
+      213: -6964151811423107657
+    second: sway_veg_06_f33_32
+  - first:
+      213: 5411980399808897030
+    second: sway_veg_06_f33_33
+  - first:
+      213: -9036738260500667807
+    second: sway_veg_06_f33_34
+  - first:
+      213: 7019204572761326804
+    second: sway_veg_06_f33_35
+  - first:
+      213: 2475553845176903370
+    second: sway_veg_06_f33_36
+  - first:
+      213: 6463646909696217850
+    second: sway_veg_06_f33_37
+  - first:
+      213: -1515789374375602075
+    second: sway_veg_06_f33_38
+  - first:
+      213: 4344853404327780863
+    second: sway_veg_06_f33_39
+  - first:
+      213: 6703698715630080299
+    second: sway_veg_06_f33_40
+  - first:
+      213: 7846594616339327065
+    second: sway_veg_06_f33_41
+  - first:
+      213: -3113795330865954835
+    second: sway_veg_06_f33_42
+  - first:
+      213: -6005452197055372034
+    second: sway_veg_06_f33_43
+  - first:
+      213: -3274932156416521105
+    second: sway_veg_06_f33_44
+  - first:
+      213: -4523682738121492494
+    second: sway_veg_06_f33_45
+  - first:
+      213: -1521376675223887901
+    second: sway_veg_06_f33_46
+  - first:
+      213: -6025082491535459802
+    second: sway_veg_06_f33_47
+  - first:
+      213: 8303368224991420269
+    second: sway_veg_06_f33_48
+  - first:
+      213: 1602124206910815344
+    second: sway_veg_06_f33_49
+  - first:
+      213: -6136869472257394523
+    second: sway_veg_06_f33_50
+  - first:
+      213: 9021458397423939431
+    second: sway_veg_06_f33_51
+  - first:
+      213: 8646114416520703273
+    second: sway_veg_06_f33_52
+  - first:
+      213: 2656246002945698039
+    second: sway_veg_06_f33_53
+  - first:
+      213: 5538280727948637331
+    second: sway_veg_06_f33_54
+  - first:
+      213: -8684235779782504541
+    second: sway_veg_06_f33_55
+  - first:
+      213: 3504269965011692416
+    second: sway_veg_06_f33_56
+  - first:
+      213: -8588131975654031877
+    second: sway_veg_06_f33_57
+  - first:
+      213: 1311204132578305953
+    second: sway_veg_06_f33_58
+  - first:
+      213: 6595739591242975387
+    second: sway_veg_06_f33_59
+  - first:
+      213: -5179368319248850731
+    second: sway_veg_06_f33_60
+  - first:
+      213: 8707516713292656939
+    second: sway_veg_06_f33_61
+  - first:
+      213: 4018327772904957259
+    second: sway_veg_06_f33_62
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 16
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: sway_veg_06_00
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a9d3d8b31956d1a41a47ad999bd993d6
+      internalID: -165552073
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_01
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3d21cc5c7caec834485b56bcdf5b7778
+      internalID: 943599833
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_02
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8f467eef1d3c2094bb9fb4ad20c149ad
+      internalID: -614227660
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_03
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f4c50d495dac76949b464c5a6b820e6b
+      internalID: 492744589
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_04
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e84e2206c1ceeb54fa48fc5445e5b6a8
+      internalID: 1432793597
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_05
+      rect:
+        serializedVersion: 2
+        x: 240
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 859dc4f0f1f12e54cb8cc4e12f81bc91
+      internalID: 986763049
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_06
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 35e7a5ac0d8adf14fb30dfebcf611184
+      internalID: -844778808
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_07
+      rect:
+        serializedVersion: 2
+        x: 336
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6a84d258b398b284b9a60c773b8a21fe
+      internalID: 1921978225
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_08
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d466e5edb66e5f54eac7826a59eeddf0
+      internalID: 2075679665
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_09
+      rect:
+        serializedVersion: 2
+        x: 432
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e5210b2dd3602204395ad8ddc09a711e
+      internalID: -1742872400
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_10
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4e5552bcde3d49f40a342772deef9e53
+      internalID: 1389660204
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_11
+      rect:
+        serializedVersion: 2
+        x: 528
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ddbb4825d7332f548b3da687d1508179
+      internalID: 640069313
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_12
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: aa23bbf279b52b34db1f470aeddd8d9f
+      internalID: 944613314
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_13
+      rect:
+        serializedVersion: 2
+        x: 624
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c2a5619d3e546c142a4c4a3a6aafe9d2
+      internalID: -1908618853
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_14
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5af451516b9f9344283362a53b16eb53
+      internalID: 2066465126
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_15
+      rect:
+        serializedVersion: 2
+        x: 720
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c0baf3d0f8ee9a348b934293fc393bc2
+      internalID: 1365751244
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_16
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 59658283d82a9d24eb9f62b274698933
+      internalID: -1011464595
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_17
+      rect:
+        serializedVersion: 2
+        x: 816
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 254263a4c4196204cb6da060e5ea22e7
+      internalID: 2029721140
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_18
+      rect:
+        serializedVersion: 2
+        x: 864
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 24f4a800740bd8346b26b5234038fe9f
+      internalID: 620933767
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_19
+      rect:
+        serializedVersion: 2
+        x: 912
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5ef9971b7ece1b3489bbadbb9abd8729
+      internalID: 135386423
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_20
+      rect:
+        serializedVersion: 2
+        x: 960
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4f25a05830c41f64aaa840479c5d3549
+      internalID: 1841133204
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_21
+      rect:
+        serializedVersion: 2
+        x: 1008
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dccfe6e159d253a42b48c717566f5979
+      internalID: 149729155
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_22
+      rect:
+        serializedVersion: 2
+        x: 1056
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b450e726bc1626f4c9a9f385b3e3a580
+      internalID: -80970189
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_23
+      rect:
+        serializedVersion: 2
+        x: 1104
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 55fcd293f631266458dde435e9b9eb97
+      internalID: 1450148825
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_24
+      rect:
+        serializedVersion: 2
+        x: 1152
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8aea3a4602aca4a45915be270786edcd
+      internalID: -180943479
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_25
+      rect:
+        serializedVersion: 2
+        x: 1200
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 42a4f3c08935fe04995743865d6ba289
+      internalID: 869585876
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_26
+      rect:
+        serializedVersion: 2
+        x: 1248
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ed237ab0fbeca8542b6f079af83735b1
+      internalID: 1590682020
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_27
+      rect:
+        serializedVersion: 2
+        x: 1296
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: aa323805b5c3f0f419051a803cb454b3
+      internalID: -939013913
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_28
+      rect:
+        serializedVersion: 2
+        x: 1344
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 879fa36d4f01b4b41a196b657f23ebd1
+      internalID: -2030415922
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_29
+      rect:
+        serializedVersion: 2
+        x: 1392
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f38d46142e14cc842b042019410916e6
+      internalID: 1310697975
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_30
+      rect:
+        serializedVersion: 2
+        x: 1440
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 11b0903864bf6c54fbd08b318028b01e
+      internalID: -1350936344
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_31
+      rect:
+        serializedVersion: 2
+        x: 1488
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9dbd92a5986530044af640ca78922e50
+      internalID: 1019357023
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sway_veg_06_32
+      rect:
+        serializedVersion: 2
+        x: 1536
+        y: 0
+        width: 48
+        height: 32
+      alignment: 2
+      pivot: {x: 0.5, y: 1}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 98a17ed60d87e694f8be26b243981a69
+      internalID: -1628993118
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      sway_veg_06_00: -165552073
+      sway_veg_06_01: 943599833
+      sway_veg_06_02: -614227660
+      sway_veg_06_03: 492744589
+      sway_veg_06_04: 1432793597
+      sway_veg_06_05: 986763049
+      sway_veg_06_06: -844778808
+      sway_veg_06_07: 1921978225
+      sway_veg_06_08: 2075679665
+      sway_veg_06_09: -1742872400
+      sway_veg_06_10: 1389660204
+      sway_veg_06_11: 640069313
+      sway_veg_06_12: 944613314
+      sway_veg_06_13: -1908618853
+      sway_veg_06_14: 2066465126
+      sway_veg_06_15: 1365751244
+      sway_veg_06_16: -1011464595
+      sway_veg_06_17: 2029721140
+      sway_veg_06_18: 620933767
+      sway_veg_06_19: 135386423
+      sway_veg_06_20: 1841133204
+      sway_veg_06_21: 149729155
+      sway_veg_06_22: -80970189
+      sway_veg_06_23: 1450148825
+      sway_veg_06_24: -180943479
+      sway_veg_06_25: 869585876
+      sway_veg_06_26: 1590682020
+      sway_veg_06_27: -939013913
+      sway_veg_06_28: -2030415922
+      sway_veg_06_29: 1310697975
+      sway_veg_06_30: -1350936344
+      sway_veg_06_31: 1019357023
+      sway_veg_06_32: -1628993118
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

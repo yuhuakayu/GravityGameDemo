@@ -9,8 +9,7 @@ namespace Resource.Scripts
     /// transform.position，这个只改 orthographicSize，互不相干。
     ///
     /// 由 LevelIntroUI 负责在浏览模式期间禁用这个组件（避免跟浏览模式自己的缩放同时响应同一个
-    /// 扳机输入），点"开始游戏"之后再启用。死亡重开关卡会整个重载场景，orthographicSize 跟着
-    /// 场景文件里的默认值恢复，这里不需要额外写重置逻辑。
+    /// 扳机输入），点"开始游戏"之后再启用。自动框选的迷宫关卡保持禁用。
     /// </summary>
     public class CameraZoomController : MonoBehaviour
     {

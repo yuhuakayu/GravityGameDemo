@@ -17,7 +17,7 @@ namespace Resource.Scripts.Editor
         // The approved design keeps the reference detail instead of the initial 24x24 draft.
         private const int FrameWidth = 96;
         private const int FrameHeight = 112;
-        private const float IdleVisibleHeight = 91f;
+        private const float IdleVisibleHeight = 92f;
         private const string UndoName = "Install astronaut idle and float";
 
         [MenuItem("Tools/Gravity Game/Install Astronaut Player in Game Scenes")]
@@ -33,10 +33,14 @@ namespace Resource.Scripts.Editor
             try
             {
                 Sprite[] idleSprites = PrepareSheet(ArtPath + "Player/player_idle.png", 4);
+                Sprite[] fallStartSprites = PrepareSheet(ArtPath + "Player/player_fallstart.png", 2);
                 Sprite[] floatSprites = PrepareSheet(ArtPath + "Player/player_float.png", 6);
+                Sprite[] landSprites = PrepareSheet(ArtPath + "Player/player_land.png", 3);
                 AnimationClip idle = PrepareClip("Astronaut_Idle", idleSprites, 0.2f);
-                AnimationClip floating = PrepareClip("Astronaut_Float", floatSprites, 0.12f);
-                AnimatorController controller = PrepareController(idle, floating);
+                AnimationClip fallStart = PrepareClip("Astronaut_FallStart", fallStartSprites, 0.06f, false);
+                AnimationClip floating = PrepareClip("Astronaut_Float", floatSprites, 0.09f);
+                AnimationClip land = PrepareClip("Astronaut_Land", landSprites, 0.07f, false);
+                AnimatorController controller = PrepareController(idle, fallStart, floating, land);
                 foreach (string guid in AssetDatabase.FindAssets("t:Scene", new[] { "Assets/Scenes" }))
                     InstallInScene(AssetDatabase.GUIDToAssetPath(guid), idleSprites[0], controller);
                 AssetDatabase.SaveAssets();
@@ -46,7 +50,7 @@ namespace Resource.Scripts.Editor
                 if (previous.IsValid() && previous.isLoaded) SceneManager.SetActiveScene(previous);
                 Undo.CollapseUndoOperations(undoGroup);
             }
-            Debug.Log("[Astronaut] Installed Idle / Float in all player scenes.");
+            Debug.Log("[Astronaut] Installed Idle / FallStart / Float / Land in all player scenes.");
         }
 
         private static Sprite[] PrepareSheet(string path, int count)
@@ -85,7 +89,7 @@ namespace Resource.Scripts.Editor
                     name = name,
                     rect = new Rect(i * FrameWidth, 0, FrameWidth, FrameHeight),
                     alignment = SpriteAlignment.Custom,
-                    pivot = new Vector2(58.5f / FrameWidth, 0f),
+                    pivot = new Vector2(49.5f / FrameWidth, 0f),
                     spriteID = existing.TryGetValue(name, out var id) ? id : GUID.Generate()
                 };
             }
@@ -99,7 +103,7 @@ namespace Resource.Scripts.Editor
             return sprites;
         }
 
-        private static AnimationClip PrepareClip(string name, Sprite[] sprites, float secondsPerFrame)
+        private static AnimationClip PrepareClip(string name, Sprite[] sprites, float secondsPerFrame, bool loop = true)
         {
             string path = AnimationPath + name + ".anim";
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
@@ -120,13 +124,13 @@ namespace Resource.Scripts.Editor
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
             settings.startTime = 0f;
             settings.stopTime = duration;
-            settings.loopTime = true;
+            settings.loopTime = loop;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
             EditorUtility.SetDirty(clip);
             return clip;
         }
 
-        private static AnimatorController PrepareController(AnimationClip idle, AnimationClip floating)
+        private static AnimatorController PrepareController(AnimationClip idle, AnimationClip fallStart, AnimationClip floating, AnimationClip land)
         {
             string path = AnimationPath + "Astronaut.controller";
             var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
@@ -137,25 +141,38 @@ namespace Resource.Scripts.Editor
             AnimatorStateMachine machine = controller.layers[0].stateMachine;
             Undo.RegisterCompleteObjectUndo(machine, UndoName);
             foreach (var child in machine.states)
-                if (child.state.name != "Idle" && child.state.name != "Float") machine.RemoveState(child.state);
+                if (child.state.name != "Idle" && child.state.name != "FallStart" && child.state.name != "Float" && child.state.name != "Land")
+                    machine.RemoveState(child.state);
             AnimatorState idleState = machine.states.FirstOrDefault(s => s.state.name == "Idle").state
                 ?? machine.AddState("Idle", new Vector3(240f, 80f));
+            AnimatorState fallStartState = machine.states.FirstOrDefault(s => s.state.name == "FallStart").state
+                ?? machine.AddState("FallStart", new Vector3(500f, 80f));
             AnimatorState floatState = machine.states.FirstOrDefault(s => s.state.name == "Float").state
-                ?? machine.AddState("Float", new Vector3(500f, 80f));
+                ?? machine.AddState("Float", new Vector3(760f, 80f));
+            AnimatorState landState = machine.states.FirstOrDefault(s => s.state.name == "Land").state
+                ?? machine.AddState("Land", new Vector3(500f, 240f));
             idleState.motion = idle;
+            fallStartState.motion = fallStart;
             floatState.motion = floating;
+            landState.motion = land;
             machine.defaultState = idleState;
-            ConfigureTransition(idleState, floatState, AnimatorConditionMode.If);
-            ConfigureTransition(floatState, idleState, AnimatorConditionMode.IfNot);
+            foreach (var child in machine.states)
+                foreach (var transition in child.state.transitions) child.state.RemoveTransition(transition);
+            ConfigureTransition(idleState, fallStartState, AnimatorConditionMode.If);
+            ConfigureTransition(fallStartState, floatState, AnimatorConditionMode.If, true);
+            ConfigureTransition(fallStartState, landState, AnimatorConditionMode.IfNot);
+            ConfigureTransition(floatState, landState, AnimatorConditionMode.IfNot);
+            ConfigureTransition(landState, fallStartState, AnimatorConditionMode.If);
+            ConfigureTransition(landState, idleState, AnimatorConditionMode.IfNot, true);
             EditorUtility.SetDirty(controller);
             return controller;
         }
 
-        private static void ConfigureTransition(AnimatorState source, AnimatorState destination, AnimatorConditionMode mode)
+        private static void ConfigureTransition(AnimatorState source, AnimatorState destination, AnimatorConditionMode mode, bool waitForExit = false)
         {
-            foreach (var transition in source.transitions) source.RemoveTransition(transition);
             var next = source.AddTransition(destination);
-            next.hasExitTime = false;
+            next.hasExitTime = waitForExit;
+            next.exitTime = 1f;
             next.hasFixedDuration = true;
             next.duration = 0f;
             next.offset = 0f;
