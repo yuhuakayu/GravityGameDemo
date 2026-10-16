@@ -244,7 +244,7 @@ LineRenderer:
   m_SortingOrder: 4
   m_Positions:
   - {x: 0.16, y: 0, z: 0}
-  - {x: 100.16, y: 0, z: 0}
+  - {x: 4, y: 0, z: 0}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -392,7 +392,7 @@ LineRenderer:
   m_SortingOrder: 3
   m_Positions:
   - {x: 0.16, y: 0, z: 0}
-  - {x: 100.16, y: 0, z: 0}
+  - {x: 4, y: 0, z: 0}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -530,7 +530,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 50.16, y: 0}
+  m_Offset: {x: 2.08, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -540,7 +540,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 100, y: 0.0625}
+  m_Size: {x: 3.84, y: 0.0625}
   m_EdgeRadius: 0
 --- !u!114 &3141817158376419217
 MonoBehaviour:

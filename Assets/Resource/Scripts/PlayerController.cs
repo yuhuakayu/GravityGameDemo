@@ -20,6 +20,7 @@ namespace Resource.Scripts
         public bool manualMoveEnabled = false;
         public float maxMoveSpeed = 6f;
         public float jumpForce = 12f;
+        public float maxFallSpeed = 0f;
         [Tooltip("关闭后禁用键盘和手柄跳跃，保留正常移动与重力。")]
         public bool jumpEnabled = true;
 
@@ -40,6 +41,7 @@ namespace Resource.Scripts
         private bool _physicsStepPending;
         private Vector2 _stepStartPosition;
         private Vector2 _submittedVelocity;
+        private bool _riding;
         private readonly HashSet<Collider2D> _landingContacts = new HashSet<Collider2D>();
         private bool _landingSoundArmed;
         private Coroutine _afterPhysics;
@@ -137,7 +139,8 @@ namespace Resource.Scripts
 
         private Rigidbody2D rb;
         private bool isGrounded = false;
-        public bool IsGrounded => isGrounded;
+        public bool IsGrounded => _riding || isGrounded;
+        public bool IsRiding => _riding;
         private bool isTouchingWallLeft = false;
         private bool isTouchingWallRight = false;
         private float debugTimer = 0f;
@@ -303,6 +306,8 @@ namespace Resource.Scripts
             if (jumpEnabled && _jumpQueued && isGrounded && !autoMoveMode) intendedVelocity.y = jumpForce;
             _jumpQueued = false;
             intendedVelocity += Physics2D.gravity * (_ownedGravityScale * dt);
+            if (maxFallSpeed > 0f && intendedVelocity.y < -maxFallSpeed)
+                intendedVelocity.y = -maxFallSpeed;
             UpdateFootsteps(input);
             UpdateRumble(input);
         }
@@ -373,6 +378,27 @@ namespace Resource.Scripts
             InitializeMotion();
             intendedVelocity = velocity;
             rb.linearVelocity = velocity;
+        }
+
+        public void SetRiding(bool riding)
+        {
+            InitializeMotion();
+            if (_isDead || _riding == riding) return;
+            _riding = riding;
+            _physicsStepPending = false;
+            _jumpQueued = false;
+            _landingSoundArmed = false;
+            intendedVelocity = Vector2.zero;
+            rb.linearVelocity = Vector2.zero;
+            rb.bodyType = riding ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic;
+        }
+
+        public void ApplyPlatformDisplacement(Vector2 worldDelta)
+        {
+            InitializeMotion();
+            if (!IsGameplayActive || rb.bodyType != RigidbodyType2D.Dynamic || !rb.simulated) return;
+            rb.position += worldDelta;
+            if (_physicsStepPending) _stepStartPosition += worldDelta;
         }
 
         public void CompletePhysicsStep(float deltaTime)
@@ -563,6 +589,7 @@ namespace Resource.Scripts
         void HandleJump()
         {
             if (!jumpEnabled) return;
+            if (_riding) return;
             if (Gyro.GyroRuntime.ConsoleCapturesInput) return;
             if (_isDead) return; // 死亡后立刻锁输入
             if (autoMoveMode) return; // 自动移动模式没有跳跃，方向完全靠撞墙决定
@@ -706,6 +733,8 @@ namespace Resource.Scripts
         {
             if (_isDead) return;
             _isDead = true;
+            SmallLevels.NearMissFeedback.RestoreTimeScale();
+            _riding = false;
             intendedVelocity = Vector2.zero;
             _jumpQueued = false;
             _physicsStepPending = false;

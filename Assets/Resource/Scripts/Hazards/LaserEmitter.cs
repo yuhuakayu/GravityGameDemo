@@ -38,6 +38,14 @@ namespace Resource.Scripts
 
         public float BeamLength { get; private set; }
         public bool IsBeamActive { get; private set; }
+        public Vector2 BeamStart => transform.TransformPoint(muzzleOffset);
+        public Vector2 BeamEnd => BeamStart + (Vector2)transform.right * BeamLength;
+
+        public void SetCycle(float on, float off)
+        {
+            onDuration = Mathf.Max(0.01f, on);
+            offDuration = Mathf.Max(0f, off);
+        }
 
         private void Reset()
         {

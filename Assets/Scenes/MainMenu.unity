@@ -8961,6 +8961,66 @@ MonoBehaviour:
     sceneName: Maze_05
     unlocked: 1
     cleared: 0
+  - displayName: Level 6
+    sceneName: Maze_06
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 7
+    sceneName: Maze_07
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 8
+    sceneName: Maze_08
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 9
+    sceneName: Mine_01
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 10
+    sceneName: Mine_02
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 11
+    sceneName: Mine_03
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 12
+    sceneName: Mine_04
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 13
+    sceneName: Lava_01
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 14
+    sceneName: Lava_02
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 15
+    sceneName: Lava_03
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 16
+    sceneName: Lava_04
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 17
+    sceneName: Sky_01
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 18
+    sceneName: Sky_02
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 19
+    sceneName: Sky_03
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 20
+    sceneName: Sky_04
+    unlocked: 1
+    cleared: 0
 --- !u!4 &1629636458
 Transform:
   m_ObjectHideFlags: 0

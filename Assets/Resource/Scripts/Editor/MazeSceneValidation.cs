@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace Resource.Scripts.Editor
 {
-    /// <summary>Five bounded Play visits and the requested Maze_03 checks; no input or window automation.</summary>
+    /// <summary>Eight bounded Play visits and the requested Maze_03 checks; no input or window automation.</summary>
     [InitializeOnLoad]
     public static class MazeSceneValidation
     {
@@ -35,20 +35,20 @@ namespace Resource.Scripts.Editor
             EditorApplication.quitting += RestoreBackground;
         }
 
-        [MenuItem("Tools/Gravity Game/Levels/Validate Five Maze Scenes")]
+        [MenuItem("Tools/Gravity Game/Levels/Validate Maze Scenes")]
         public static void Begin()
         {
             if (IsRunning || EditorApplication.isPlayingOrWillChangePlaymode)
                 throw new InvalidOperationException("Exit Play and finish any existing validation first.");
             if (SceneManager.sceneCount != 1 || SceneManager.GetActiveScene().isDirty || string.IsNullOrEmpty(SceneManager.GetActiveScene().path))
                 throw new InvalidOperationException("Validation requires one saved, unmodified scene.");
-            for (int i = 1; i <= 5; i++)
+            for (int i = 1; i <= 8; i++)
                 if (!File.Exists(ScenePath(i))) throw new FileNotFoundException(ScenePath(i));
 
             SessionState.SetString(Key + "OriginalScene", SceneManager.GetActiveScene().path);
             SessionState.SetBool(Key + "OriginalBackground", Application.runInBackground);
             SessionState.SetBool(Key + "RestorePending", true);
-            SessionState.SetString(Key + "Status", "Running: five Play visits; 30-second limit per scene.");
+            SessionState.SetString(Key + "Status", "Running: eight Play visits; 30-second limit per scene.");
             SessionState.SetInt(Key + "Index", 1);
             SessionState.SetBool(Key + "Active", true);
             OpenNext();
@@ -81,10 +81,10 @@ namespace Resource.Scripts.Editor
             if (!IsRunning) { RestoreScene(); return; }
             if (!SessionState.GetBool(Key + "ExpectedExit", false)) { Fail("Play was interrupted."); return; }
             int next = SessionState.GetInt(Key + "Index", 1) + 1;
-            if (next > 5)
+            if (next > 8)
             {
                 SessionState.SetBool(Key + "Active", false);
-                Append("PASS: five screenshots and Maze_03 laser checks completed.");
+                Append("PASS: eight screenshots and Maze_03 laser checks completed.");
                 RestoreScene();
             }
             else

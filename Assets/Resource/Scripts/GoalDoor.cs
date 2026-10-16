@@ -140,6 +140,7 @@ namespace Resource.Scripts
             }
 
             _triggered = true;
+            SmallLevels.NearMissFeedback.RestoreTimeScale();
             _hintTimer = 0f;
             ApplyOverlay();
 

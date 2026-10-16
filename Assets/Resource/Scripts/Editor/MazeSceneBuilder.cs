@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using Resource.Scripts.SceneFX;
+using Resource.Scripts.SmallLevels;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -14,7 +15,7 @@ using Object = UnityEngine.Object;
 
 namespace Resource.Scripts.Editor
 {
-    /// <summary>按关卡仕样书的字符地图生成五个独立场景，复用 Stage2 的玩家及玩法配置。</summary>
+    /// <summary>按关卡仕样书的字符地图生成八个独立场景，复用 Stage2 的玩家及玩法配置。</summary>
     public static class MazeSceneBuilder
     {
         private const string TemplateScene = "Assets/Scenes/Stage2.unity";
@@ -29,11 +30,14 @@ namespace Resource.Scripts.Editor
             new[] { "######", "#....#", "#....#", "#....#", "#.P.D#", "######" },
             new[] { "######", "#...P#", "#.####", "#....#", "#...D#", "######" },
             new[] { "########", "#.P....#", "#..##>.#", "#......#", "#<####.#", "#......#", "#D.....#", "########" },
-            new[] { "#######", "##XD.X#", "##...##", "#..####", "#..####", "#..####", "#.P####", "#######" },
-            new[] { "########", "#P..#D##", "###.v.v#", "###....#", "###.#..#", "###....#", "####.###", "########" }
+            new[] { "#########", "#P.....X#", "#####..##", "#X......#", "##..#####", "#.....X##", "####..###", "####.]###", "#########" },
+            new[] { "##########", "#P......X#", "######..##", "######..##", "######..##", "#.......##", "#.......##", "#.......##", "#DXXXXXX##", "##########" },
+            new[] { "##########", "#.....####", "#..#>.####", "#..#..####", "#..#..####", "#..#..####", "#..#..v..#", "#P.#....]#", "##########" },
+            new[] { "##########", "#......^.#", "#<XXXXXX.#", "#.X####X.#", "#.X####X.#", "#.X####X.#", "#.X####X.#", "#.XXXXXX>#", "#D#Pv....#", "##########" },
+            new[] { "##########", "##U#P....#", "##.####>.#", "##.####..#", "##.####..#", "##.......#", "##.......#", "##.......#", "##XXXXXXX#", "##########" }
         };
 
-        [MenuItem("Tools/Gravity Game/Levels/Build Five Maze Scenes")]
+        [MenuItem("Tools/Gravity Game/Levels/Build Maze Scenes")]
         public static void BuildAll()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -57,10 +61,10 @@ namespace Resource.Scripts.Editor
                 CreateLaserPrefab();
                 AssetDatabase.SaveAssets();
                 for (int i = 0; i < Maps.Length; i++) BuildScene(i);
-                RegisterBuildScenes();
-                UpdateLevelSelection();
+                LevelOrder.RegisterBuildScenes();
+                LevelOrder.UpdateLevelSelection();
                 AssetDatabase.SaveAssets();
-                Debug.Log("[MazeSceneBuilder] 已生成 Maze_01～Maze_05，并加入构建及 Level 1～5 选关列表。");
+                Debug.Log("[MazeSceneBuilder] 已生成 Maze_01～Maze_08，并按二十关顺序更新构建和选关列表。");
             }
             finally
             {
@@ -82,6 +86,7 @@ namespace Resource.Scripts.Editor
             EditorSceneManager.SaveScene(scene, scenePath);
             var roots = scene.GetRootGameObjects();
             var player = roots.SelectMany(r => r.GetComponentsInChildren<PlayerController>(true)).Single();
+            player.maxFallSpeed = index < 3 ? 0f : 16f;
             var grade = player.GetComponent<PlayerColorGrade>() ?? player.gameObject.AddComponent<PlayerColorGrade>();
             string playerMaterialPath = "Assets/Resource/Art/Character/Player/PlayerUnlit.mat";
             var playerMaterial = AssetDatabase.LoadAssetAtPath<Material>(playerMaterialPath);
@@ -170,7 +175,11 @@ namespace Resource.Scripts.Editor
 
             door.transform.SetParent(grid.transform, false);
             door.transform.localRotation = Quaternion.identity;
-            door.nextSceneName = index < Maps.Length - 1 ? "Maze_" + (index + 2).ToString("00") : "MainMenu";
+            door.nextSceneName = LevelOrder.Next("Maze_" + (index + 1).ToString("00"));
+            var feedback = new GameObject("NearMissFeedback").AddComponent<NearMissFeedback>();
+            feedback.worldKind = "Maze";
+            feedback.cooldown = 1.4f;
+            feedback.gameObject.AddComponent<MazeNearMiss>();
             var emitters = new List<LaserEmitter>();
             for (int row = 0; row < map.Length; row++)
             for (int column = 0; column < map[row].Length; column++)
@@ -178,7 +187,7 @@ namespace Resource.Scripts.Editor
                 char cell = map[row][column];
                 Vector2 center = new Vector2(column * TilesPerCell + 1f - width / 2f, height / 2f - row * TilesPerCell - 1f);
                 if (cell == 'P') PlacePlayer(player, center);
-                else if (cell == 'D') PlaceDoor(door, center);
+                else if (cell == 'D' || cell == 'U' || cell == '[' || cell == ']') PlaceDoor(door, center, cell);
                 else if (cell == 'X') BuildSpikeCell(grid.transform, center, column, row);
                 else if (cell == '>' || cell == '<' || cell == '^' || cell == 'v')
                 {
@@ -187,7 +196,13 @@ namespace Resource.Scripts.Editor
                     emitterObject.name = "Laser_" + column + "_" + row;
                     emitterObject.transform.localPosition = center - direction * (1f - 0.125f);
                     emitterObject.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
-                    emitters.Add(emitterObject.GetComponent<LaserEmitter>());
+                    var emitter = emitterObject.GetComponent<LaserEmitter>();
+                    if (index == 5 && column == 4 && row == 2) emitter.SetCycle(1.3f, 1.7f);
+                    else if (index == 5 && column == 6 && row == 6) emitter.SetCycle(1f, 1.8f);
+                    else if (index == 6) emitter.SetCycle(1f, 1.6f);
+                    else if (index == 7 && column == 7 && row == 2) emitter.SetCycle(2.3f, 1.6f);
+                    PrefabUtility.RecordPrefabInstancePropertyModifications(emitter);
+                    emitters.Add(emitter);
                 }
             }
 
@@ -382,7 +397,7 @@ namespace Resource.Scripts.Editor
             }
         }
 
-        private static void PlacePlayer(PlayerController player, Vector2 center)
+        internal static void PlacePlayer(PlayerController player, Vector2 center)
         {
             player.transform.position = Vector3.zero;
             player.transform.rotation = Quaternion.identity;
@@ -397,25 +412,34 @@ namespace Resource.Scripts.Editor
             // 手动 A/D、不跳跃及玩家尺寸直接沿用 Stage2，不重新调参。
         }
 
-        private static void PlaceDoor(GoalDoor door, Vector2 center)
+        private static void PlaceDoor(GoalDoor door, Vector2 center, char cell)
+        {
+            float angle = cell == 'U' ? 180f : cell == '[' ? -90f : cell == ']' ? 90f : 0f;
+            Vector2 bottom = center + (Vector2)(Quaternion.Euler(0f, 0f, angle) * Vector2.down);
+            PlaceDoor(door, bottom, angle);
+        }
+
+        internal static void PlaceDoor(GoalDoor door, Vector2 bottom, float angle)
         {
             door.transform.localPosition = Vector3.zero;
+            door.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
             var visual = door.transform.Find("DoorVisual");
             var renderer = visual != null ? visual.GetComponent<SpriteRenderer>() : null;
             if (renderer != null)
             {
                 Bounds spriteBounds = renderer.localBounds;
-                Vector3 bottom = visual.TransformPoint(new Vector3(spriteBounds.center.x, spriteBounds.min.y, spriteBounds.center.z));
-                Vector3 localBottom = door.transform.parent.InverseTransformPoint(bottom);
-                door.transform.localPosition = new Vector3(center.x - localBottom.x, center.y - 1f - localBottom.y, 0f);
+                Vector3 spriteBottom = visual.TransformPoint(new Vector3(spriteBounds.center.x, spriteBounds.min.y, spriteBounds.center.z));
+                Vector3 localBottom = door.transform.parent.InverseTransformPoint(spriteBottom);
+                door.transform.localPosition = new Vector3(bottom.x - localBottom.x, bottom.y - localBottom.y, 0f);
                 return;
             }
 
             var map = door.GetComponent<Tilemap>();
             map.CompressBounds();
             Bounds bounds = map.localBounds;
-            Vector3 scale = door.transform.localScale;
-            door.transform.localPosition = new Vector3(center.x - bounds.center.x * scale.x, center.y - 1f - bounds.min.y * scale.y, 0f);
+            Vector3 tileBottom = door.transform.TransformPoint(new Vector3(bounds.center.x, bounds.min.y, bounds.center.z));
+            Vector3 localTileBottom = door.transform.parent.InverseTransformPoint(tileBottom);
+            door.transform.localPosition = new Vector3(bottom.x - localTileBottom.x, bottom.y - localTileBottom.y, 0f);
         }
 
         private static void BuildSpikeCell(Transform parent, Vector2 center, int column, int row)
@@ -512,33 +536,6 @@ namespace Resource.Scripts.Editor
                 return PrefabUtility.SaveAsPrefabAsset(go, LaserPrefabPath);
             }
             finally { Object.DestroyImmediate(go); }
-        }
-
-        private static void RegisterBuildScenes()
-        {
-            var scenes = EditorBuildSettings.scenes.ToList();
-            for (int i = 0; i < Maps.Length; i++)
-            {
-                string path = "Assets/Scenes/Maze_" + (i + 1).ToString("00") + ".unity";
-                var entry = scenes.FirstOrDefault(s => s.path == path);
-                if (entry != null) entry.enabled = true;
-                else scenes.Add(new EditorBuildSettingsScene(path, true));
-            }
-            EditorBuildSettings.scenes = scenes.ToArray();
-        }
-
-        private static void UpdateLevelSelection()
-        {
-            var scene = EditorSceneManager.OpenScene("Assets/Scenes/MainMenu.unity", OpenSceneMode.Single);
-            var menu = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<MainMenuUI>(true)).Single();
-            menu.levels = Enumerable.Range(1, Maps.Length).Select(i => new LevelEntry
-            {
-                displayName = "Level " + i,
-                sceneName = "Maze_" + i.ToString("00"),
-                unlocked = true
-            }).ToList();
-            EditorUtility.SetDirty(menu);
-            EditorSceneManager.SaveScene(scene);
         }
 
         private static void ClearChildren(Transform parent)
