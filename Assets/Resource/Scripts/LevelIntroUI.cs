@@ -77,7 +77,11 @@ namespace Resource.Scripts
 
             _cam.transform.position = new Vector3(boundsCenter.x, boundsCenter.y, _cam.transform.position.z);
             if (_camFit != null) _camFit.RestoreDefault();
-            if (_smallCam != null) _smallCam.RestoreDefault();
+            if (_smallCam != null)
+            {
+                _smallCam.RestoreDefault();
+                _cam.transform.position = new Vector3(boundsCenter.x, boundsCenter.y, _cam.transform.position.z);
+            }
 
             _isPreviewing = true;
         }

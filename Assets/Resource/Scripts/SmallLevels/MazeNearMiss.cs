@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Resource.Scripts.SmallLevels
 {
-    [DefaultExecutionOrder(-100)]
+    [DefaultExecutionOrder(-150)]
     public sealed class MazeNearMiss : MonoBehaviour
     {
         private PlayerController _player;
