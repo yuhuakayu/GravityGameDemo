@@ -58,17 +58,18 @@ namespace Resource.Scripts.SmallLevels
             var renderer = surface.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite; renderer.sortingOrder = order;
             renderer.transform.localScale = new Vector3(data.w / sprite.bounds.size.x, data.h / sprite.bounds.size.y, 1f);
-            renderer.color = new Color(1f, 1f, 1f, opacity);
-            renderer.sharedMaterial = MakeMaterial(additive);
+            renderer.color = Color.white;
+            renderer.sharedMaterial = MakeMaterial(additive, opacity);
             return renderer;
         }
 
-        private static Material MakeMaterial(bool additive)
+        private static Material MakeMaterial(bool additive, float opacity = 1f)
         {
             var material = new Material(Shader.Find("Gravity Game/Small Levels/Lava"));
             material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
             material.SetFloat("_DstBlend", (float)(additive ? BlendMode.One : BlendMode.OneMinusSrcAlpha));
             material.SetFloat("_Interpolation", 1f);
+            material.SetColor("_Color", new Color(1f, 1f, 1f, opacity));
             return material;
         }
 
@@ -152,7 +153,8 @@ namespace Resource.Scripts.SmallLevels
         private Material BindSurface(SpriteRenderer renderer, Texture2D current, Texture2D previous, bool additive)
         {
             Sprite sprite = NewSprite(current); owned.Add(sprite); renderer.sprite = sprite;
-            Material material = MakeMaterial(additive); owned.Add(material); renderer.sharedMaterial = material;
+            float opacity = renderer.sharedMaterial.GetColor("_Color").a;
+            Material material = MakeMaterial(additive, opacity); owned.Add(material); renderer.sharedMaterial = material;
             material.SetTexture("_PreviousTex", previous);
             return material;
         }

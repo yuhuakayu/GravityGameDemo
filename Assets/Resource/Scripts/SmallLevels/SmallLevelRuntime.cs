@@ -185,12 +185,15 @@ namespace Resource.Scripts.SmallLevels
         protected void Burst(Vector2 point, int count, Color color, float speed = 2f, float life = .6f, float size = .08f, Vector2? direction = null)
         {
             var go = new GameObject("Level particles"); go.transform.position = ToWorld(point);
-            var ps = go.AddComponent<ParticleSystem>(); var main = ps.main;
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
             main.loop = false; main.playOnAwake = false; main.duration = life; main.startLifetime = life;
             main.startSpeed = speed; main.startSize = size; main.startColor = color; main.simulationSpace = ParticleSystemSimulationSpace.World;
             var emission = ps.emission; emission.enabled = false; var shape = ps.shape; shape.enabled = false;
             var renderer = ps.GetComponent<ParticleSystemRenderer>(); renderer.sortingOrder = 16;
             renderer.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+            ps.Play();
             for (int i = 0; i < count; i++)
             {
                 var emit = new ParticleSystem.EmitParams();
