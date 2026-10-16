@@ -1,0 +1,141 @@
+仕样书 1：迷宫 Maze_01～08（老三关保留，新做五关）
+
+先读 仕样书_0_总览和通用规则.txt。
+原型页：原型/迷宫_原型.html（页面上的 04～08 就是这里的 Maze_04～08，下面贴的地图就是从它来的）。
+范围：改 MazeSceneBuilder（8 张地图、门的四种装法、激光周期、下一关和选关改用 LevelOrder），LaserEmitter 加两个小接口，
+MazeCameraSettings 和 MazeSceneValidation 扩到 8 关，加迷宫的擦边判定，换 Maze_04～08 的背景素材，重新生成 8 个场景。
+玩家、门、尖刺、激光本身的手感和参数都不改。
+
+====================================
+一、地图（MazeSceneBuilder.Maps，8 张，上方为初始的"上"）
+====================================
+
+Maze_01～03：就是现在 Maps 里的前三张，一个字都不改。现在的第四、五张删掉。
+Maze_04～08 是新地图，符号和原来一样，门多了三种装法（第二节）：
+
+Maze_04 之字
+#########
+#P.....X#
+#####..##
+#X......#
+##..#####
+#.....X##
+####..###
+####.]###
+#########
+
+Maze_05 甩尾
+##########
+#P......X#
+######..##
+######..##
+######..##
+#.......##
+#.......##
+#.......##
+#DXXXXXX##
+##########
+
+Maze_06 闪光闸
+##########
+#.....####
+#..#>.####
+#..#..####
+#..#..####
+#..#..####
+#..#..v..#
+#P.#....]#
+##########
+
+Maze_07 大回环
+##########
+#......^.#
+#<XXXXXX.#
+#.X####X.#
+#.X####X.#
+#.X####X.#
+#.X####X.#
+#.XXXXXX>#
+#D#Pv....#
+##########
+
+Maze_08 翻天
+##########
+##U#P....#
+##.####>.#
+##.####..#
+##.####..#
+##.......#
+##.......#
+##.......#
+##XXXXXXX#
+##########
+
+====================================
+二、门装在哪一面（现在的代码只认 D，要补上）
+====================================
+
+D = 门在地上，U = 门在天花板上倒挂（上面那格是 #），[ = 门在左墙上，] = 门在右墙上。
+1. BuildScene 里这 4 个字母都调用 PlaceDoor(door, center, cell)。
+2. PlaceDoor 先设旋转：door.transform.localRotation = Quaternion.Euler(0, 0, z)，z：D 为 0，U 为 180，[ 为 -90，] 为 90。
+   再用原来的算法求门图底边中点（旋转以后的位置），对齐到 center + (Vector2)(Quaternion.Euler(0, 0, z) * Vector2.down)。D 的结果和原来一样。
+3. 用到的：Maze_01～03、05、07 是 D；04、06 是 ]；08 是 U。
+
+====================================
+三、激光的开关周期（每道单独设）
+====================================
+
+1. LaserEmitter 加：
+     public void SetCycle(float on, float off) { onDuration = Mathf.Max(0.01f, on); offDuration = Mathf.Max(0f, off); }
+     public Vector2 BeamStart => transform.TransformPoint(muzzleOffset);
+     public Vector2 BeamEnd => BeamStart + (Vector2)transform.right * BeamLength;
+2. MazeSceneBuilder 生成激光后按下表调用 SetCycle，再调用 PrefabUtility.RecordPrefabInstancePropertyModifications(emitter)。
+   坐标是（列, 行），从地图左上角 0 开始数。表里没有的激光（包括老 Maze_03 的两道）保持一直亮。
+     Maze_06：(4,2) 亮 1.3 秒、灭 1.7 秒；(6,6) 亮 1 秒、灭 1.8 秒
+     Maze_07：(4,8) (8,7) (7,1) (1,2) 都是亮 1 秒、灭 1.6 秒
+     Maze_08：(7,2) 亮 2.3 秒、灭 1.6 秒
+3. 周期从正式开始游戏算起，一开始都是亮的，死了重开从头算（现有逻辑就是这样，不用改）。
+4. 发射器的位置是故意摆的：发射器是实心小块，都放在玩家不会贴着滑过去的那一面。Maze_07 的 4 个发射器贴在尖刺块那一面，照常生成就行。
+
+====================================
+四、迷宫的擦边判定
+====================================
+
+新组件 MazeNearMiss（生成器给 8 个迷宫场景都加上），玩家 IsGameplayActive 时每个 FixedUpdate 检查一次，触发调用 NearMissFeedback.NearMiss（冷却 1.4 秒）。
+玩家的两个圆、半径 PR = 0.4 见仕样书_0 第三节第 6 条。下面的距离都是格（Unity 单位），不是地图格（地图一个字符 = 2×2 格）。
+"快"= 玩家竖直速度（屏幕方向）的绝对值 > 2.5，或者世界正在转（WorldRotator.IsRotating）。
+1. 尖刺 kind "spike"：每个尖刺格（Spikes_ 物体，2×2 的 BoxCollider2D），圆心到这个格子的距离（在格子本地坐标里算点到矩形的距离）< PR + 0.55，并且"快"。
+2. 激光 kind "laser"，两种情况：
+   亮着时：圆心到光束线段（BeamStart～BeamEnd）的距离 < PR + 0.5，并且"快"；
+   刚冲过去它就在身后亮起：激光灭着的时候玩家碰到过光束那条线（距离 < PR + 0.04，记下时间），之后 0.45 秒内这道激光从灭变亮。
+   亮灭用 LaserEmitter.IsBeamActive；灭着时 BeamLength 也照算，所以线段一直拿得到。
+3. 死亡判定不变（尖刺和激光现有的触发器）。
+
+====================================
+五、其他
+====================================
+
+1. 下一关、Build Settings、选关列表改成从 LevelOrder 取（仕样书_0 第一节），不再在这里写死 5 关。菜单名改成 Build Maze Scenes。
+2. PlayerController.maxFallSpeed：Maze_01～03 写 0，Maze_04～08 写 16（仕样书_0 第四节）。
+3. MazeCameraSettings：场景表补齐 Maze_01～08（资源文件里也要补上 06～08）；Maze_04～08 以前存过的镜头大小清掉（地图变了，用默认值）；Maze_01～03 存过的值不动。
+4. MazeSceneValidation：循环从 5 关改成 8 关，菜单名改成 Validate Maze Scenes；Maze_03 的两道激光检查照旧（老 Maze_03 没变）。
+5. 8 个迷宫场景都加 NearMissFeedback（冷却 1.4 秒）、速度线、暗角，用仕样书_0 第五、七节里迷宫的颜色和数值。
+
+====================================
+六、背景素材（Maze_04～08 已经生成好，直接覆盖）
+====================================
+
+  素材/迷宫/Background/bg_far_Maze_0X.png、bg_mid_Maze_0X.png  →  Assets/Resource/Mode/Cave Tileset/Background/
+  素材/迷宫/Exterior/exterior_shade_Maze_0X.png                →  Assets/Resource/Mode/Cave Tileset/Exterior/
+  素材/迷宫/Foreground/fg_layout.json                          →  Assets/Resource/Mode/Cave Tileset/Foreground/
+X 是 4～8。06、07、08 是新文件，导入设置照 04 的 .meta 设（同样的 Sprite、PPU、Point 设置，用新的 GUID）；04、05 只覆盖图，.meta 不动。
+fg_layout.json 里已经合好了：Maze_01～03 是现在项目里的原样，04～08 是新的。
+
+====================================
+七、验证和汇报（只做这些）
+====================================
+
+1. 编译无错误，重新生成 Maze_01～08，Validate Maze Scenes 通过。
+2. Maze_04～08 各截一张图和原型页对照：门贴在对的那面墙上（04、06 在右墙，08 在天花板）；06、07、08 的激光按表里的时间一亮一灭。
+3. 在 Maze_04 擦着尖刺掉下去一次，出现"险！"和慢动作。
+4. 汇报 3 到 5 行，不写报告文件。

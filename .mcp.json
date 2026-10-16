@@ -3,6 +3,14 @@
     "UnityMCP": {
       "type": "http",
       "url": "http://127.0.0.1:8080/mcp"
+    },
+    "unity": {
+      "command": "unity",
+      "args": [
+        "mcp",
+        "--project-path",
+        "D:\\unity  s   main\\Gravity Game"
+      ]
     }
   }
 }

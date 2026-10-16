@@ -1061,8 +1061,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isDebugLog: 0
   isDebugScanGamepads: 0
-  rotateSpeed: 90
-  maxAngularSpeed: 120
+  rotateSpeed: 135
+  maxAngularSpeed: 150
   maxStepAngle: 3
   maxPointTravelFraction: 0.45
   useGeometrySafetyClamp: 0
