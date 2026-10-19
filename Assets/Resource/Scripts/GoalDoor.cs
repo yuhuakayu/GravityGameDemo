@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Resource.Scripts
 {
     /// <summary>
-    /// 关卡终点门（带重力锁）。玩家进入触发区域、并且门已解锁时：禁用玩家操作、停止摄像机跟随、播放开门音效，
+    /// 关卡终点门（带重力锁）。玩家进入触发区域、并且门已解锁时：锁定操作并保留重力，落地后时停、播放开门音效，
     /// 然后交给 SceneTransition 播放虹膜转场并加载下一关（新场景里的玩家/摄像机默认就是
     /// 启用状态，所以"恢复操作"不需要额外代码——新场景本身就是"恢复好"的状态）。
     ///
@@ -145,19 +145,8 @@ namespace Resource.Scripts
             ApplyOverlay();
 
             var player = _player;
-            player.enabled = false;
-            var rb = player.GetComponent<Rigidbody2D>();
-            if (rb != null) rb.linearVelocity = Vector2.zero;
-
-            var cam = Camera.main;
-            if (cam != null)
-            {
-                var follow = cam.GetComponent<FollowTarget2D>();
-                if (follow != null) follow.enabled = false;
-            }
-
-            SfxManager.Instance.PlayDoorOpen();
-            StartCoroutine(DoGoalSequence());
+            player.LockForGoal();
+            StartCoroutine(DoGoalSequence(player));
         }
 
         private void ApplyOverlay()
@@ -173,9 +162,32 @@ namespace Resource.Scripts
             if (sprite != null && lockOverlay.sprite != sprite) lockOverlay.sprite = sprite;
         }
 
-        /// <summary>开门声后 0.3 秒播放过关声，等待动画和原有延迟后进入虹膜转场。</summary>
-        private IEnumerator DoGoalSequence()
+        /// <summary>等玩家落地后时停；开门声后 0.3 秒播放过关声，等待动画和原有延迟后进入虹膜转场。</summary>
+        private IEnumerator DoGoalSequence(PlayerController player)
         {
+            bool wasGrounded = player.IsGrounded;
+            float elapsed = 0f;
+            while (!player.IsGrounded && elapsed < 1f)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+            if (!wasGrounded && player.IsGrounded)
+                yield return new WaitForSeconds(0.15f);
+
+            Time.timeScale = 0f;
+            player.enabled = false;
+            var rb = player.GetComponent<Rigidbody2D>();
+            if (rb != null) rb.linearVelocity = Vector2.zero;
+
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                var follow = cam.GetComponent<FollowTarget2D>();
+                if (follow != null) follow.enabled = false;
+            }
+
+            SfxManager.Instance.PlayDoorOpen();
             float openDuration = 0f;
             if (doorAnimator != null && openAnimation != null)
             {

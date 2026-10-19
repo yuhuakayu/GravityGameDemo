@@ -103,7 +103,19 @@ namespace Resource.Scripts
         private bool _isDead = false;
         private bool _gameplayStarted;
         public bool IsDead => _isDead;
+        public bool IsGoalLocked { get; private set; }
         public bool IsGameplayActive => _gameplayStarted && isActiveAndEnabled && !_isDead && Time.timeScale > 0f;
+
+        public void LockForGoal()
+        {
+            if (_isDead) return;
+            InitializeMotion();
+            IsGoalLocked = true;
+            _jumpQueued = false;
+            intendedVelocity = new Vector2(0f, Mathf.Min(0f, intendedVelocity.y));
+            rb.linearVelocity = new Vector2(0f, Mathf.Min(0f, rb.linearVelocity.y));
+            AutoMoveVelocityContribution = 0f;
+        }
 
         public void BeginGameplay()
         {
@@ -296,14 +308,14 @@ namespace Resource.Scripts
 
         private void BuildIntendedVelocity(float dt)
         {
-            float input = autoMoveMode ? _autoMoveDir.x : ReadMoveInput();
+            float input = IsGoalLocked ? 0f : (autoMoveMode ? _autoMoveDir.x : ReadMoveInput());
             if (autoMoveMode && AutoMovePausedForRotation) input = 0f;
             if ((_autoMoveDir.x > 0f && isTouchingWallRight || _autoMoveDir.x < 0f && isTouchingWallLeft) && autoMoveMode)
                 input = 0f;
             if (!autoMoveMode && ((input < 0f && isTouchingWallLeft) || (input > 0f && isTouchingWallRight))) input = 0f;
             intendedVelocity.x = input * (autoMoveMode ? autoMoveSpeed : maxMoveSpeed);
             if (autoMoveMode) AutoMoveVelocityContribution = intendedVelocity.x;
-            if (jumpEnabled && _jumpQueued && isGrounded && !autoMoveMode) intendedVelocity.y = jumpForce;
+            if (!IsGoalLocked && jumpEnabled && _jumpQueued && isGrounded && !autoMoveMode) intendedVelocity.y = jumpForce;
             _jumpQueued = false;
             intendedVelocity += Physics2D.gravity * (_ownedGravityScale * dt);
             if (maxFallSpeed > 0f && intendedVelocity.y < -maxFallSpeed)
@@ -335,7 +347,7 @@ namespace Resource.Scripts
 
         public float ReadMoveInput()
         {
-            if (!manualMoveEnabled || Gyro.GyroRuntime.ConsoleCapturesInput) return 0f;
+            if (IsGoalLocked || !manualMoveEnabled || Gyro.GyroRuntime.ConsoleCapturesInput) return 0f;
             float input = 0f;
             var keyboard = Keyboard.current;
             if (keyboard != null)
@@ -509,7 +521,7 @@ namespace Resource.Scripts
 
             float moveInput = 0f;
 
-            if (!manualMoveEnabled || Gyro.GyroRuntime.ConsoleCapturesInput)
+            if (IsGoalLocked || !manualMoveEnabled || Gyro.GyroRuntime.ConsoleCapturesInput)
             {
                 rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
                 UpdateFootsteps(0f);
@@ -579,7 +591,7 @@ namespace Resource.Scripts
 
             bool wallBlocked = (_autoMoveDir.x > 0f && isTouchingWallRight) ||
                                 (_autoMoveDir.x < 0f && isTouchingWallLeft);
-            float targetX = wallBlocked || AutoMovePausedForRotation ? 0f : _autoMoveDir.x * autoMoveSpeed;
+            float targetX = IsGoalLocked || wallBlocked || AutoMovePausedForRotation ? 0f : _autoMoveDir.x * autoMoveSpeed;
             AutoMoveVelocityContribution = targetX;
             rb.linearVelocity = new Vector2(targetX, rb.linearVelocity.y);
 
@@ -588,7 +600,7 @@ namespace Resource.Scripts
 
         void HandleJump()
         {
-            if (!jumpEnabled) return;
+            if (IsGoalLocked || !jumpEnabled) return;
             if (_riding) return;
             if (Gyro.GyroRuntime.ConsoleCapturesInput) return;
             if (_isDead) return; // 死亡后立刻锁输入
@@ -731,6 +743,7 @@ namespace Resource.Scripts
         /// </summary>
         public void Die()
         {
+            if (IsGoalLocked) return;
             if (_isDead) return;
             _isDead = true;
             SmallLevels.NearMissFeedback.RestoreTimeScale();

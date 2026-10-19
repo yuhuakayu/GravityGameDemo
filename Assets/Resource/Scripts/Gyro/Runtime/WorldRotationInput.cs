@@ -174,7 +174,7 @@ namespace Resource.Scripts.Gyro
         {
             if (_player == null) _player = FindFirstObjectByType<PlayerController>();
             return IsSolarPulseActive || !world.isActiveAndEnabled || Time.timeScale <= 0f ||
-                _player == null || !_player.IsGameplayActive || SceneTransition.Instance.IsTransitioning;
+                _player == null || !_player.IsGameplayActive || _player.IsGoalLocked || SceneTransition.Instance.IsTransitioning;
         }
 
         private float FilterStick(float raw, WorldRotator world)

@@ -68,6 +68,7 @@ namespace Resource.Scripts.SmallLevels
 
         public void NearMiss(string kind)
         {
+            if (_door != null && _door.IsOpening) return;
             if (Time.timeScale == 0f || _player == null || !_player.IsGameplayActive) return;
             if (_lastNear.TryGetValue(kind, out float last) && Time.time - last < cooldown) return;
             _lastNear[kind] = Time.time;

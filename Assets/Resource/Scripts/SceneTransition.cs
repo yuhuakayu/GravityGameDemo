@@ -112,6 +112,7 @@ namespace Resource.Scripts
             yield return new WaitForSecondsRealtime(holdDuration);
 
             SceneManager.LoadScene(sceneName);
+            Time.timeScale = 1f;
             yield return null; // 等一帧，确保新场景的对象都已经 Awake/Start
 
             yield return AnimateIris(_maxScale, 0f, openDuration);
