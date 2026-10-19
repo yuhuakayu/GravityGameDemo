@@ -1,0 +1,49 @@
+{
+ "logoSize": [
+  298,
+  51
+ ],
+ "scale": 3,
+ "letters": [
+  {
+   "file": "logo_00.png",
+   "x": -1,
+   "y": 3
+  },
+  {
+   "file": "logo_01.png",
+   "x": 34,
+   "y": 11
+  },
+  {
+   "file": "logo_02.png",
+   "x": 65,
+   "y": 1
+  },
+  {
+   "file": "logo_03.png",
+   "x": 102,
+   "y": -1
+  },
+  {
+   "file": "logo_04.png",
+   "x": 131,
+   "y": 13
+  },
+  {
+   "file": "logo_05.png",
+   "x": 168,
+   "y": 3
+  },
+  {
+   "file": "logo_06.png",
+   "x": 202,
+   "y": 13
+  },
+  {
+   "file": "logo_07.png",
+   "x": 225,
+   "y": 11
+  }
+ ]
+}

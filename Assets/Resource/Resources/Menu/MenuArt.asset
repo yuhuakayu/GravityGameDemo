@@ -1,0 +1,263 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: adf93cad29d334a4fb2224bf0c7f1095, type: 3}
+  m_Name: MenuArt
+  m_EditorClassIdentifier: 
+  sprites:
+  - key: Lamp/chain_dark
+    frames:
+    - {fileID: 21300000, guid: 0ac95d18eceb6244e8da70a289275af5, type: 3}
+  - key: Lamp/chain_light
+    frames:
+    - {fileID: 21300000, guid: 6af95a9d1c742084783c8196e5e5665d, type: 3}
+  - key: Lamp/lamp_0
+    frames:
+    - {fileID: 21300000, guid: d33259968633d5b49b07819b0c75bf3f, type: 3}
+  - key: Lamp/lamp_1
+    frames:
+    - {fileID: 21300000, guid: d0aba2f18d42ffa48bc6ad1d6cd5a0ab, type: 3}
+  - key: Lamp/lamp_2
+    frames:
+    - {fileID: 21300000, guid: a251ed4da3d6268419620673014ef506, type: 3}
+  - key: Select/card_lava
+    frames:
+    - {fileID: 21300000, guid: 071c0b63c84c9ef4ba6a3fa2ea37bfd7, type: 3}
+  - key: Select/card_lava_sel
+    frames:
+    - {fileID: 21300000, guid: f23db838a2fa1924d820ea2ae3650888, type: 3}
+  - key: Select/card_maze
+    frames:
+    - {fileID: 21300000, guid: 89b9d1b3638d8c14aa2d1336d93c0b54, type: 3}
+  - key: Select/card_maze_sel
+    frames:
+    - {fileID: 21300000, guid: 5268bf3be6a467a41a7dcc6390591b9b, type: 3}
+  - key: Select/card_mine
+    frames:
+    - {fileID: 21300000, guid: d1a733ff51641a444b664431cf20b991, type: 3}
+  - key: Select/card_mine_sel
+    frames:
+    - {fileID: 21300000, guid: 5de808d5c0a8df645ad61627b51c009c, type: 3}
+  - key: Select/card_sky
+    frames:
+    - {fileID: 21300000, guid: f2dbdae96f425fb4e90455cf69134d6e, type: 3}
+  - key: Select/card_sky_sel
+    frames:
+    - {fileID: 21300000, guid: 81102f405fb4afb4ea617e2b101cf018, type: 3}
+  - key: Select/check
+    frames:
+    - {fileID: 21300000, guid: 1eccde8e953994c4ea36a060e05d3a8b, type: 3}
+  - key: Select/check_sky
+    frames:
+    - {fileID: 21300000, guid: 56bc05bb0055c1346919f6e115f13129, type: 3}
+  - key: Select/diamond_gold
+    frames:
+    - {fileID: 21300000, guid: 9e37bfa8108c205469b9216e56428f49, type: 3}
+  - key: Select/diamond_orange
+    frames:
+    - {fileID: 21300000, guid: a8d49e8408858584f8b959e53c56fb27, type: 3}
+  - key: Select/diamond_pink
+    frames:
+    - {fileID: 21300000, guid: 6ddf9b406f769b1459e9bfe851f4404b, type: 3}
+  - key: Select/gem_lava_off
+    frames:
+    - {fileID: 21300000, guid: c00e35420c0bcb74e9a0a5966a9f7236, type: 3}
+  - key: Select/gem_lava_off_light
+    frames:
+    - {fileID: 21300000, guid: 2202950f1d6d401498e8dd379594a082, type: 3}
+  - key: Select/gem_lava_on
+    frames:
+    - {fileID: 21300000, guid: 03f5d8313dab8cd4686da064b9ed1e3d, type: 3}
+  - key: Select/gem_maze_off
+    frames:
+    - {fileID: 21300000, guid: 946bf8971cc613947b9dbc50db6cb55b, type: 3}
+  - key: Select/gem_maze_off_light
+    frames:
+    - {fileID: 21300000, guid: 0782d22950c6ccf45b7642a27af1a7cc, type: 3}
+  - key: Select/gem_maze_on
+    frames:
+    - {fileID: 21300000, guid: 1b5d496206132aa4c845ac2c1e0b6f22, type: 3}
+  - key: Select/gem_mine_off
+    frames:
+    - {fileID: 21300000, guid: 2561ffde3d194234e915acaf7a17c6ab, type: 3}
+  - key: Select/gem_mine_off_light
+    frames:
+    - {fileID: 21300000, guid: 74ddaa7cf44dee147800ccd352b01420, type: 3}
+  - key: Select/gem_mine_on
+    frames:
+    - {fileID: 21300000, guid: c40327966d14acf4690284de7aedf827, type: 3}
+  - key: Select/gem_sky_off
+    frames:
+    - {fileID: 21300000, guid: 07c5a571acded0d4496265c3b90a977d, type: 3}
+  - key: Select/gem_sky_off_light
+    frames:
+    - {fileID: 21300000, guid: 5fc1f836ebece2d459ceac7d637902c0, type: 3}
+  - key: Select/gem_sky_on
+    frames:
+    - {fileID: 21300000, guid: 3c6832112a14a1046a3b86e617c0b3ed, type: 3}
+  - key: Select/sign_lava
+    frames:
+    - {fileID: 21300000, guid: 198364c62b504db47b91aeaee6e5674e, type: 3}
+  - key: Select/sign_maze
+    frames:
+    - {fileID: 21300000, guid: 51eb9ed16d02f8e43a9bd540fcde78d3, type: 3}
+  - key: Select/sign_mine
+    frames:
+    - {fileID: 21300000, guid: 0720a3f51b13d944cb5babc07202a6f1, type: 3}
+  - key: Select/sign_sky
+    frames:
+    - {fileID: 21300000, guid: 51e54b23b59cce540b28530740f7b463, type: 3}
+  - key: Thumbs/thumb_Lava_01
+    frames:
+    - {fileID: 21300000, guid: 6312e254e3070b149978bdd2dea238e0, type: 3}
+  - key: Thumbs/thumb_Lava_02
+    frames:
+    - {fileID: 21300000, guid: c8486043a57d81d43b085c51d14df65f, type: 3}
+  - key: Thumbs/thumb_Lava_03
+    frames:
+    - {fileID: 21300000, guid: 037569d3888df3c428e304f6b3a1fbf5, type: 3}
+  - key: Thumbs/thumb_Lava_04
+    frames:
+    - {fileID: 21300000, guid: 985204776a18eba48b68b64bbffdcb54, type: 3}
+  - key: Thumbs/thumb_Maze_01
+    frames:
+    - {fileID: 21300000, guid: 02324954fb36c87499777a5383339a54, type: 3}
+  - key: Thumbs/thumb_Maze_02
+    frames:
+    - {fileID: 21300000, guid: 3bedbe67c8ebb064c8eb9e5966f9e907, type: 3}
+  - key: Thumbs/thumb_Maze_03
+    frames:
+    - {fileID: 21300000, guid: 71057ec033785e24082119fee62c6445, type: 3}
+  - key: Thumbs/thumb_Maze_04
+    frames:
+    - {fileID: 21300000, guid: 894ebaa91309a804e8c7481b249a8a24, type: 3}
+  - key: Thumbs/thumb_Maze_05
+    frames:
+    - {fileID: 21300000, guid: dd016978ac0cf2947b9ea76c35fc483d, type: 3}
+  - key: Thumbs/thumb_Maze_06
+    frames:
+    - {fileID: 21300000, guid: b11337cc97654814996d29b0b3c18971, type: 3}
+  - key: Thumbs/thumb_Maze_07
+    frames:
+    - {fileID: 21300000, guid: d198c81ad768ba14d8a3a800a947232b, type: 3}
+  - key: Thumbs/thumb_Maze_08
+    frames:
+    - {fileID: 21300000, guid: 89172a5b286b95a4b98695694a1a99fd, type: 3}
+  - key: Thumbs/thumb_Mine_01
+    frames:
+    - {fileID: 21300000, guid: 157c772860786b843af76480ccfcb074, type: 3}
+  - key: Thumbs/thumb_Mine_02
+    frames:
+    - {fileID: 21300000, guid: 80a7365886266a84da436d4126826e31, type: 3}
+  - key: Thumbs/thumb_Mine_03
+    frames:
+    - {fileID: 21300000, guid: 5d4a64591aae28e4ca5e9027d3384f23, type: 3}
+  - key: Thumbs/thumb_Mine_04
+    frames:
+    - {fileID: 21300000, guid: c963b6e4daf31ab4da8eed6820f7b2b5, type: 3}
+  - key: Thumbs/thumb_Sky_01
+    frames:
+    - {fileID: 21300000, guid: d9c0e8b49ee909a4cb5720fa28a01fd9, type: 3}
+  - key: Thumbs/thumb_Sky_02
+    frames:
+    - {fileID: 21300000, guid: bb516a5851d218c43b6f99844abb8a55, type: 3}
+  - key: Thumbs/thumb_Sky_03
+    frames:
+    - {fileID: 21300000, guid: efe6810fbc89ec740abc2d56e15ab099, type: 3}
+  - key: Thumbs/thumb_Sky_04
+    frames:
+    - {fileID: 21300000, guid: c98b8b10ce7a82244838c0fd14a9d896, type: 3}
+  - key: Title/logo_00
+    frames:
+    - {fileID: 21300000, guid: 53b32b2ba5b696143a4672100a8aed4e, type: 3}
+  - key: Title/logo_01
+    frames:
+    - {fileID: 21300000, guid: 7baa4ffd05584374db8f0436c5b225a0, type: 3}
+  - key: Title/logo_02
+    frames:
+    - {fileID: 21300000, guid: 8644285908341d44ba763cb03a9bee9b, type: 3}
+  - key: Title/logo_03
+    frames:
+    - {fileID: 21300000, guid: 2c9e612c5e88e5a4b88629a55f4f59f7, type: 3}
+  - key: Title/logo_04
+    frames:
+    - {fileID: 21300000, guid: 2fc04d3d08254e9469cd05ae7b466d8f, type: 3}
+  - key: Title/logo_05
+    frames:
+    - {fileID: 21300000, guid: 2b8afe6ad8c7fb24ca54236e31693782, type: 3}
+  - key: Title/logo_06
+    frames:
+    - {fileID: 21300000, guid: c72fb20f35091f947a0e8e5175bad281, type: 3}
+  - key: Title/logo_07
+    frames:
+    - {fileID: 21300000, guid: 3abb089f53456ce48ad1f5b337c19687, type: 3}
+  - key: Title/room
+    frames:
+    - {fileID: 21300000, guid: b93960102168c2f44bdd3324df3326a4, type: 3}
+  - key: Door/maze_idle
+    frames:
+    - {fileID: 2107642330287750122, guid: 9e88959158f09c3479cd86e69ba44f32, type: 3}
+    - {fileID: 389248703591375222, guid: 9e88959158f09c3479cd86e69ba44f32, type: 3}
+    - {fileID: -1587445729945836661, guid: 9e88959158f09c3479cd86e69ba44f32, type: 3}
+    - {fileID: -1224277992482222373, guid: 9e88959158f09c3479cd86e69ba44f32, type: 3}
+    - {fileID: -7498697621078389060, guid: 9e88959158f09c3479cd86e69ba44f32, type: 3}
+    - {fileID: 9079967583847852951, guid: 9e88959158f09c3479cd86e69ba44f32, type: 3}
+  - key: Door/maze_open
+    frames:
+    - {fileID: 9087207327684497215, guid: 4e06da7c9722ae144969ba2540628789, type: 3}
+    - {fileID: 7047090797191019503, guid: 4e06da7c9722ae144969ba2540628789, type: 3}
+    - {fileID: -906029365395904993, guid: 4e06da7c9722ae144969ba2540628789, type: 3}
+    - {fileID: 5802036049879401569, guid: 4e06da7c9722ae144969ba2540628789, type: 3}
+  - key: Door/mine_idle
+    frames:
+    - {fileID: 2107642330287750122, guid: 6d13c077ba727554ca384e3140cf6e88, type: 3}
+    - {fileID: 1183998089, guid: 6d13c077ba727554ca384e3140cf6e88, type: 3}
+    - {fileID: -915420698, guid: 6d13c077ba727554ca384e3140cf6e88, type: 3}
+    - {fileID: -1850159441, guid: 6d13c077ba727554ca384e3140cf6e88, type: 3}
+    - {fileID: -2073397371, guid: 6d13c077ba727554ca384e3140cf6e88, type: 3}
+    - {fileID: -363320806, guid: 6d13c077ba727554ca384e3140cf6e88, type: 3}
+  - key: Door/mine_open
+    frames:
+    - {fileID: 9087207327684497215, guid: b17052cdfcdd2754487e647f24fb1996, type: 3}
+    - {fileID: -51466643, guid: b17052cdfcdd2754487e647f24fb1996, type: 3}
+    - {fileID: -300450130, guid: b17052cdfcdd2754487e647f24fb1996, type: 3}
+    - {fileID: 1160036158, guid: b17052cdfcdd2754487e647f24fb1996, type: 3}
+  - key: Door/lava_idle
+    frames:
+    - {fileID: 2107642330287750122, guid: e4e1837b7bb72a440b3bef5bf9421ae7, type: 3}
+    - {fileID: 389248703591375222, guid: e4e1837b7bb72a440b3bef5bf9421ae7, type: 3}
+    - {fileID: -1587445729945836661, guid: e4e1837b7bb72a440b3bef5bf9421ae7, type: 3}
+    - {fileID: -1224277992482222373, guid: e4e1837b7bb72a440b3bef5bf9421ae7, type: 3}
+    - {fileID: -7498697621078389060, guid: e4e1837b7bb72a440b3bef5bf9421ae7, type: 3}
+    - {fileID: 9079967583847852951, guid: e4e1837b7bb72a440b3bef5bf9421ae7, type: 3}
+  - key: Door/lava_open
+    frames:
+    - {fileID: 9087207327684497215, guid: 2c077e36d917bb645829225c647f6a0a, type: 3}
+    - {fileID: 7047090797191019503, guid: 2c077e36d917bb645829225c647f6a0a, type: 3}
+    - {fileID: -906029365395904993, guid: 2c077e36d917bb645829225c647f6a0a, type: 3}
+    - {fileID: 5802036049879401569, guid: 2c077e36d917bb645829225c647f6a0a, type: 3}
+  - key: Door/sky_idle
+    frames:
+    - {fileID: 2107642330287750122, guid: 7406afe4acb7e554a982b7782c20bf8e, type: 3}
+    - {fileID: -317417489, guid: 7406afe4acb7e554a982b7782c20bf8e, type: 3}
+    - {fileID: 1561195096, guid: 7406afe4acb7e554a982b7782c20bf8e, type: 3}
+    - {fileID: -1310880735, guid: 7406afe4acb7e554a982b7782c20bf8e, type: 3}
+    - {fileID: 2032328775, guid: 7406afe4acb7e554a982b7782c20bf8e, type: 3}
+    - {fileID: 1743161676, guid: 7406afe4acb7e554a982b7782c20bf8e, type: 3}
+  - key: Door/sky_open
+    frames:
+    - {fileID: 9087207327684497215, guid: f6dd00f1a283777409be63b6cf7cc3ee, type: 3}
+    - {fileID: 1663516240, guid: f6dd00f1a283777409be63b6cf7cc3ee, type: 3}
+    - {fileID: -1010732647, guid: f6dd00f1a283777409be63b6cf7cc3ee, type: 3}
+    - {fileID: 1786723735, guid: f6dd00f1a283777409be63b6cf7cc3ee, type: 3}
+  logoLetters: {fileID: 4900000, guid: 3a38fe996272e1544a7635c995f40bd3, type: 3}
+  blobs: {fileID: 4900000, guid: ec7f63ddb11258343836d2c134dc6780, type: 3}
+  blobShader: {fileID: 4800000, guid: 84d480eb1db94b788667a479eeb7bde9, type: 3}

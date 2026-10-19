@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Resource.Scripts.Gyro;
+using Resource.Scripts.UI.Menu;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -23,18 +24,12 @@ namespace Resource.Scripts
     }
 
     /// <summary>
-    /// 主菜单——独立场景（MainMenu.unity），挂在这个场景里的 MainMenuUI 物体上。
-    /// UI 层级本身还是运行时代码搭的，但改成了"场景里已经有就直接复用，没有才新建"，
-    /// 编辑期不用进 Play 模式也能在 Hierarchy 里看到/调整这些物体；事件监听器/协程这些
-    /// 没法存进场景文件的运行时绑定，每次 Start() 都会重新走一遍。
-    ///
-    /// 流程：标题（Start/Options/Quit）→ 点 Start，标题面板下滑淡出，关卡选择从右侧滑入 →
-    /// 选关卡确认：走 SceneTransition 完全切换（非附加）到 level.sceneName 指定的场景，
-    /// MainMenu 场景本身会被卸载掉。Options 面板同理，从标题面板滑入/滑出。
+    /// 主菜单总控：初始化、设置面板、语言刷新与关卡转场。
+    /// 标题和选关由 MenuPresentation 构建；Options 保留原有实现。
     /// </summary>
     public class MainMenuUI : MonoBehaviour
     {
-        [Header("关卡列表（Level 2/3 是锁住的占位卡，纯粹为了能测手柄/键盘左右切换，没有真关卡时先留着）")]
+        [Header("关卡列表（由 LevelOrder.UpdateLevelSelection 写入）")]
         public List<LevelEntry> levels = new List<LevelEntry>
         {
             new LevelEntry { displayName = "Level 1", sceneName = "Stage1", unlocked = true },
@@ -42,10 +37,7 @@ namespace Resource.Scripts
             new LevelEntry { displayName = "Level 3", sceneName = "", unlocked = false }
         };
 
-        private RectTransform _titlePanelRoot;
-        private CanvasGroup   _titleGroup;
-        private RectTransform _levelSelectRoot;
-        private CanvasGroup   _levelSelectGroup;
+        private MenuPresentation _menuPresentation;
         private RectTransform _optionsRoot;
         private CanvasGroup   _optionsGroup;
         private CanvasGroup _menuGroup;
@@ -53,14 +45,7 @@ namespace Resource.Scripts
         private bool MenuInputBlocked => GyroRuntime.ConsoleCapturesInput
             || (_sceneTransition != null && _sceneTransition.IsTransitioning);
 
-        private static readonly Color LockedLevelText = new Color32(0x5A, 0x58, 0x7C, 255);
-        private readonly List<RectTransform> _levelCards = new List<RectTransform>();
-        private ScrollRect _levelScroll;
-        private int  _selectedLevelIndex;
         private bool _navLocked;
-
-        private readonly List<Button> _titleButtons = new List<Button>();
-        private int _titleSelectedIndex;
 
         private LocalizationManager _loc;
         private readonly List<(TextMeshProUGUI text, string key)> _localizedTexts = new List<(TextMeshProUGUI, string)>();
@@ -123,12 +108,15 @@ namespace Resource.Scripts
 
         private void SetTransitionInputLocked(bool locked)
         {
-            _menuGroup.interactable = !locked;
-            _menuGroup.blocksRaycasts = !locked;
+            if (_menuGroup != null)
+            {
+                _menuGroup.interactable = !locked;
+                _menuGroup.blocksRaycasts = !locked;
+            }
             // 自定义滑条不继承 Selectable，禁用它们也阻止已经开始的拖动。
-            _optionsMasterDrag.enabled = !locked;
-            _optionsMusicDrag.enabled = !locked;
-            _optionsSfxDrag.enabled = !locked;
+            if (_optionsMasterDrag != null) _optionsMasterDrag.enabled = !locked;
+            if (_optionsMusicDrag != null) _optionsMusicDrag.enabled = !locked;
+            if (_optionsSfxDrag != null) _optionsSfxDrag.enabled = !locked;
         }
 
         /// <summary>用 Localization 表里的 key 建文字，并且登记下来，语言切换时统一刷新</summary>
@@ -145,17 +133,12 @@ namespace Resource.Scripts
                 if (text != null) text.text = LocalizationManager.Instance.Get(key);
             if (_optionsLanguageLabel != null)
                 _optionsLanguageLabel.text = LocalizationManager.Instance.LanguageName(LocalizationManager.Instance.CurrentLanguage);
+            if (_menuPresentation != null) _menuPresentation.RefreshLocalizedTexts();
         }
 
         void Update()
         {
             if (MenuInputBlocked) return;
-            if (_titlePanelRoot != null && _titlePanelRoot.gameObject.activeSelf)
-                HandleTitleInput();
-
-            if (_levelSelectGroup != null && _levelSelectGroup.gameObject.activeSelf)
-                HandleLevelSelectInput();
-
             if (_optionsGroup != null && _optionsGroup.gameObject.activeSelf)
                 HandleOptionsInput();
         }
@@ -191,152 +174,54 @@ namespace Resource.Scripts
             if (canvasRT.GetComponent<GraphicRaycaster>() == null)
                 canvasRT.gameObject.AddComponent<GraphicRaycaster>();
 
-            foreach (string name in new[] { "Background", "TorchGlow0", "TorchGlow1", "Fog0", "Fog1", "Fog2" })
+            foreach (string name in new[] { "TitlePanel", "LevelSelectPanel", "PixelBackground", "Backdrop", "Background", "TorchGlow0", "TorchGlow1", "Fog0", "Fog1", "Fog2" })
                 RemoveChild(canvasRT, name);
-            PixelUI.Backdrop(canvasRT);
-            BuildTitlePanel(canvasRT);
-            BuildLevelSelectPanel(canvasRT);
             BuildOptionsPanel(canvasRT);
-        }
 
-        // ── 标题面板 ─────────────────────────────────────────────
-        private void BuildTitlePanel(Transform parent)
-        {
-            _titlePanelRoot = GetRect(parent, "TitlePanel");
-            Stretch(_titlePanelRoot);
-            _titleGroup = GetGroup(_titlePanelRoot);
-            _titleGroup.alpha = 1f;
-            _titlePanelRoot.gameObject.SetActive(true);
-            RemoveChild(_titlePanelRoot, "Logo");
-
-            var titleRT = GetRect(_titlePanelRoot, "Text_Title");
-            Place(titleRT, new Vector2(0.5f, 0.79f), Vector2.zero, new Vector2(600f, 108f));
-            var title = PixelUI.EnsureText(titleRT.gameObject, 72, false, TextAnchor.MiddleCenter, PixelUI.TextLight);
-            title.font = PixelUI.Theme.titleFont;
-            title.text = "Upside Down";
-
-            var buttonsRT = GetRect(_titlePanelRoot, "Buttons");
-            Place(buttonsRT, new Vector2(0.5f, 0.43f), Vector2.zero, new Vector2(300f, 204f));
-            var startBtn = CreateButton(buttonsRT, LocalizationManager.Instance.Get("menu.start"), new Vector2(300f, 54f), "Button_Start Game");
-            PositionVerticalStack(startBtn.GetComponent<RectTransform>(), 0, 3, 72f);
-            startBtn.onClick.AddListener(OnStartGameClicked);
-            _localizedTexts.Add((startBtn.GetComponentInChildren<TextMeshProUGUI>(true), "menu.start"));
-
-            var optionsBtn = CreateButton(buttonsRT, LocalizationManager.Instance.Get("menu.options"), new Vector2(300f, 54f), "Button_Options");
-            PositionVerticalStack(optionsBtn.GetComponent<RectTransform>(), 1, 3, 72f);
-            optionsBtn.onClick.AddListener(OnOptionsClicked);
-            _localizedTexts.Add((optionsBtn.GetComponentInChildren<TextMeshProUGUI>(true), "menu.options"));
-
-            var quitBtn = CreateButton(buttonsRT, LocalizationManager.Instance.Get("menu.quit"), new Vector2(300f, 54f), "Button_Quit Game");
-            PositionVerticalStack(quitBtn.GetComponent<RectTransform>(), 2, 3, 72f);
-            quitBtn.onClick.AddListener(OnQuitClicked);
-            _localizedTexts.Add((quitBtn.GetComponentInChildren<TextMeshProUGUI>(true), "menu.quit"));
-
-            _titleButtons.Clear();
-            _titleButtons.Add(startBtn);
-            _titleButtons.Add(optionsBtn);
-            _titleButtons.Add(quitBtn);
-            _titleSelectedIndex = 0;
-            SetButtonFocused(startBtn, true);
-        }
-
-        /// <summary>标题页的十字键/左摇杆/键盘上下选择 + 确认（跟关卡选择页同一套轮询手柄的写法，
-        /// 不依赖 InputSystemUIInputModule 的默认导航绑定，保证不管有没有配好都能用）</summary>
-        private void HandleTitleInput()
-        {
-            if (_navLocked || _titleButtons.Count == 0) return;
-
-            float navAxis = 0f;
-            if (Keyboard.current != null)
-            {
-                if (Keyboard.current.upArrowKey.wasPressedThisFrame)   navAxis = -1f;
-                if (Keyboard.current.downArrowKey.wasPressedThisFrame) navAxis = 1f;
-            }
-            var gamepad = Gamepad.current;
-            if (gamepad != null)
-            {
-                if (gamepad.leftStick.up.wasPressedThisFrame   || gamepad.dpad.up.wasPressedThisFrame)   navAxis = -1f;
-                if (gamepad.leftStick.down.wasPressedThisFrame || gamepad.dpad.down.wasPressedThisFrame) navAxis = 1f;
-            }
-
-            if (navAxis != 0f)
-            {
-                int newIndex = Mathf.Clamp(_titleSelectedIndex + (int)navAxis, 0, _titleButtons.Count - 1);
-                if (newIndex != _titleSelectedIndex)
-                {
-                    SetButtonFocused(_titleButtons[_titleSelectedIndex], false);
-                    _titleSelectedIndex = newIndex;
-                    SetButtonFocused(_titleButtons[_titleSelectedIndex], true);
-                    SfxManager.Instance.PlayUIMove();
-                }
-            }
-
-            bool confirmPressed = (Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame)
-                || (gamepad != null && gamepad.buttonSouth.wasPressedThisFrame);
-            if (confirmPressed) _titleButtons[_titleSelectedIndex].onClick.Invoke();
-        }
-
-        private void PositionVerticalStack(RectTransform rt, int index, int count, float spacing)
-        {
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            float offset = (count - 1) * 0.5f - index;
-            rt.anchoredPosition = new Vector2(0f, offset * spacing);
-        }
-
-        private void OnStartGameClicked()
-        {
-            if (MenuInputBlocked) return;
-            if (_navLocked) return;
-            _navLocked = true;
-            SfxManager.Instance.PlayButtonClick();
-            StartCoroutine(SwapPanels(_titlePanelRoot, _titleGroup, new Vector2(0f, -150f),
-                                       _levelSelectRoot, _levelSelectGroup, new Vector2(400f, 0f)));
+            var menu = new GameObject("MenuPresentation", typeof(RectTransform));
+            _menuPresentation = menu.AddComponent<MenuPresentation>();
+            _menuPresentation.Build(transform, levels, OnOptionsClicked, LoadLevel, () => MenuInputBlocked);
+            _menuPresentation.ShowTitle(true);
         }
 
         private void OnOptionsClicked()
         {
-            if (MenuInputBlocked) return;
-            if (_navLocked) return;
+            if (MenuInputBlocked || _navLocked) return;
             _navLocked = true;
-            SfxManager.Instance.PlayButtonClick();
-            StartCoroutine(SwapPanels(_titlePanelRoot, _titleGroup, new Vector2(0f, -150f),
-                                       _optionsRoot, _optionsGroup, new Vector2(400f, 0f)));
+            _menuPresentation.gameObject.SetActive(false);
+            StartCoroutine(ShowOptions());
         }
 
-        private void OnQuitClicked()
+        private IEnumerator ShowOptions()
         {
-            if (MenuInputBlocked) return;
-            SfxManager.Instance.PlayButtonClick();
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
+            yield return SlidePanel(_optionsRoot, _optionsGroup, new Vector2(400f, 0f), Vector2.zero, 0f, 1f, 0.5f, false);
+            UpdateOptionsRowHighlight();
+            _navLocked = false;
         }
 
-        private void BackToTitle(RectTransform fromRoot, CanvasGroup fromGroup, Vector2 fromExitOffset)
+        private void BackToTitle()
         {
-            if (MenuInputBlocked) return;
-            if (_navLocked) return;
+            if (MenuInputBlocked || _navLocked) return;
             _navLocked = true;
             SfxManager.Instance.PlayUIBack();
-            StartCoroutine(SwapPanels(fromRoot, fromGroup, fromExitOffset,
-                                       _titlePanelRoot, _titleGroup, new Vector2(0f, -150f)));
+            StartCoroutine(ReturnFromOptions());
         }
 
-        /// <summary>通用面板切换：outRoot 滑出淡出，inRoot 从对应方向滑入淡入</summary>
-        private IEnumerator SwapPanels(RectTransform outRoot, CanvasGroup outGroup, Vector2 outOffset,
-                                        RectTransform inRoot, CanvasGroup inGroup, Vector2 inOffset)
+        private IEnumerator ReturnFromOptions()
         {
-            yield return SlidePanel(outRoot, outGroup, Vector2.zero, outOffset, 1f, 0f, 0.5f, true);
-            yield return SlidePanel(inRoot, inGroup, inOffset, Vector2.zero, 0f, 1f, 0.5f, false);
-            if (inRoot == _optionsRoot) UpdateOptionsRowHighlight();
-            else if (inRoot == _levelSelectRoot) UpdateCardHighlight();
-            else
-                for (int i = 0; i < _titleButtons.Count; i++)
-                    SetButtonFocused(_titleButtons[i], i == _titleSelectedIndex);
+            yield return SlidePanel(_optionsRoot, _optionsGroup, Vector2.zero, new Vector2(400f, 0f), 1f, 0f, 0.5f, true);
+            _menuPresentation.gameObject.SetActive(true);
+            RefreshLocalizedTexts();
+            _menuPresentation.ShowTitle(false);
             _navLocked = false;
+        }
+
+        private void LoadLevel(string sceneName)
+        {
+            if (MenuInputBlocked || _navLocked) return;
+            _navLocked = true;
+            GameFlowState.HasEnteredGame = true;
+            SceneTransition.Instance.LoadScene(sceneName);
         }
 
         private IEnumerator SlidePanel(RectTransform rt, CanvasGroup cg, Vector2 fromOffset, Vector2 toOffset,
@@ -359,225 +244,6 @@ namespace Resource.Scripts
 
         private static float EaseOutCubic(float x) => 1f - Mathf.Pow(1f - x, 3f);
 
-        // ── 关卡选择面板 ─────────────────────────────────────────
-        private void BuildLevelSelectPanel(Transform parent)
-        {
-            _levelSelectRoot = GetRect(parent, "LevelSelectPanel");
-            Stretch(_levelSelectRoot);
-            _levelSelectGroup = GetGroup(_levelSelectRoot);
-            _levelSelectGroup.alpha = 0f;
-            _levelSelectRoot.gameObject.SetActive(false);
-            RemoveChild(_levelSelectRoot, "Cards");
-
-            var title = GetRect(_levelSelectRoot, "Title");
-            Place(title, new Vector2(0.5f, 1f), new Vector2(0f, -100.5f), new Vector2(372f, 69f));
-            var titleImage = GetImage(title);
-            titleImage.sprite = PixelUI.Theme.levelTitle;
-            titleImage.color = Color.white;
-            titleImage.raycastTarget = false;
-
-            var back = CreateButton(_levelSelectRoot, LocalizationManager.Instance.Get("settings.back"), new Vector2(138f, 54f), "Button_Back");
-            Place(back.GetComponent<RectTransform>(), Vector2.zero, new Vector2(102f, 66f), new Vector2(138f, 54f));
-            back.onClick.AddListener(() => BackToTitle(_levelSelectRoot, _levelSelectGroup, new Vector2(400f, 0f)));
-            _localizedTexts.Add((back.GetComponentInChildren<TextMeshProUGUI>(true), "settings.back"));
-
-            var viewport = GetRect(_levelSelectRoot, "CardsViewport");
-            viewport.anchorMin = new Vector2(0f, 0.5f);
-            viewport.anchorMax = new Vector2(1f, 0.5f);
-            viewport.pivot = new Vector2(0.5f, 0.5f);
-            viewport.offsetMin = new Vector2(72f, -162f);
-            viewport.offsetMax = new Vector2(-72f, 162f);
-            GetImage(viewport).color = Color.clear;
-            if (viewport.GetComponent<RectMask2D>() == null) viewport.gameObject.AddComponent<RectMask2D>();
-            _levelScroll = viewport.GetComponent<ScrollRect>();
-            if (_levelScroll == null) _levelScroll = viewport.gameObject.AddComponent<ScrollRect>();
-            _levelScroll.viewport = viewport;
-            _levelScroll.horizontal = true;
-            _levelScroll.vertical = false;
-            _levelScroll.movementType = ScrollRect.MovementType.Clamped;
-            _levelScroll.inertia = false;
-            _levelScroll.scrollSensitivity = 30f;
-
-            var cards = GetRect(viewport, "Cards");
-            float rowWidth = Mathf.Max(0f, levels.Count * 198f - 12f);
-            Place(cards, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(rowWidth, 288f));
-            _levelScroll.content = cards;
-            _levelCards.Clear();
-            for (int i = 0; i < levels.Count; i++)
-            {
-                var card = BuildLevelCard(cards, levels[i], i);
-                card.anchoredPosition = new Vector2((i - (levels.Count - 1) * 0.5f) * 198f, 12f);
-                _levelCards.Add(card);
-            }
-
-            // The supplied font subset lacks the triangle glyphs; use the shared pixel arrows.
-            var hint = GetRect(_levelSelectRoot, "ControlsHint");
-            Place(hint, new Vector2(0.5f, 0f), new Vector2(0f, 54f), new Vector2(312f, 30f));
-            for (int i = 0; i < 2; i++)
-            {
-                var arrow = GetRect(hint, i == 0 ? "Left" : "Right");
-                Place(arrow, new Vector2(0f, 0.5f), new Vector2(12f + i * 21f, 0f), new Vector2(12f, 18f));
-                var image = GetImage(arrow);
-                image.sprite = i == 0 ? PixelUI.Theme.arrowLeftDisabled : PixelUI.Theme.arrowRightDisabled;
-                image.preserveAspect = true;
-                image.raycastTarget = false;
-            }
-            var hintText = CreateText(hint, "Select   × Start   ○ Back", Vector2.zero, Vector2.one, TextAnchor.MiddleLeft, 18, "Text");
-            hintText.GetComponent<RectTransform>().offsetMin = new Vector2(51f, 0f);
-            hintText.GetComponent<TextMeshProUGUI>().color = new Color32(0x96, 0x94, 0xBA, 255);
-
-            _selectedLevelIndex = 0;
-            UpdateCardHighlight();
-        }
-
-        private RectTransform BuildLevelCard(Transform parent, LevelEntry level, int index)
-        {
-            var card = GetRect(parent, $"Card_{index + 1:00}");
-            Place(card, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(186f, 252f));
-            var background = GetImage(card);
-            background.type = Image.Type.Simple;
-            background.color = Color.white;
-
-            var content = GetRect(card, "Content");
-            Stretch(content);
-            var thumb = GetRect(content, "Thumbnail");
-            Place(thumb, new Vector2(0f, 1f), new Vector2(93f, -78f), new Vector2(144f, 102f));
-            var thumbImage = GetImage(thumb);
-            thumbImage.sprite = level.unlocked ? PixelUI.Theme.levelThumbnail : null;
-            thumbImage.color = level.unlocked ? Color.white : new Color32(0x17, 0x16, 0x22, 255);
-            thumbImage.raycastTarget = false;
-
-            var lockIcon = GetRect(thumb, "Lock");
-            Place(lockIcon, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(24f, 33f));
-            GetImage(lockIcon).sprite = PixelUI.Theme.levelLock;
-            GetImage(lockIcon).raycastTarget = false;
-            lockIcon.gameObject.SetActive(!level.unlocked);
-            var check = GetRect(thumb, "Cleared");
-            Place(check, Vector2.one, new Vector2(-7.5f, -13.5f), new Vector2(21f, 15f));
-            GetImage(check).sprite = PixelUI.Theme.levelCheck;
-            GetImage(check).raycastTarget = false;
-            check.gameObject.SetActive(level.unlocked && level.cleared);
-
-            var number = CreateText(content, (index + 1).ToString("00"), Vector2.zero, Vector2.one, TextAnchor.MiddleCenter, 34, "Number");
-            Place(number.GetComponent<RectTransform>(), new Vector2(0.5f, 1f), new Vector2(0f, -174f), new Vector2(150f, 42f));
-            number.GetComponent<TextMeshProUGUI>().color = level.unlocked ? PixelUI.TextLight : LockedLevelText;
-            var name = CreateText(content, level.unlocked ? level.displayName : "???", Vector2.zero, Vector2.one, TextAnchor.MiddleCenter, 17, "Name");
-            Place(name.GetComponent<RectTransform>(), new Vector2(0.5f, 1f), new Vector2(0f, -201f), new Vector2(150f, 36f));
-            var nameText = name.GetComponent<TextMeshProUGUI>();
-            nameText.color = level.unlocked ? PixelUI.TextLight : LockedLevelText;
-            nameText.overflowMode = TextOverflowModes.Ellipsis;
-            var status = CreateText(content, !level.unlocked ? "LOCKED" : level.cleared ? "CLEARED" : "", Vector2.zero, Vector2.one, TextAnchor.MiddleCenter, 12, "Status");
-            Place(status.GetComponent<RectTransform>(), new Vector2(0.5f, 1f), new Vector2(0f, -220f), new Vector2(150f, 18f));
-            status.GetComponent<TextMeshProUGUI>().color = level.unlocked ? PixelUI.OxygenNormal : LockedLevelText;
-
-            var button = card.GetComponent<Button>();
-            if (button == null) button = card.gameObject.AddComponent<Button>();
-            button.targetGraphic = background;
-            button.transition = Selectable.Transition.None;
-            button.navigation = new Navigation { mode = Navigation.Mode.None };
-            button.onClick.RemoveAllListeners();
-            button.onClick.AddListener(() =>
-            {
-                if (MenuInputBlocked || _navLocked) return;
-                _selectedLevelIndex = index;
-                UpdateCardHighlight();
-                ConfirmLevelSelection();
-            });
-            return card;
-        }
-
-        private void UpdateCardHighlight()
-        {
-            for (int i = 0; i < _levelCards.Count; i++)
-            {
-                bool selected = i == _selectedLevelIndex;
-                var card = _levelCards[i];
-                var image = card.GetComponent<Image>();
-                image.sprite = selected ? PixelUI.Theme.levelCardSelected
-                    : levels[i].unlocked ? PixelUI.Theme.levelCardNormal : PixelUI.Theme.levelCardLocked;
-                image.color = selected && !levels[i].unlocked ? new Color(0.65f, 0.65f, 0.65f, 1f) : Color.white;
-                // Selected artwork is already raised by 3 pixels; only its contents need the same offset.
-                card.Find("Content").GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, selected ? 9f : 0f);
-            }
-            if (_levelCards.Count == 0) return;
-            Canvas.ForceUpdateCanvases();
-            float halfView = _levelScroll.viewport.rect.width * 0.5f;
-            var selectedCard = _levelCards[_selectedLevelIndex];
-            float offset = _levelScroll.content.anchoredPosition.x;
-            float left = selectedCard.anchoredPosition.x - selectedCard.rect.width * 0.5f + offset;
-            float right = left + selectedCard.rect.width;
-            if (left < -halfView) offset += -halfView - left;
-            else if (right > halfView) offset -= right - halfView;
-            float limit = Mathf.Max(0f, (_levelScroll.content.rect.width - _levelScroll.viewport.rect.width) * 0.5f);
-            _levelScroll.StopMovement();
-            _levelScroll.content.anchoredPosition = new Vector2(Mathf.Clamp(offset, -limit, limit), 0f);
-        }
-        private void HandleLevelSelectInput()
-        {
-            if (_navLocked) return;
-
-            float navAxis = 0f;
-            if (Keyboard.current != null)
-            {
-                if (Keyboard.current.leftArrowKey.wasPressedThisFrame)  navAxis = -1f;
-                if (Keyboard.current.rightArrowKey.wasPressedThisFrame) navAxis = 1f;
-            }
-            var gamepad = Gamepad.current;
-            if (gamepad != null)
-            {
-                if (gamepad.leftStick.left.wasPressedThisFrame  || gamepad.dpad.left.wasPressedThisFrame)  navAxis = -1f;
-                if (gamepad.leftStick.right.wasPressedThisFrame || gamepad.dpad.right.wasPressedThisFrame) navAxis = 1f;
-            }
-
-            if (navAxis != 0f && _levelCards.Count > 0)
-            {
-                int newIndex = Mathf.Clamp(_selectedLevelIndex + (int)navAxis, 0, _levelCards.Count - 1);
-                if (newIndex != _selectedLevelIndex)
-                {
-                    _selectedLevelIndex = newIndex;
-                    UpdateCardHighlight();
-                    SfxManager.Instance.PlayUIMove();
-                }
-            }
-
-            bool confirmPressed = (Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame)
-                || (gamepad != null && gamepad.buttonSouth.wasPressedThisFrame);
-            if (confirmPressed) ConfirmLevelSelection();
-
-            bool backPressed = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-                || (gamepad != null && gamepad.buttonEast.wasPressedThisFrame);
-            if (backPressed) BackToTitle(_levelSelectRoot, _levelSelectGroup, new Vector2(400f, 0f));
-        }
-
-        private void ConfirmLevelSelection()
-        {
-            if (MenuInputBlocked) return;
-            if (_navLocked) return;
-            if (_levelCards.Count == 0 || _selectedLevelIndex >= levels.Count) return;
-
-            var level = levels[_selectedLevelIndex];
-            if (!level.unlocked)
-            {
-                SfxManager.Instance.PlayUIError();
-                return;
-            }
-
-            SfxManager.Instance.PlayButtonClick();
-            _navLocked = true;
-            GameFlowState.HasEnteredGame = true;
-
-            if (string.IsNullOrEmpty(level.sceneName))
-            {
-                Debug.LogError($"[MainMenuUI] 关卡 \"{level.displayName}\" 没有配置 sceneName，无法跳转。");
-                _navLocked = false;
-                return;
-            }
-
-            // 走场景转场（黑幕合上→加载→展开），非附加方式完全切到目标关卡场景，
-            // MainMenu 场景本身会被卸载。
-            SceneTransition.Instance.LoadScene(level.sceneName);
-        }
-
         private void UpdateOptionsRowHighlight()
         {
             for (int i = 0; i < _optionsRows.Count; i++)
@@ -593,7 +259,7 @@ namespace Resource.Scripts
 
             bool backPressed = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
                 || (gamepad != null && gamepad.buttonEast.wasPressedThisFrame);
-            if (backPressed) { BackToTitle(_optionsRoot, _optionsGroup, new Vector2(400f, 0f)); return; }
+            if (backPressed) { BackToTitle(); return; }
 
             float navAxis = 0f;
             if (Keyboard.current != null)
@@ -699,7 +365,7 @@ namespace Resource.Scripts
             PixelUI.EnsureText(titleGO, 36, true, TextAnchor.MiddleCenter, PixelUI.TextLight);
             var backBtn = CreateButton(_optionsRoot, LocalizationManager.Instance.Get("settings.back"), new Vector2(240f, 54f), "Button_Back");
             Place(backBtn.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0f, 48f), new Vector2(240f, 54f));
-            backBtn.onClick.AddListener(() => BackToTitle(_optionsRoot, _optionsGroup, new Vector2(400f, 0f)));
+            backBtn.onClick.AddListener(() => BackToTitle());
             _localizedTexts.Add((backBtn.GetComponentInChildren<TextMeshProUGUI>(true), "settings.back"));
 
             var contentRT = GetRect(_optionsRoot, "Content");
@@ -928,7 +594,7 @@ namespace Resource.Scripts
             });
             trigger.triggers.Add(enter);
             var exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
-            exit.callback.AddListener(_ => SetButtonFocused(button, _titleButtons.Count > _titleSelectedIndex && _titleButtons[_titleSelectedIndex] == button));
+            exit.callback.AddListener(_ => SetButtonFocused(button, false));
             trigger.triggers.Add(exit);
             return button;
         }

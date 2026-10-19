@@ -188,6 +188,8 @@ namespace Resource.Scripts
             if (openDuration > 0.3f)
                 yield return new WaitForSecondsRealtime(openDuration - 0.3f);
             yield return new WaitForSecondsRealtime(0.6f);
+            PlayerPrefs.SetInt("cleared." + gameObject.scene.name, 1);
+            PlayerPrefs.Save();
             if (nextSceneName == "MainMenu") GameFlowState.HasEnteredGame = false;
             SceneTransition.Instance.LoadScene(nextSceneName);
         }
