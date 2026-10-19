@@ -146,11 +146,13 @@ namespace Resource.Scripts.Editor
             composite.geometryType = CompositeCollider2D.GeometryType.Polygons;
             world.attachedGeometryBodies = new[] { wallBody };
 
-            bool Solid(int x, int y)
+            bool OriginalSolid(int x, int y)
             {
                 if (x < 0 || y < 0 || x >= width || y >= height) return true;
                 return map[y / TilesPerCell][x / TilesPerCell] == '#';
             }
+            bool Solid(int x, int y) => OriginalSolid(x, y)
+                || (map[y / TilesPerCell][x / TilesPerCell] == 'X' && SpikeTile(map, x, y) == null);
             int margin = MarginCells * TilesPerCell;
             for (int y = -margin; y < height + margin; y++)
             for (int x = -margin; x < width + margin; x++)
@@ -166,7 +168,7 @@ namespace Resource.Scripts.Editor
             if (walls.GetUsedTilesCount() == 0 || composite.pathCount == 0)
                 throw new InvalidOperationException(scenePath + " 未生成有效墙体碰撞，停止保存。");
 
-            BuildDecoration(grid.transform, map, index, Solid);
+            BuildDecoration(grid.transform, map, index, OriginalSolid);
             BuildSceneEffects(grid.transform, walls, index, width, height);
             foreach (var renderer in player.GetComponentsInChildren<SpriteRenderer>(true))
                 renderer.sortingOrder = Mathf.Max(renderer.sortingOrder, 2);
@@ -188,7 +190,7 @@ namespace Resource.Scripts.Editor
                 Vector2 center = new Vector2(column * TilesPerCell + 1f - width / 2f, height / 2f - row * TilesPerCell - 1f);
                 if (cell == 'P') PlacePlayer(player, center);
                 else if (cell == 'D' || cell == 'U' || cell == '[' || cell == ']') PlaceDoor(door, center, cell);
-                else if (cell == 'X') BuildSpikeCell(grid.transform, center, column, row);
+                else if (cell == 'X') BuildSpikeCell(grid.transform, center, column, row, map);
                 else if (cell == '>' || cell == '<' || cell == '^' || cell == 'v')
                 {
                     Vector2 direction = cell == '>' ? Vector2.right : cell == '<' ? Vector2.left : cell == '^' ? Vector2.up : Vector2.down;
@@ -442,25 +444,45 @@ namespace Resource.Scripts.Editor
             door.transform.localPosition = new Vector3(bottom.x - localTileBottom.x, bottom.y - localTileBottom.y, 0f);
         }
 
-        private static void BuildSpikeCell(Transform parent, Vector2 center, int column, int row)
+        // 0 = wall/closed, 1 = open, 2 = laser emitter mounted on this face.
+        private static int SpikeFace(string[] map, int column, int row, int dx, int dy)
         {
-            var cell = new GameObject("Spikes_" + column + "_" + row);
-            cell.transform.SetParent(parent, false);
-            cell.transform.localPosition = center;
-            cell.AddComponent<HazardKill>();
-            cell.AddComponent<BoxCollider2D>().isTrigger = true;
-            cell.GetComponent<BoxCollider2D>().size = Vector2.one * TilesPerCell;
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resource/Prefabs/Spike.prefab");
-            for (int y = 0; y < 2; y++)
-            for (int x = 0; x < 2; x++)
+            int x = column + dx, y = row + dy;
+            if (x < 0 || y < 0 || y >= map.Length || x >= map[y].Length) return 0;
+            char cell = map[y][x];
+            if (cell == '#' || cell == 'X') return 0;
+            char outward = dx < 0 ? '<' : dx > 0 ? '>' : dy < 0 ? '^' : 'v';
+            return cell == outward ? 2 : 1;
+        }
+
+        private static string SpikeTile(string[] map, int x, int y)
+        {
+            int dx = x % TilesPerCell == 0 ? -1 : 1;
+            int dy = y % TilesPerCell == 0 ? -1 : 1;
+            int horizontal = SpikeFace(map, x / TilesPerCell, y / TilesPerCell, dx, 0);
+            int vertical = SpikeFace(map, x / TilesPerCell, y / TilesPerCell, 0, dy);
+            if (horizontal == 2 || vertical == 2 || (horizontal != 1 && vertical != 1)) return null;
+            string v = dy < 0 ? "up" : "down", h = dx < 0 ? "left" : "right";
+            return "spike_" + (vertical == 1 ? v + (horizontal == 1 ? "_" + h : "") : h);
+        }
+
+        private static void BuildSpikeCell(Transform parent, Vector2 center, int column, int row, string[] map)
+        {
+            for (int y = 0; y < TilesPerCell; y++)
+            for (int x = 0; x < TilesPerCell; x++)
             {
-                var spike = (GameObject)PrefabUtility.InstantiatePrefab(prefab, cell.transform);
-                // 整格 Box Trigger 已负责死亡判定，禁用重复且复杂的尖刺轮廓碰撞。
-                foreach (var collider in spike.GetComponentsInChildren<Collider2D>(true)) collider.enabled = false;
-                Vector2 size = spike.GetComponent<SpriteRenderer>().sprite.bounds.size;
-                spike.transform.localScale = new Vector3(1f / size.x, 1f / size.y, 1f);
-                spike.transform.localPosition = new Vector3(x - 0.5f, y - 0.5f, 0f);
-                spike.GetComponent<SpriteRenderer>().sortingOrder = 2;
+                string tile = SpikeTile(map, column * TilesPerCell + x, row * TilesPerCell + y);
+                if (tile == null) continue;
+                var spike = new GameObject("Spikes_" + column + "_" + row + "_" + x + "_" + y);
+                spike.transform.SetParent(parent, false);
+                spike.transform.localPosition = center + new Vector2(x - 0.5f, 0.5f - y);
+                var renderer = spike.AddComponent<SpriteRenderer>();
+                renderer.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(PowerStationTilesetImporter.CaveRoot + "/SpikeTiles/" + tile + ".png");
+                renderer.sortingOrder = 2;
+                spike.AddComponent<HazardKill>();
+                var trigger = spike.AddComponent<BoxCollider2D>();
+                trigger.size = Vector2.one;
+                trigger.isTrigger = true;
             }
         }
 
