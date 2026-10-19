@@ -1,0 +1,53 @@
+仕样书 5：矿坑、岩浆、天空各自的出口门
+
+现在 12 个小关卡（Mine_01～04、Lava_01～04、Sky_01～04）的门都是迷宫的门。改成每个世界一套门图。
+门的逻辑全部不变：GoalDoor、重力锁（20 度解锁、23 度重新锁）、表盘指针、PlaceDoor 的对齐方式都照旧。迷宫 8 关不动。
+设计预览：素材/出口门_预览.gif（待机、打开、锁住、碰到锁住的门），素材/出口门_对照.png。
+
+====================================
+一、图（已经做好，直接用）
+====================================
+
+素材/矿坑/Door、素材/岩浆/Door、素材/天空/Door，每个文件夹 5 张：
+  door_idle.png          待机 6 帧，横排 192x32
+  door_open.png          打开 4 帧，横排 128x32
+  door_lock_open.png     重力锁表盘：解锁
+  door_lock_locked.png   重力锁表盘：锁住（门缝和门顶小灯熄灭）
+  door_lock_hint.png     重力锁表盘：碰到锁住的门时闪红
+指针还用迷宫的 door_lock_needle.png。
+
+格式和迷宫门（Assets/Resource/Mode/Cave Tileset/Door/）完全一样：帧大小、帧数、表盘位置、门缝位置都相同，
+所以 GoalDoor 和 GravityLockDoorSetup 的判断逻辑不用改，只是换图。
+
+导入设置照抄 Cave Tileset/Door 里同名的图：PPU 16，Point，不压缩；door_idle、door_open 按 32x32 切片（枢轴也照抄）；三张表盘图是单张 Sprite，枢轴中心。
+
+====================================
+二、放进工程
+====================================
+
+按仕样书 0 的素材对应关系，Door 文件夹跟着一起复制：
+  素材/矿坑/Door → Assets/Resource/Art/SmallLevels/Mine/Door/
+  素材/岩浆/Door → Assets/Resource/Art/SmallLevels/Lava/Door/
+  素材/天空/Door → Assets/Resource/Art/SmallLevels/Sky/Door/
+
+====================================
+三、代码
+====================================
+
+1. GoalDoorSetup：把“用 Cave Tileset/Door 的两张序列图生成 Door.controller、door_idle.anim、door_open.anim，再装到门上”这段改成可以传文件夹：
+   给定一个 Door 文件夹，就在那个文件夹里生成同样的 controller 和两个 anim（帧率、循环、状态名都和迷宫门一样），并装到指定的门上。
+   原来不传文件夹的调用等于传 Cave Tileset/Door，迷宫门的结果不变。
+2. GravityLockDoorSetup：加 Apply(door, artFolder)，表盘图从 artFolder 读，指针仍然读 Cave Tileset/Door/door_lock_needle.png。
+   原来的 Apply(door) 等于 Apply(door, Cave Tileset/Door)。
+3. SmallLevelSceneBuilder 放门那段（PlaceDoor 之后、GravityLockDoorSetup.Apply 那一行）：
+   按场景名前缀选文件夹：Mine_ 用 Mine/Door，Lava_ 用 Lava/Door，Sky_ 用 Sky/Door。
+   先用第 1 条把该世界的门图和动画装到门上，再调用 Apply(door, 该文件夹)。后面统一换 unlit 材质、改排序的代码不动。
+4. 别的都不动。
+
+====================================
+四、验证和汇报（只做这些）
+====================================
+
+1. 编译无错误；重新生成 12 个小关卡场景，原来的检查（20 个场景、20 个门的下一关、20 个选关项）照样通过。
+2. Mine_01、Lava_01、Sky_01 各进 Play 看一眼：门是新图；世界转正时门缝和表盘亮青色，进门过关时门打开；歪着碰门表盘闪红。
+3. 汇报 3 到 5 行，不写报告文件。

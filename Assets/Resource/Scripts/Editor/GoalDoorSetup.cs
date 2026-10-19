@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
+using UnityEditor.U2D.Sprites;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
@@ -22,20 +23,7 @@ namespace Resource.Scripts.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 throw new InvalidOperationException("Stop Play mode before replacing exit doors.");
 
-            AnimationClip idle = PrepareClip("door_idle", 6, 7f, true);
-            AnimationClip open = PrepareClip("door_open", 4, 12f, false);
-            string controllerPath = Art + "Door.controller";
-            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
-            if (controller == null) controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
-            var machine = controller.layers[0].stateMachine;
-            var idleState = machine.states.FirstOrDefault(s => s.state.name == "Idle").state;
-            if (idleState == null) idleState = machine.AddState("Idle");
-            var openState = machine.states.FirstOrDefault(s => s.state.name == "Open").state;
-            if (openState == null) openState = machine.AddState("Open");
-            idleState.motion = idle;
-            openState.motion = open;
-            machine.defaultState = idleState;
-            EditorUtility.SetDirty(controller);
+            var controller = PrepareController(Art, out AnimationClip open);
             Sprite first = AssetDatabase.LoadAllAssetsAtPath(Art + "door_idle.png")
                 .OfType<Sprite>().OrderBy(s => s.name).First();
             Texture2D legacyAtlas = AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(LegacyAtlasGuid));
@@ -75,18 +63,62 @@ namespace Resource.Scripts.Editor
             Debug.Log("[GoalDoor] Replaced " + count + " exits; opening duration=" + open.length.ToString("F3") + "s.");
         }
 
-        private static AnimationClip PrepareClip(string name, int count, float fps, bool loop)
+        public static void Apply(GoalDoor door) => Apply(door, Art);
+
+        public static void Apply(GoalDoor door, string artFolder)
         {
-            string sheetPath = Art + name + ".png";
+            artFolder = artFolder.TrimEnd('/', '\\') + "/";
+            var controller = PrepareController(artFolder, out AnimationClip open);
+            Transform visual = door.transform.Find("DoorVisual");
+            if (visual == null) throw new InvalidOperationException(door.name + " has no DoorVisual.");
+            visual.GetComponent<SpriteRenderer>().sprite = AssetDatabase.LoadAllAssetsAtPath(artFolder + "door_idle.png")
+                .OfType<Sprite>().OrderBy(s => s.name).First();
+            var animator = visual.GetComponent<Animator>();
+            if (animator == null) animator = Undo.AddComponent<Animator>(visual.gameObject);
+            animator.runtimeAnimatorController = controller;
+            animator.updateMode = AnimatorUpdateMode.UnscaledTime;
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            var settings = new SerializedObject(door);
+            settings.FindProperty("doorAnimator").objectReferenceValue = animator;
+            settings.FindProperty("openAnimation").objectReferenceValue = open;
+            settings.ApplyModifiedProperties();
+        }
+
+        private static AnimatorController PrepareController(string artFolder, out AnimationClip open)
+        {
+            AnimationClip idle = PrepareClip(artFolder, "door_idle", 6, 7f, true);
+            open = PrepareClip(artFolder, "door_open", 4, 12f, false);
+            string controllerPath = artFolder + "Door.controller";
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+            if (controller == null) controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+            var machine = controller.layers[0].stateMachine;
+            var idleState = machine.states.FirstOrDefault(s => s.state.name == "Idle").state;
+            if (idleState == null) idleState = machine.AddState("Idle");
+            var openState = machine.states.FirstOrDefault(s => s.state.name == "Open").state;
+            if (openState == null) openState = machine.AddState("Open");
+            idleState.motion = idle;
+            openState.motion = open;
+            machine.defaultState = idleState;
+            EditorUtility.SetDirty(controller);
+            return controller;
+        }
+
+        private static AnimationClip PrepareClip(string artFolder, string name, int count, float fps, bool loop)
+        {
+            string sheetPath = artFolder + name + ".png";
             var importer = AssetImporter.GetAtPath(sheetPath) as TextureImporter;
             if (importer == null) throw new FileNotFoundException("Missing door texture: " + sheetPath);
-            PowerStationTilesetImporter.ApplyBaseSettings(importer, sheetPath);
-            importer.SaveAndReimport();
-            PowerStationTilesetImporter.SliceAndAnimate(sheetPath, false);
+            if (artFolder == Art)
+            {
+                PowerStationTilesetImporter.ApplyBaseSettings(importer, sheetPath);
+                importer.SaveAndReimport();
+                PowerStationTilesetImporter.SliceAndAnimate(sheetPath, false);
+            }
+            else CopySheetSettings(importer, Art + name + ".png");
             Sprite[] sprites = AssetDatabase.LoadAllAssetsAtPath(sheetPath)
                 .OfType<Sprite>().OrderBy(s => s.name).ToArray();
             if (sprites.Length != count) throw new InvalidOperationException("Wait for door sprite import: " + name);
-            string path = Art + name + ".anim";
+            string path = artFolder + name + ".anim";
             var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
             if (clip == null)
             {
@@ -104,6 +136,42 @@ namespace Resource.Scripts.Editor
             AnimationUtility.SetAnimationClipSettings(clip, settings);
             EditorUtility.SetDirty(clip);
             return clip;
+        }
+
+        private static void CopySheetSettings(TextureImporter importer, string referencePath)
+        {
+            var reference = (TextureImporter)AssetImporter.GetAtPath(referencePath);
+            var settings = new TextureImporterSettings();
+            reference.ReadTextureSettings(settings);
+            importer.SetTextureSettings(settings);
+            importer.spriteImportMode = SpriteImportMode.Multiple;
+            importer.spritePixelsPerUnit = reference.spritePixelsPerUnit;
+            importer.filterMode = reference.filterMode;
+            importer.textureCompression = reference.textureCompression;
+            importer.mipmapEnabled = reference.mipmapEnabled;
+            importer.SaveAndReimport();
+
+            var factory = new SpriteDataProviderFactories();
+            factory.Init();
+            var source = factory.GetSpriteEditorDataProviderFromObject(reference);
+            source.InitSpriteEditorDataProvider();
+            var target = factory.GetSpriteEditorDataProviderFromObject(importer);
+            target.InitSpriteEditorDataProvider();
+            var existing = target.GetSpriteRects().ToDictionary(rect => rect.name, rect => rect.spriteID);
+            var rects = source.GetSpriteRects().Select(rect => new SpriteRect
+            {
+                name = rect.name,
+                rect = rect.rect,
+                alignment = rect.alignment,
+                pivot = rect.pivot,
+                border = rect.border,
+                spriteID = existing.TryGetValue(rect.name, out var id) ? id : GUID.Generate()
+            }).ToArray();
+            target.SetSpriteRects(rects);
+            target.GetDataProvider<ISpriteNameFileIdDataProvider>()?.SetNameFileIdPairs(
+                rects.Select(rect => new SpriteNameFileIdPair(rect.name, rect.spriteID)));
+            target.Apply();
+            importer.SaveAndReimport();
         }
 
         private static void InstallDoor(GoalDoor door, Sprite first, AnimatorController controller, AnimationClip open, Texture2D legacyAtlas)

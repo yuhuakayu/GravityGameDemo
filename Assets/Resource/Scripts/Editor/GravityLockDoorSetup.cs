@@ -15,8 +15,11 @@ namespace Resource.Scripts.Editor
         // 表盘中心在门图（32x32，中心枢轴）里往上 5 像素 = 5/16 单位
         private static readonly Vector3 GaugeCenter = new Vector3(0f, 5f / 16f, 0f);
 
-        public static void Apply(GoalDoor door)
+        public static void Apply(GoalDoor door) => Apply(door, Art);
+
+        public static void Apply(GoalDoor door, string artFolder)
         {
+            artFolder = artFolder.TrimEnd('/', '\\') + "/";
             Transform visual = door.transform.Find("DoorVisual");
             if (visual == null) throw new System.InvalidOperationException(door.name + " 没有 DoorVisual，先运行 Replace Exit Doors。");
             var doorRenderer = visual.GetComponent<SpriteRenderer>();
@@ -29,10 +32,10 @@ namespace Resource.Scripts.Editor
                 group.sortingOrder = doorRenderer.sortingOrder;
             }
 
-            Sprite open = Load("door_lock_open.png");
-            Sprite locked = Load("door_lock_locked.png");
-            Sprite hint = Load("door_lock_hint.png");
-            Sprite needleSprite = Load("door_lock_needle.png");
+            Sprite open = Load(artFolder, "door_lock_open.png");
+            Sprite locked = Load(artFolder, "door_lock_locked.png");
+            Sprite hint = Load(artFolder, "door_lock_hint.png");
+            Sprite needleSprite = Load(Art, "door_lock_needle.png");
 
             SpriteRenderer overlay = Child(visual, "GravityLockOverlay", Vector3.zero, doorRenderer, 1);
             overlay.sprite = open;
@@ -49,10 +52,10 @@ namespace Resource.Scripts.Editor
             settings.ApplyModifiedProperties();
         }
 
-        private static Sprite Load(string file)
+        private static Sprite Load(string artFolder, string file)
         {
-            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(Art + file);
-            if (sprite == null) throw new System.IO.FileNotFoundException("缺少重力锁图片（单张 Sprite，PPU 16）：" + Art + file);
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(artFolder + file);
+            if (sprite == null) throw new System.IO.FileNotFoundException("缺少重力锁图片（单张 Sprite，PPU 16）：" + artFolder + file);
             return sprite;
         }
 

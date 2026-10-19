@@ -107,7 +107,8 @@ namespace Resource.Scripts.Editor
                 var importer = (TextureImporter)AssetImporter.GetAtPath(path);
                 string spriteName = Path.GetFileNameWithoutExtension(path);
                 JToken pivotData = json["sprites"]?[spriteName]?["pivot"];
-                Vector2 pivot = pivotData != null ? V2(pivotData) : new Vector2(0f, 1f);
+                Vector2 pivot = relative.StartsWith("Door/") ? new Vector2(.5f, .5f)
+                    : pivotData != null ? V2(pivotData) : new Vector2(0f, 1f);
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.spritePixelsPerUnit = 16f;
@@ -243,7 +244,9 @@ namespace Resource.Scripts.Editor
             MazeSceneBuilder.PlaceDoor(door, new Vector2(data.door.bx, -data.door.by), data.door.dir);
             door.nextSceneName = LevelOrder.Next(data.scene);
             foreach (var renderer in door.GetComponentsInChildren<Renderer>(true)) renderer.sortingOrder = 10;
-            GravityLockDoorSetup.Apply(door);
+            string doorArt = art + "/Door/";
+            GoalDoorSetup.Apply(door, doorArt);
+            GravityLockDoorSetup.Apply(door, doorArt);
             foreach (var renderer in door.GetComponentsInChildren<SpriteRenderer>(true)) renderer.sharedMaterial = unlit;
             foreach (var group in door.GetComponentsInChildren<SortingGroup>(true)) group.sortingOrder = 10;
 
