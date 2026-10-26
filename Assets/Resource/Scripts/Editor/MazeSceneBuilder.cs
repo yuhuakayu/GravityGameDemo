@@ -15,7 +15,7 @@ using Object = UnityEngine.Object;
 
 namespace Resource.Scripts.Editor
 {
-    /// <summary>按关卡仕样书的字符地图生成八个独立场景，复用 Stage2 的玩家及玩法配置。</summary>
+    /// <summary>按关卡仕样书的字符地图生成独立场景，复用 Stage2 的玩家及玩法配置。</summary>
     public static class MazeSceneBuilder
     {
         private const string TemplateScene = "Assets/Scenes/Stage2.unity";
@@ -25,16 +25,30 @@ namespace Resource.Scripts.Editor
         private const int TilesPerCell = 2;
         private const int MarginCells = 3;
 
-        private static readonly string[][] Maps =
+        public static readonly string[][] Maps =
         {
-            new[] { "######", "#....#", "#....#", "#....#", "#.P.D#", "######" },
+            new[] { "######", "#U...#", "#....#", "#....#", "#.P..#", "######" },
             new[] { "######", "#...P#", "#.####", "#....#", "#...D#", "######" },
-            new[] { "########", "#.P....#", "#..##>.#", "#......#", "#<####.#", "#......#", "#D.....#", "########" },
+            new[] { "########", "#..P...#", "#..##>.#", "#......#", "#<####.#", "#......#", "#D.....#", "########" },
             new[] { "#########", "#P.....X#", "#####..##", "#X......#", "##..#####", "#.....X##", "####..###", "####.]###", "#########" },
             new[] { "##########", "#P......X#", "######..##", "######..##", "######..##", "#.......##", "#.......##", "#.......##", "#DXXXXXX##", "##########" },
             new[] { "##########", "#.....####", "#..#>.####", "#..#..####", "#..#..####", "#..#..####", "#..#..v..#", "#P.#....]#", "##########" },
             new[] { "##########", "#......^.#", "#<XXXXXX.#", "#.X####X.#", "#.X####X.#", "#.X####X.#", "#.X####X.#", "#.XXXXXX>#", "#D#Pv....#", "##########" },
-            new[] { "##########", "##U#P....#", "##.####>.#", "##.####..#", "##.####..#", "##.......#", "##.......#", "##.......#", "##XXXXXXX#", "##########" }
+            new[] { "##########", "##U#P....#", "##.####>.#", "##.####..#", "##.####..#", "##.......#", "##.......#", "##.......#", "##XXXXXXX#", "##########" },
+            new[] { "##########", "#P......X#", "######..##", "######..##", "######..##", "#.......##", "#.......##", "#.......##", "#.......##", "#.XXXXXX##", "#.########", "#........#", "#........#", "#........#", "#.......]#", "#XXXXXXXX#", "##########" },
+            new[] { "##########", "#UXXXXXX##", "#.......##", "#.......##", "#.......##", "######..##", "######>.##", "######..##", "#P......##", "##########" },
+            new[] { "##########", "#P......X#", "######..##", "#X.......#", "##..######", "##..######", "##..######", "#........#", "#........#", "#........#", "#........#", "#XXXXXXXD#", "##########" },
+            new[] { "##########", "#P......##", "######..##", "######..##", "######..##", "######..##", "######..##", "#...v...##", "#.......##", "#.......##", "#.......##", "#DXXXXXX##", "##########" },
+            new[] { "##########", "#P..v...X#", "######..##", "#X...v...#", "##..######", "#....v..]#", "##########" },
+            new[] { "#########", "####.]###", "####..###", "#.....X##", "##..#####", "#X......#", "#####..##", "#P.....X#", "#########" },
+            new[] { "##########", "#........#", "#P.......#", "#####.####", "#####.####", "#.....####", "#D....####", "##########" },
+            new[] { "##########", "#P...#####", "####.#####", "##X...####", "##X......#", "##X......#", "##X...X#D#", "##X...X###", "##X...X###", "##X...X###", "##X...X###", "##XJJJX###", "##########" },
+            new[] { "##XXXJJXX##", "X...P.....X", "X.........J", "#[........J", "X.........X", "X.........X", "X.........X", "X.........X", "X.........X", "##XXJXXXX##" },
+            new[] { "############", "#P........X#", "#iii.iiDiii#", "####X#######", "############" },
+            new[] { "############", "#........P.#", "#.######.#.#", "#.#>....m#.#", "#.######.#.#", "#[.........#", "############" },
+            new[] { "##########", "#P....####", "#####.####", "#####.####", "#####.####", "###M..####", "###.#.####", "###^#.####", "#####.####", "#####.####", "#####..M##", "#####.#.##", "#####.#^##", "#####.####", "#####.####", "###M..####", "###.#.####", "###^#.####", "#####.####", "#####.####", "#####..M##", "#####.#.##", "#####.#^##", "#####D####", "##########" },
+            new[] { "#######", "#.....#", "#.XXX.#", "#.XXX.#", "#P....#", "#Z#####", "#D#####", "#######" },
+            new[] { "########", "####...#", "####.X.#", "####P..#", "####Z###", "##...###", "##.X.###", "##...###", "####z###", "####D###", "########" }
         };
 
         [MenuItem("Tools/Gravity Game/Levels/Build Maze Scenes")]
@@ -57,6 +71,15 @@ namespace Resource.Scripts.Editor
                     cameraSettings = ScriptableObject.CreateInstance<MazeCameraSettings>();
                     AssetDatabase.CreateAsset(cameraSettings, CameraSettingsPath);
                 }
+                var serializedSettings = new SerializedObject(cameraSettings);
+                var sizes = serializedSettings.FindProperty("sceneSizes");
+                for (int i = sizes.arraySize; i < Maps.Length; i++)
+                {
+                    sizes.arraySize = i + 1;
+                    sizes.GetArrayElementAtIndex(i).FindPropertyRelative("sceneName").stringValue = "Maze_" + (i + 1).ToString("00");
+                    sizes.GetArrayElementAtIndex(i).FindPropertyRelative("size").floatValue = 0f;
+                }
+                serializedSettings.ApplyModifiedPropertiesWithoutUndo();
                 CreateMazeTiles();
                 CreateLaserPrefab();
                 AssetDatabase.SaveAssets();
@@ -64,7 +87,7 @@ namespace Resource.Scripts.Editor
                 LevelOrder.RegisterBuildScenes();
                 LevelOrder.UpdateLevelSelection();
                 AssetDatabase.SaveAssets();
-                Debug.Log("[MazeSceneBuilder] 已生成 Maze_01～Maze_08，并按二十关顺序更新构建和选关列表。");
+                Debug.Log($"[MazeSceneBuilder] 已生成 {Maps.Length} 个迷宫，并按 {LevelOrder.Scenes.Length} 关顺序更新构建和选关列表。");
             }
             finally
             {
@@ -97,6 +120,8 @@ namespace Resource.Scripts.Editor
             }
             grade.Configure(playerMaterial);
             var world = roots.SelectMany(r => r.GetComponentsInChildren<WorldRotator>(true)).Single();
+            world.rotateSpeed = world.maxAngularSpeed = 150f;
+            world.maxStepAngle = 3f;
             var door = roots.SelectMany(r => r.GetComponentsInChildren<GoalDoor>(true)).Single();
             var camera = roots.SelectMany(r => r.GetComponentsInChildren<Camera>(true)).Single(c => c.CompareTag("MainCamera"));
 
@@ -149,7 +174,8 @@ namespace Resource.Scripts.Editor
             bool OriginalSolid(int x, int y)
             {
                 if (x < 0 || y < 0 || x >= width || y >= height) return true;
-                return map[y / TilesPerCell][x / TilesPerCell] == '#';
+                char cell = map[y / TilesPerCell][x / TilesPerCell];
+                return cell == '#' || cell == 'i';
             }
             bool Solid(int x, int y) => OriginalSolid(x, y)
                 || (map[y / TilesPerCell][x / TilesPerCell] == 'X' && SpikeTile(map, x, y) == null);
@@ -203,8 +229,28 @@ namespace Resource.Scripts.Editor
                     else if (index == 5 && column == 6 && row == 6) emitter.SetCycle(1f, 1.8f);
                     else if (index == 6) emitter.SetCycle(1f, 1.6f);
                     else if (index == 7 && column == 7 && row == 2) emitter.SetCycle(2.3f, 1.6f);
+                    else if (index == 9 && column == 6 && row == 6) emitter.SetCycle(1.2f, 1.3f);
+                    else if (index == 11 && column == 4 && row == 7) emitter.SetCycle(2f, 2.8f);
+                    else if (index == 12 && column == 4 && row == 1) emitter.SetCycle(1.4f, 2f);
+                    else if (index == 12 && column == 5 && row == 3) emitter.SetCycle(1.6f, 1.8f);
+                    else if (index == 12 && column == 5 && row == 5) emitter.SetCycle(1.2f, 2f);
                     PrefabUtility.RecordPrefabInstancePropertyModifications(emitter);
                     emitters.Add(emitter);
+                }
+            }
+
+            if (index >= 14)
+            {
+                var mechanisms = grid.gameObject.AddComponent<MazeMechanisms>();
+                mechanisms.map = map; mechanisms.world = world; mechanisms.player = player; mechanisms.feedback = feedback;
+                mechanisms.sprites = AssetDatabase.FindAssets("t:Sprite", new[] { ArtRoot + "/Sprites" })
+                    .Select(AssetDatabase.GUIDToAssetPath).Select(AssetDatabase.LoadAssetAtPath<Sprite>).ToArray();
+                mechanisms.emitters = emitters.ToArray(); mechanisms.BuildVisuals();
+                if (index == 14)
+                {
+                    var pendulum = grid.gameObject.AddComponent<SpikeBallPendulum>();
+                    pendulum.map = map; pendulum.world = world; pendulum.player = player; pendulum.feedback = feedback;
+                    pendulum.BuildVisuals();
                 }
             }
 
@@ -450,7 +496,7 @@ namespace Resource.Scripts.Editor
             int x = column + dx, y = row + dy;
             if (x < 0 || y < 0 || y >= map.Length || x >= map[y].Length) return 0;
             char cell = map[y][x];
-            if (cell == '#' || cell == 'X') return 0;
+            if (cell == '#' || cell == 'X' || cell == 'i') return 0;
             char outward = dx < 0 ? '<' : dx > 0 ? '>' : dy < 0 ? '^' : 'v';
             return cell == outward ? 2 : 1;
         }

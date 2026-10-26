@@ -3,8 +3,9 @@ using UnityEngine;
 
 namespace Resource.Scripts.Gyro
 {
-    public enum GyroControlMode { Speed, Angle }
+    public enum GyroControlMode { Speed, Angle, Wheel }
     public enum GyroInputSource { Gyro, RightStick, Combined }
+    public enum GyroControllerProfile { Auto, JoyCon2 }
     public enum GyroRecenterButton { LeftStick, RightStick, Touchpad, South, North, LeftShoulder, RightShoulder }
 
     [Serializable]
@@ -13,6 +14,7 @@ namespace Resource.Scripts.Gyro
         public int version = 1;
         public GyroControlMode mode = GyroControlMode.Speed;
         public GyroInputSource inputSource = GyroInputSource.Gyro;
+        public GyroControllerProfile controllerProfile = GyroControllerProfile.Auto;
         public float sensitivity = 5.25f;
         public float minInputSpeed = 0f;
         public float maxInputSpeed = 180f;
@@ -30,6 +32,12 @@ namespace Resource.Scripts.Gyro
         public float angleMultiplier = 1f;
         public float angleSmoothTime = 0.05f;
         public float angleDeadzone = 1f;
+        public string wheelDeviceMatch = "";
+        public string wheelAxisPath = "";
+        public float wheelLeft = -1f;
+        public float wheelCenter = 0f;
+        public float wheelRight = 1f;
+        public bool wheelCalibrated;
         public GyroRecenterButton recenterButton = GyroRecenterButton.LeftStick;
         public float uiScale = 2f;
         public float consoleScreenFraction = 0.7f;
@@ -47,6 +55,7 @@ namespace Resource.Scripts.Gyro
         {
             if (!Enum.IsDefined(typeof(GyroControlMode), mode)) mode = GyroControlMode.Speed;
             if (!Enum.IsDefined(typeof(GyroInputSource), inputSource)) inputSource = GyroInputSource.Gyro;
+            if (!Enum.IsDefined(typeof(GyroControllerProfile), controllerProfile)) controllerProfile = GyroControllerProfile.Auto;
             if (!Enum.IsDefined(typeof(GyroRecenterButton), recenterButton)) recenterButton = GyroRecenterButton.LeftStick;
             sensitivity = Clamp(sensitivity, 0f, 20f, 5.25f);
             minInputSpeed = Clamp(minInputSpeed, 0f, 1999f, 0f);
@@ -63,6 +72,10 @@ namespace Resource.Scripts.Gyro
             angleMultiplier = Clamp(angleMultiplier, 0.5f, 4f, 1f);
             angleSmoothTime = Clamp(angleSmoothTime, 0f, 1f, 0.05f);
             angleDeadzone = Clamp(angleDeadzone, 0f, 20f, 1f);
+            if (!GyroSample.Finite(wheelLeft)) { wheelLeft = -1f; wheelCalibrated = false; }
+            if (!GyroSample.Finite(wheelCenter)) { wheelCenter = 0f; wheelCalibrated = false; }
+            if (!GyroSample.Finite(wheelRight)) { wheelRight = 1f; wheelCalibrated = false; }
+            if (!PhysicalWheelMapper.IsValid(wheelLeft, wheelCenter, wheelRight)) wheelCalibrated = false;
             uiScale = Clamp(uiScale, 0.75f, 3f, 2f);
             consoleScreenFraction = Clamp(consoleScreenFraction, 0.4f, 1f, 0.7f);
             float windowWidth = Clamp(consoleWindowNormalized.width, 0.001f, 1f, 0.7f);

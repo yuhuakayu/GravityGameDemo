@@ -62,6 +62,7 @@ namespace Resource.Scripts
             _loc = LocalizationManager.Instance;
             BuildUI();
             _loc.OnLanguageChanged += RefreshLocalizedTexts;
+            InputPrompts.Changed += RefreshLocalizedTexts;
 
             _camFollow = _cam.GetComponent<FollowTarget2D>();
             if (_camFollow != null) _camFollow.enabled = false;
@@ -89,11 +90,12 @@ namespace Resource.Scripts
         void OnDestroy()
         {
             if (_loc != null) _loc.OnLanguageChanged -= RefreshLocalizedTexts;
+            InputPrompts.Changed -= RefreshLocalizedTexts;
         }
 
         private void RefreshLocalizedTexts()
         {
-            if (_startLabel != null) _startLabel.text = _loc.Get("menu.start");
+            if (_startLabel != null) _startLabel.text = _loc.Get("input.start");
         }
 
         void Update()
@@ -101,7 +103,7 @@ namespace Resource.Scripts
             if (GyroRuntime.ConsoleCapturesInput) return;
             if (!_isPreviewing || _cam == null) return;
 
-            var gamepad = Gamepad.current;
+            var gamepad = InputPrompts.ActiveGamepad;
             if (gamepad != null)
             {
                 ApplyPan(gamepad.leftStick.ReadValue());
@@ -266,7 +268,7 @@ namespace Resource.Scripts
             }
 
             // 开始游戏按钮（右下角）
-            var startBtn = CreateButton(canvasGO.transform, _loc.Get("menu.start"), new Vector2(300f, 54f));
+            var startBtn = CreateButton(canvasGO.transform, _loc.Get("input.start"), new Vector2(300f, 54f));
             _startLabel = startBtn.GetComponentInChildren<TextMeshProUGUI>();
             var startRT = startBtn.GetComponent<RectTransform>();
             startRT.anchorMin = startRT.anchorMax = new Vector2(1f, 0f);

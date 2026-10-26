@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Resource.Scripts.SmallLevels
 {
     [DefaultExecutionOrder(-150)]
-    public sealed class SkyMechanisms : SmallLevelRuntime
+    public sealed partial class SkyMechanisms : SmallLevelRuntime
     {
         [SerializeField] private Rigidbody2D[] seeBodies = Array.Empty<Rigidbody2D>(), cloudBodies = Array.Empty<Rigidbody2D>(), platBodies = Array.Empty<Rigidbody2D>();
         [SerializeField] private SpriteRenderer[] seeVisuals = Array.Empty<SpriteRenderer>(), seeHubs = Array.Empty<SpriteRenderer>();
@@ -53,6 +53,7 @@ namespace Resource.Scripts.SmallLevels
         private Platform[] platforms;
         private BoxCollider2D[] seeColliders, cloudColliders, platColliders;
         private Material particleMaterial;
+        private readonly List<Sprite> dangerSprites = new List<Sprite>();
 
         public override void BuildVisuals()
         {
@@ -97,7 +98,7 @@ namespace Resource.Scripts.SmallLevels
                 var seed = data.clouds[i];
                 Vector2 point = new Vector2(seed.cx, seed.cy);
                 cloudBodies[i] = MakeBody(bodyRoot, "CloudBody_" + i, point, new Vector2(seed.hx, seed.hy));
-                cloudVisuals[i] = MakeVisual(visualRoot, "Cloud_" + i, "cloud_platform_" + i, point, 22);
+                cloudVisuals[i] = MakeVisual(visualRoot, "Cloud_" + i, seed.hy > seed.hx ? "cloud_platform_0" : "cloud_platform_1", point, 22);
             }
             platBodies = new Rigidbody2D[data.plats.Length];
             platVisuals = new SpriteRenderer[data.plats.Length];
@@ -121,6 +122,7 @@ namespace Resource.Scripts.SmallLevels
                     balloonRopes[index].SetPosition(1, ToWorld(balloon));
                 }
             }
+            BuildSecondRoundVisuals(visualRoot);
         }
 
         private SpriteRenderer MakeVisual(Transform parent, string name, string sprite, Vector2 point, int order)
@@ -150,7 +152,8 @@ namespace Resource.Scripts.SmallLevels
         protected override void Awake()
         {
             base.Awake();
-            if (seeBodies.Length != data.sees.Length || cloudBodies.Length != data.clouds.Length || platBodies.Length != data.plats.Length || mineVisuals.Length != data.mines.Length)
+            if (seeBodies.Length != data.sees.Length || cloudBodies.Length != data.clouds.Length || platBodies.Length != data.plats.Length || mineVisuals.Length != data.mines.Length ||
+                windColumns.Length != data.winds.Length || grabBalloonVisuals.Length != data.seeds.Length || portalVisuals.Length != data.portals.Length * 2)
                 BuildVisuals();
             sees = new See[data.sees.Length];
             seeColliders = new BoxCollider2D[sees.Length];
@@ -174,6 +177,8 @@ namespace Resource.Scripts.SmallLevels
                 platColliders[i] = platBodies[i].GetComponent<BoxCollider2D>();
             }
             particleMaterial = new Material(Shader.Find("Sprites/Default"));
+            InitializeSecondRound();
+            BuildDangerMarks();
         }
 
         private void FixedUpdate()
@@ -186,7 +191,11 @@ namespace Resource.Scripts.SmallLevels
             StepClouds(dt);
             StepPlatforms(dt);
             StepWind(dt);
-            if (Alive) CheckHazards();
+            if (Alive)
+            {
+                StepSecondRound(dt);
+                CheckHazards();
+            }
         }
 
         private void SampleContacts()
@@ -468,6 +477,7 @@ namespace Resource.Scripts.SmallLevels
             {
                 if (mines[i].exploded) continue;
                 Mine mine = mines[i];
+                mineVisuals[i].color = DangerVisual.Red();
                 PlaceVisual(mineVisuals[i], mine.previous, mine.position, clock * 0.6f);
                 mineRopes[i].SetPosition(0, ToWorld(new Vector2(data.mines[i].x, data.mines[i].y)));
                 mineRopes[i].SetPosition(1, mineVisuals[i].transform.position);
@@ -509,6 +519,7 @@ namespace Resource.Scripts.SmallLevels
                 wind.line.transform.localPosition = new Vector3(point.x, -point.y);
                 wind.line.startColor = wind.line.endColor = new Color(1f, 1f, 1f, 0.5f * Mathf.Clamp01(wind.life / 0.4f));
             }
+            UpdateSecondRoundVisuals();
         }
 
         private void EmitBurst(Vector2 point, int count, Color color, float speed, float life, float size)
@@ -537,7 +548,9 @@ namespace Resource.Scripts.SmallLevels
 
         private void OnDestroy()
         {
+            foreach (Sprite sprite in dangerSprites) if (sprite != null) Destroy(sprite);
             if (particleMaterial != null) Destroy(particleMaterial);
+            if (Application.isPlaying && secondRoundLineMaterial != null) Destroy(secondRoundLineMaterial);
         }
     }
 }

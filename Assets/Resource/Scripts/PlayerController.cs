@@ -44,6 +44,12 @@ namespace Resource.Scripts
         private bool _riding;
         private readonly HashSet<Collider2D> _landingContacts = new HashSet<Collider2D>();
         private bool _landingSoundArmed;
+        private float _landingAirborneTime;
+        private float _nextLandingFeedbackTime;
+        private const float LandingAirborneDelay = 0.18f;
+        private const float MinimumLandingSpeed = 2f;
+        private const float LandingFeedbackInterval = 0.5f;
+        public int LandingFeedbackVersion { get; private set; }
         private Coroutine _afterPhysics;
 
         public float SimulatedGravityScale
@@ -120,6 +126,8 @@ namespace Resource.Scripts
         public void BeginGameplay()
         {
             InitializeMotion();
+            _landingAirborneTime = 0f;
+            _landingSoundArmed = false;
             if (autoMoveRotationSource == null)
                 foreach (var world in FindObjectsByType<WorldRotator>(FindObjectsSortMode.None))
                     if (world.gameObject.scene == gameObject.scene) { autoMoveRotationSource = world; break; }
@@ -134,20 +142,18 @@ namespace Resource.Scripts
         {
             _gameplayStarted = false;
             _landingSoundArmed = false;
+            _landingAirborneTime = 0f;
             intendedVelocity = Vector2.zero;
             _jumpQueued = false;
             _physicsStepPending = false;
             if (rb != null) rb.linearVelocity = Vector2.zero;
         }
 
-        [Header("死亡：红光闪烁")]
-        [Tooltip("红光淡入淡出的总时长（秒）")]
-        public float deathFlashDuration = 0.5f;
-        [Tooltip("闪烁的发光颜色")]
+        [Header("死亡：人物变红")]
+        [Tooltip("死亡动画前人物短暂变红的时长（秒）")]
+        public float deathFlashDuration = 0.15f;
+        [Tooltip("死亡后人物的颜色")]
         public Color deathFlashColor = Color.red;
-        [Tooltip("闪烁最亮的时候有多亮，对应 AllIn1SpriteShader 的 _Glow（0~100）")]
-        public float deathFlashPeakGlow = 40f;
-        private Material _deathFlashMaterial;
 
         private Rigidbody2D rb;
         private bool isGrounded = false;
@@ -278,6 +284,12 @@ namespace Resource.Scripts
         public void BeginPhysicsStep(float deltaTime)
         {
             InitializeMotion();
+            if (!_mazeMotionResolved)
+            {
+                _mazeMotionResolved = true;
+                if (autoMoveRotationSource != null)
+                    _mazeMechanisms = autoMoveRotationSource.GetComponentInChildren<SmallLevels.MazeMechanisms>();
+            }
             SynchronizeAntiPush();
             if (!IsGameplayActive || rb.bodyType != RigidbodyType2D.Dynamic || !rb.simulated || deltaTime <= 0f)
             {
@@ -298,9 +310,14 @@ namespace Resource.Scripts
             else
                 HandleMovement();
             _submittedVelocity = _selfVelocityActive ? intendedVelocity : rb.linearVelocity;
-            // 防挤压修正可能暂时断开物理接触；脚底仍有支撑时不算新的下落。
-            if (!isGrounded && _landingContacts.Count == 0 && _submittedVelocity.y < -0.01f)
-                _landingSoundArmed = true;
+            // 旋转和防挤压修正中的短暂接触断开不算一次新的落地。
+            if (!isGrounded && _landingContacts.Count == 0)
+            {
+                _landingAirborneTime += deltaTime;
+                if (_landingAirborneTime >= LandingAirborneDelay && _submittedVelocity.y <= -MinimumLandingSpeed)
+                    _landingSoundArmed = true;
+            }
+            else _landingAirborneTime = 0f;
             if (_selfVelocityActive) _crushGuard.CaptureBeforePhysics(deltaTime);
             _physicsStepPending = true;
             if (autoMoveMode) CheckAutoMoveFootContact();
@@ -308,6 +325,7 @@ namespace Resource.Scripts
 
         private void BuildIntendedVelocity(float dt)
         {
+            Vector2 previousVelocity = intendedVelocity;
             float input = IsGoalLocked ? 0f : (autoMoveMode ? _autoMoveDir.x : ReadMoveInput());
             if (autoMoveMode && AutoMovePausedForRotation) input = 0f;
             if ((_autoMoveDir.x > 0f && isTouchingWallRight || _autoMoveDir.x < 0f && isTouchingWallLeft) && autoMoveMode)
@@ -320,6 +338,8 @@ namespace Resource.Scripts
             intendedVelocity += Physics2D.gravity * (_ownedGravityScale * dt);
             if (maxFallSpeed > 0f && intendedVelocity.y < -maxFallSpeed)
                 intendedVelocity.y = -maxFallSpeed;
+            if (_mazeMechanisms != null)
+                intendedVelocity = _mazeMechanisms.ApplyIceVelocity(previousVelocity, intendedVelocity, dt);
             UpdateFootsteps(input);
             UpdateRumble(input);
         }
@@ -392,6 +412,20 @@ namespace Resource.Scripts
             rb.linearVelocity = velocity;
         }
 
+        private SmallLevels.MazeMechanisms _mazeMechanisms;
+        private bool _mazeMotionResolved;
+        private float _jellyAirUntil;
+
+        public void BounceFromJelly(float upwardSpeed)
+        {
+            SetIntendedVelocity(new Vector2(intendedVelocity.x, upwardSpeed));
+            _jellyAirUntil = Time.time + .08f;
+            isGrounded = false;
+            _landingContacts.Clear();
+            _landingSoundArmed = false;
+            _landingAirborneTime = 0f;
+        }
+
         public void SetRiding(bool riding)
         {
             InitializeMotion();
@@ -400,6 +434,7 @@ namespace Resource.Scripts
             _physicsStepPending = false;
             _jumpQueued = false;
             _landingSoundArmed = false;
+            _landingAirborneTime = 0f;
             intendedVelocity = Vector2.zero;
             rb.linearVelocity = Vector2.zero;
             rb.bodyType = riding ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic;
@@ -471,6 +506,7 @@ namespace Resource.Scripts
 
         void CheckGround()
         {
+            if (Time.time < _jellyAirUntil) { isGrounded = false; return; }
             if (groundCheck != null && groundLayer != 0)
             {
                 isGrounded = Physics2D.OverlapCircle(
@@ -632,6 +668,7 @@ namespace Resource.Scripts
 
         void OnCollisionEnter2D(Collision2D col)
         {
+            if (SmallLevels.MazeJellyBlock.TryBounce(this, col, Mathf.Max(0f, -_submittedVelocity.y))) return;
             bool hasGroundContact = UpdateLandingAudio(col);
 
             // 自动移动模式的玩法接地仍只使用脚底检测。
@@ -639,7 +676,12 @@ namespace Resource.Scripts
             if (hasGroundContact) isGrounded = true;
         }
 
-        void OnCollisionStay2D(Collision2D col) => UpdateLandingAudio(col);
+        void OnCollisionStay2D(Collision2D col)
+        {
+            if (Time.time < _jellyAirUntil) return;
+            if (SmallLevels.MazeJellyBlock.TryBounce(this, col, Mathf.Max(0f, -_submittedVelocity.y))) return;
+            if (UpdateLandingAudio(col) && !autoMoveMode) isGrounded = true;
+        }
 
         private bool UpdateLandingAudio(Collision2D col)
         {
@@ -655,13 +697,19 @@ namespace Resource.Scripts
             }
 
             _landingContacts.Add(col.collider);
+            _landingAirborneTime = 0f;
             if (_landingSoundArmed && IsGameplayActive)
             {
                 _landingSoundArmed = false;
-                float landingSpeed = Mathf.Max(0f, -_submittedVelocity.y);
-                float impact01 = Mathf.Clamp01(Mathf.Abs(col.relativeVelocity.y) / maxLandImpactSpeed);
-                SfxManager.Instance.PlayLand(landingSpeed, impact01);
-                EmitDust(3);
+                if (Time.time >= _nextLandingFeedbackTime)
+                {
+                    _nextLandingFeedbackTime = Time.time + LandingFeedbackInterval;
+                    ++LandingFeedbackVersion;
+                    float landingSpeed = Mathf.Max(0f, -_submittedVelocity.y);
+                    float impact01 = Mathf.Clamp01(Mathf.Abs(col.relativeVelocity.y) / maxLandImpactSpeed);
+                    SfxManager.Instance.PlayLand(landingSpeed, impact01);
+                    EmitDust(3);
+                }
             }
 
             return true;
@@ -671,7 +719,8 @@ namespace Resource.Scripts
         {
             _landingContacts.Remove(col.collider);
             if (autoMoveMode) return;
-            isGrounded = false;
+            isGrounded = _landingContacts.Count > 0;
+            if (!isGrounded) CheckGround();
         }
 
         void OnTriggerEnter2D(Collider2D other)
@@ -738,7 +787,7 @@ namespace Resource.Scripts
         }
 
         /// <summary>
-        /// 统一的死亡入口：锁输入+冻结物理 → 播放死亡音效 → 红光闪烁淡入淡出 → 走现成的场景转场重开本关。
+        /// 统一的死亡入口：冻结物理和当前姿势 → 短暂变红 → 恢复原色并播放死亡动画 → 转场重开本关。
         /// 以后别的死亡原因（比如掉出边界）也直接调这个方法，不用另外写一套流程。
         /// </summary>
         public void Die()
@@ -754,43 +803,32 @@ namespace Resource.Scripts
             if (rb == null) rb = GetComponent<Rigidbody2D>(); // 极端情况下 Start() 还没跑到就被外部触发（比如浏览模式切游戏那一帧），做个兜底
             rb.linearVelocity = Vector2.zero;
             rb.bodyType = RigidbodyType2D.Kinematic; // 光锁输入不够，重力还在算，会让玩家在闪光的时候继续往下掉，干脆把物理也冻住（反正马上要重开关卡，不用管恢复）
+            var movementAnimation = GetComponent<PlayerMovementAnimation>();
+            if (movementAnimation != null) movementAnimation.FreezeForDeath();
             SfxManager.Instance.PlayPlayerDeath();
             StartCoroutine(DeathSequence());
         }
 
-        /// <summary>红光淡入淡出，结束后交给 SceneTransition 重开本关——本关的 LevelIntroUI 会在场景重载后
+        /// <summary>人物短暂变红后恢复原色，播完死亡动画后交给 SceneTransition 重开本关——本关的 LevelIntroUI 会在场景重载后
         /// 自己重新冻结玩法、弹出浏览界面，摄像机大小也会跟着场景重载恢复默认值，这里不用额外处理。</summary>
         private IEnumerator DeathSequence()
         {
+            if (_spriteRenderer == null)
+                _spriteRenderer = transform.Find("PlayerIM")?.GetComponent<SpriteRenderer>() ?? GetComponentInChildren<SpriteRenderer>();
+            Color originalColor = _spriteRenderer != null ? _spriteRenderer.color : Color.white;
             if (_spriteRenderer != null)
-                _spriteRenderer.material = GetOrCreateDeathFlashMaterial();
+                _spriteRenderer.color = deathFlashColor;
 
-            float t = 0f;
-            while (t < deathFlashDuration)
-            {
-                t += Time.deltaTime;
-                float glow = Mathf.Sin(Mathf.Clamp01(t / deathFlashDuration) * Mathf.PI) * deathFlashPeakGlow;
-                if (_deathFlashMaterial != null) _deathFlashMaterial.SetFloat("_Glow", glow);
-                yield return null;
-            }
+            yield return new WaitForSecondsRealtime(deathFlashDuration);
+
+            if (_spriteRenderer != null)
+                _spriteRenderer.color = originalColor;
+            var movementAnimation = GetComponent<PlayerMovementAnimation>();
+            float animationDuration = movementAnimation != null ? movementAnimation.PlayDeath() : 0f;
+            if (animationDuration > 0f)
+                yield return new WaitForSecondsRealtime(animationDuration);
 
             SceneTransition.Instance.LoadScene(SceneManager.GetActiveScene().name);
-        }
-
-        /// <summary>懒加载死亡红光材质。只在死亡那一刻才赋给 SpriteRenderer——这个 shader 没有
-        /// URP 2D 需要的 Universal2D 光照通道，如果一直挂着，玩家身上就会从此收不到 Light2D
-        /// （火把光、玩家自己的点光源、场景整体氛围光）的照明，是个很容易被忽略的视觉倒退。
-        /// 死亡后马上就要重开场景了，不需要再换回原来的材质。</summary>
-        private Material GetOrCreateDeathFlashMaterial()
-        {
-            if (_deathFlashMaterial != null) return _deathFlashMaterial;
-
-            var shader = Shader.Find("AllIn1SpriteShader/AllIn1SpriteShader");
-            _deathFlashMaterial = new Material(shader);
-            _deathFlashMaterial.EnableKeyword("GLOW_ON");
-            _deathFlashMaterial.SetColor("_GlowColor", deathFlashColor);
-            _deathFlashMaterial.SetFloat("_Glow", 0f);
-            return _deathFlashMaterial;
         }
 
         // ── 扬尘（项目里没有现成的沙尘美术资源，用运行时生成的 ParticleSystem）──
@@ -926,6 +964,7 @@ namespace Resource.Scripts
         {
             _landingContacts.Clear();
             _landingSoundArmed = false;
+            _landingAirborneTime = 0f;
             if (_afterPhysics != null) StopCoroutine(_afterPhysics);
             _afterPhysics = null;
             _physicsStepPending = false;

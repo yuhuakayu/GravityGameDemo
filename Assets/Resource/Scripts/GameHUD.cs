@@ -47,6 +47,7 @@ namespace Resource.Scripts
         private LocalizationManager _loc;
         private readonly List<(TextMeshProUGUI text, string key)> _localizedTexts = new List<(TextMeshProUGUI, string)>();
         private TextMeshProUGUI _settingsLanguageLabel;
+        private TextMeshProUGUI _pauseKeyLabel;
 
         public bool IsPaused => _isPaused;
         public bool IsSettingsOpen => _isSettingsOpen;
@@ -60,11 +61,13 @@ namespace Resource.Scripts
             BuildSettingsPanel();
             _loc = LocalizationManager.Instance;
             _loc.OnLanguageChanged += RefreshLocalizedTexts;
+            InputPrompts.Changed += RefreshLocalizedTexts;
         }
 
         void OnDestroy()
         {
             if (_loc != null) _loc.OnLanguageChanged -= RefreshLocalizedTexts;
+            InputPrompts.Changed -= RefreshLocalizedTexts;
         }
 
         /// <summary>用 Localization 表里的 key 建文字，并且登记下来，语言切换时统一刷新</summary>
@@ -81,6 +84,7 @@ namespace Resource.Scripts
                 if (text != null) text.text = LocalizationManager.Instance.Get(key);
             if (_settingsLanguageLabel != null)
                 _settingsLanguageLabel.text = LocalizationManager.Instance.LanguageName(LocalizationManager.Instance.CurrentLanguage);
+            if (_pauseKeyLabel != null) _pauseKeyLabel.text = "[" + InputPrompts.Pause + "]";
         }
 
         void Update()
@@ -98,7 +102,7 @@ namespace Resource.Scripts
             // 手柄的 Home/Guide 键在绝大多数平台上是系统保留的（打开 Xbox/PS 自带的系统菜单），
             // 游戏本身收不到；这里用行业惯例的 Start/Options 键代替，效果等价。
             // 按一下打开的是第一层菜单（继续/设置/重新开始/退出游戏），要进设置得在里面再选一次。
-            var gamepad = Gamepad.current;
+            var gamepad = InputPrompts.ActiveGamepad;
             if (gamepad != null && gamepad.startButton.wasPressedThisFrame)
                 TogglePause();
 
@@ -147,7 +151,7 @@ namespace Resource.Scripts
         {
             if (_pauseButtons.Count == 0) return;
 
-            var gamepad = Gamepad.current;
+            var gamepad = InputPrompts.ActiveGamepad;
 
             bool closePressed = gamepad != null && gamepad.buttonEast.wasPressedThisFrame;
             if (closePressed) { ClosePause(); return; }
@@ -223,7 +227,7 @@ namespace Resource.Scripts
 
         private void HandleSettingsInput()
         {
-            var gamepad = Gamepad.current;
+            var gamepad = InputPrompts.ActiveGamepad;
 
             bool closePressed = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
                 || (gamepad != null && (gamepad.buttonEast.wasPressedThisFrame || gamepad.startButton.wasPressedThisFrame));
@@ -352,6 +356,13 @@ namespace Resource.Scripts
             settingsBtn.onClick.AddListener(TogglePause);
             _localizedTexts.Add((settingsBtn.GetComponentInChildren<TextMeshProUGUI>(), "settings.title"));
             RemoveDecoration(settingsBtn.transform, "GearIcon");
+            var prompt = CreateSettingsText(canvas.transform, "[" + InputPrompts.Pause + "]", Vector2.one, Vector2.one,
+                TextAnchor.MiddleCenter, 18, "PauseKey");
+            _pauseKeyLabel = prompt.GetComponent<TextMeshProUGUI>();
+            var promptRT = prompt.GetComponent<RectTransform>();
+            promptRT.pivot = new Vector2(1f, .5f);
+            promptRT.sizeDelta = new Vector2(96f, 30f);
+            promptRT.anchoredPosition = new Vector2(-186f, -47f);
         }
 
         // ── 暂停菜单 ─────────────────────────────────────────────
@@ -398,6 +409,12 @@ namespace Resource.Scripts
             _pauseButtons.Add(settingsBtn);
             _pauseButtons.Add(restartBtn);
             _pauseButtons.Add(exitBtn);
+            var controls = CreateLocalizedText(panel, "input.menu", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
+                TextAnchor.MiddleCenter, 16, "Controls");
+            var controlsRT = controls.GetComponent<RectTransform>();
+            controlsRT.pivot = new Vector2(.5f, 0f);
+            controlsRT.sizeDelta = new Vector2(400f, 24f);
+            controlsRT.anchoredPosition = new Vector2(0f, 12f);
             canvas.gameObject.SetActive(false);
         }
 
@@ -627,13 +644,13 @@ namespace Resource.Scripts
         {
             var row = CreateSettingsRow(parent, "Row_Close", 54f);
             row.GetComponent<Image>().enabled = false;
-            var close = CreateButton(row, LocalizationManager.Instance.Get("settings.close"), new Vector2(300f, 54f), "Button_Close");
+            var close = CreateButton(row, LocalizationManager.Instance.Get("input.close"), new Vector2(300f, 54f), "Button_Close");
             var rt = close.GetComponent<RectTransform>();
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = Vector2.zero;
             close.onClick.AddListener(CloseSettings);
             _settingsRows[_settingsRows.Count - 1] = close;
-            _localizedTexts.Add((close.GetComponentInChildren<TextMeshProUGUI>(), "settings.close"));
+            _localizedTexts.Add((close.GetComponentInChildren<TextMeshProUGUI>(), "input.close"));
         }
 
         private Button CreateArrow(Transform parent, bool right)

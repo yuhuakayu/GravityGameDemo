@@ -134,6 +134,145 @@ namespace Resource.Tests.Gyro
         }
 
         [Test]
+        public void JoyConInitialCalibration_StationaryLargeBiasRequiresThreeSeconds_DefaultStillRejectsIt()
+        {
+            const float delta = 0.015f;
+            var bias = new Vector3(20.2f, 13.1f, -1.37f);
+            var joyCon = new GyroCalibration(true);
+            var standard = new GyroCalibration();
+            joyCon.BeginManualCalibration();
+            standard.BeginManualCalibration();
+            float calibratedAt = 0f;
+            for (int i = 1; i <= 202; ++i)
+            {
+                float noise = i % 2 == 0 ? 0.01f : -0.01f;
+                var sample = new GyroSample(delta, bias + new Vector3(noise, -noise, noise * 0.5f),
+                    Vector3.up, Vector3.down, i * (double)delta);
+                joyCon.Process(sample);
+                standard.Process(sample);
+                if (i == 199) Assert.That(joyCon.IsCalibrated, Is.False, "Manual calibration must collect three seconds.");
+                if (joyCon.IsCalibrated && calibratedAt == 0f) calibratedAt = i * delta;
+            }
+
+            Assert.That(joyCon.IsCalibrated, Is.True);
+            Assert.That(joyCon.IsManualCalibration, Is.False);
+            Assert.That(calibratedAt, Is.InRange(2.999f, 3.031f));
+            Assert.That(Vector3.Distance(joyCon.Bias, bias), Is.LessThan(0.002f));
+            Assert.That(standard.IsCalibrated, Is.False, "The default PS5 calibration must retain its speed threshold.");
+            Assert.That(standard.Bias, Is.EqualTo(Vector3.zero));
+        }
+
+        [Test]
+        public void JoyConInitialCalibration_ChangingAccelerationDirectionResetsStationaryWindow()
+        {
+            const float delta = 0.015f;
+            var calibration = new GyroCalibration(true);
+            calibration.BeginManualCalibration();
+            var rawGyro = new Vector3(20.2f, 13.1f, -1.37f) + Vector3.forward * 12f;
+            float maximumStill = 0f;
+            int resets = 0;
+            for (int i = 1; i <= 400; ++i)
+            {
+                // Constant gyro has zero variance; the changing gravity must prevent a false bias.
+                Vector3 gravity = GravityAt(12f * i * delta);
+                float previousStill = calibration.StillSeconds;
+                calibration.Process(new GyroSample(delta, rawGyro, -gravity, gravity, i * (double)delta));
+                if (calibration.StillSeconds < previousStill) ++resets;
+                maximumStill = Mathf.Max(maximumStill, calibration.StillSeconds);
+            }
+
+            Assert.That(resets, Is.GreaterThan(0));
+            Assert.That(maximumStill, Is.LessThan(0.12f));
+            Assert.That(calibration.IsCalibrated, Is.False);
+            Assert.That(calibration.IsManualCalibration, Is.True);
+            Assert.That(calibration.Bias, Is.EqualTo(Vector3.zero));
+        }
+
+        [Test]
+        public void JoyConInitialCalibration_AfterCalibrationKeepsRealRotationInsteadOfLearningItAsBias()
+        {
+            const float delta = 0.015f;
+            var rawBias = new Vector3(20.2f, 13.1f, -1.37f);
+            var calibration = new GyroCalibration(true);
+            calibration.BeginManualCalibration();
+            for (int i = 1; i <= 202; ++i)
+                calibration.Process(new GyroSample(delta, rawBias, Vector3.up, Vector3.down, i * (double)delta));
+            Assert.That(calibration.IsCalibrated, Is.True);
+            Vector3 learnedBias = calibration.Bias;
+            Vector3 rotation = Vector3.up * 30f;
+            for (int phase = 0; phase < 2; ++phase)
+            {
+                if (phase == 1) calibration.BeginManualCalibration();
+                for (int i = 1; i <= 220; ++i)
+                {
+                    // Rotation about gravity keeps acceleration stable, so the speed gate is essential.
+                    Vector3 corrected = calibration.Process(new GyroSample(delta, rawBias + rotation,
+                        Vector3.up, Vector3.down, (202 + phase * 220 + i) * (double)delta));
+                    Assert.That(Vector3.Distance(corrected, rotation), Is.LessThan(0.001f));
+                }
+                Assert.That(calibration.IsCalibrated, Is.True);
+                Assert.That(calibration.Bias, Is.EqualTo(learnedBias));
+                Assert.That(calibration.StillSeconds, Is.Zero);
+            }
+        }
+
+        [TestCase(10f)]
+        [TestCase(-10f)]
+        [TestCase(60f)]
+        [TestCase(-60f)]
+        public void JoyConSpeed_TiltedYWheelKeepsDirectionAndSpeedThroughoutAFullTurn(float speed)
+        {
+            const float delta = 0.015f;
+            const float verticalComponent = 0.34f;
+            float radius = Mathf.Sqrt(1f - verticalComponent * verticalComponent);
+            var processor = new GyroProcessor(new GyroSettings { mode = GyroControlMode.Speed })
+            { UseJoyConWheelAxis = true };
+            processor.Calibration.SetInitialBias(Vector3.zero);
+            int steps = Mathf.CeilToInt(360f / (Mathf.Abs(speed) * delta));
+            for (int i = 0; i <= steps; ++i)
+            {
+                float angle = speed * i * delta;
+                float radians = angle * Mathf.Deg2Rad;
+                // One rigid rotation about local Y. The tilted wheel never enters |g.x| > 0.95,
+                // but a gravity-derived axis crosses zero and folds at each quarter turn.
+                Vector3 gravity = new Vector3(-radius * Mathf.Sin(radians),
+                    verticalComponent, radius * Mathf.Cos(radians));
+                double now = (i + 1) * (double)delta;
+                Assert.That(processor.ProcessSample(new GyroSample(delta,
+                    Vector3.up * speed, -gravity, gravity, now)), Is.True);
+                Assert.That(processor.GatedSpeed, Is.EqualTo(speed).Within(0.001f),
+                    $"Joy-Con wheel speed changed at hand angle {angle:F3} degrees.");
+                Assert.That(processor.IsShakeHolding, Is.False,
+                    $"Pure wheel rotation triggered shake rejection at {angle:F3} degrees.");
+                Assert.That(processor.EndFrame(now) * speed, Is.GreaterThan(0f));
+                Assert.That(processor.ConsumeStickIntegral() * speed, Is.GreaterThan(0.0));
+            }
+        }
+
+        [TestCase(0, TestName = "JoyConSpeed_PureXRotationDoesNotProduceWheelOutput")]
+        [TestCase(2, TestName = "JoyConSpeed_PureZRotationDoesNotProduceWheelOutput")]
+        public void JoyConSpeed_NonWheelAxesDoNotProduceOutput(int axisIndex)
+        {
+            const float delta = 0.015f;
+            const float speed = 60f;
+            Vector3 axis = axisIndex == 0 ? Vector3.right : Vector3.forward;
+            Vector3 initialGravity = new Vector3(0f, 0.34f, Mathf.Sqrt(1f - 0.34f * 0.34f));
+            var processor = new GyroProcessor(new GyroSettings { mode = GyroControlMode.Speed })
+            { UseJoyConWheelAxis = true };
+            processor.Calibration.SetInitialBias(Vector3.zero);
+            for (int i = 0; i <= 400; ++i)
+            {
+                Vector3 gravity = Quaternion.AngleAxis(-speed * i * delta, axis) * initialGravity;
+                double now = (i + 1) * (double)delta;
+                Assert.That(processor.ProcessSample(new GyroSample(delta,
+                    axis * speed, -gravity, gravity, now)), Is.True);
+                Assert.That(processor.LastSteering.AngularSpeed, Is.Zero);
+                Assert.That(processor.EndFrame(now), Is.Zero);
+                Assert.That(processor.ConsumeStickIntegral(), Is.Zero);
+            }
+        }
+
+        [Test]
         public void SingularCone_CrossingOutAndBackKeepsAxisAndRateContinuous()
         {
             var extractor = new SteeringExtractor();

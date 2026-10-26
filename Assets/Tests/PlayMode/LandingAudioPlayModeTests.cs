@@ -36,6 +36,7 @@ namespace GravityGame.Tests.PlayMode
                 oldEnabled = Get<bool>(sfx, "sfxEnabled");
                 Set(sfx, "sfxEnabled", true);
                 var body = player.GetComponent<Rigidbody2D>();
+                var animator = player.GetComponentInChildren<Animator>();
                 var wait = new WaitForFixedUpdate();
 
                 // Use the real tilemap, controller, collision callbacks and CrushGuard.
@@ -50,24 +51,47 @@ namespace GravityGame.Tests.PlayMode
                 }
                 Assert.That(standingSounds, Is.Zero, "Resting contact separation must not replay landing audio.");
 
-                for (int drop = 0; drop < 2; drop++)
+                int smallBounceSounds = 0;
+                bool smallBounceAnimatedLand = false;
+                for (int bounce = 0; bounce < 4; bounce++)
+                {
+                    body.position += Vector2.up * 0.1f;
+                    Call(player, "SetIntendedVelocity", Vector2.zero);
+                    Physics2D.SyncTransforms();
+                    for (int i = 0; i < 20; i++)
+                    {
+                        yield return wait;
+                        smallBounceSounds += CountSounds(sfx, ref previous);
+                        smallBounceAnimatedLand |= animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Land");
+                    }
+                }
+                Assert.That(smallBounceSounds, Is.Zero, "Small contact bounces must not replay landing feedback.");
+                Assert.That(smallBounceAnimatedLand, Is.False, "Small contact bounces must not restart the landing animation.");
+
+                for (int drop = 0; drop < 3; drop++)
                 {
                     body.position += Vector2.up * 2f;
                     Call(player, "SetIntendedVelocity", Vector2.zero);
                     Physics2D.SyncTransforms();
                     bool leftGround = false;
                     int landingSounds = 0;
+                    bool animatedLand = false;
                     for (int i = 0; i < 100; i++)
                     {
+                        // A slow approach lets the foot probe report ground before the collision.
+                        if (drop == 2 && !Property<bool>(player, "IsGrounded"))
+                            Call(player, "SetIntendedVelocity", Vector2.down * 2f);
                         yield return wait;
                         leftGround |= !Property<bool>(player, "IsGrounded");
                         landingSounds += CountSounds(sfx, ref previous);
+                        animatedLand |= animator.GetCurrentAnimatorStateInfo(0).IsName("Base Layer.Land");
                     }
                     Assert.That(leftGround, Is.True, "The regression check must include a real fall.");
                     Assert.That(Property<bool>(player, "IsGrounded"), Is.True);
                     Assert.That(landingSounds, Is.EqualTo(1), "Each physical fall/landing must play exactly once.");
+                    Assert.That(animatedLand, Is.True, "A real fall must retain the landing animation.");
                 }
-                Debug.Log("[LandingAudio] stationary 150 physics steps: 0 sounds; two real drops: 1 sound each.");
+                Debug.Log("[LandingAudio] stationary and four small bounces: 0 sounds; three real drops including a slow landing: 1 sound and Land animation each.");
             }
             finally
             {

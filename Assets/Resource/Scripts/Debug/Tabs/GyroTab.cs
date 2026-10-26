@@ -10,9 +10,12 @@ namespace Resource.Scripts.Debugging
         private const int HistoryCapacity = 8192;
         private const double HistorySeconds = 5.0;
         private const int GraphPointLimit = 300;
-        private static readonly string[] ModeLabels = { "模式 A · 速度", "模式 B · 角度" };
+        private static readonly string[] ModeLabels = { "模式 A · 速度", "模式 B · 角度", "模式 C · 方向盘" };
         private static readonly string[] SourceLabels = { "陀螺仪", "右摇杆", "两者叠加" };
+        private static readonly string[] ControllerProfileLabels = { "自动识别（Joy-Con / PS5）", "Joy-Con 2（DS4 Raw 桥接）" };
         private static readonly string[] RecenterLabels = { "L3", "R3", "触控板", "× / A", "△ / Y", "L1", "R1" };
+        private static readonly string[] JoyConRecenterLabels = { "摇杆按下", "摇杆按下", "触控板（无）", "B / A", "X", "SL", "R / SR" };
+        private static readonly string[] NintendoRecenterLabels = { "左摇杆按下", "右摇杆按下", "触控板", "A", "X", "L", "R" };
         private static readonly string[] RawLegendLabels = { "X", "Y", "Z" };
         private static readonly string[] FilterLegendLabels = { "方向盘 ωs", "被过滤分量" };
         private static readonly Color XColor = new Color(1f, 0.38f, 0.32f);
@@ -75,6 +78,19 @@ namespace Resource.Scripts.Debugging
             GUILayout.Space(6f);
             GUILayout.Label("控制模式");
             settings.mode = (GyroControlMode)GUILayout.Toolbar((int)settings.mode, ModeLabels, GUILayout.Height(28f));
+            if (settings.mode == GyroControlMode.Wheel && !_runtime.IsPlaybackActive)
+            {
+                DrawWheelControls(console.World);
+                return;
+            }
+            GUILayout.Label("手柄参数");
+            bool profileEnabled = GUI.enabled;
+            GUI.enabled = profileEnabled && !_runtime.IsPlaybackActive;
+            settings.controllerProfile = (GyroControllerProfile)GUILayout.Toolbar((int)settings.controllerProfile,
+                ControllerProfileLabels, GUILayout.Height(28f));
+            GUI.enabled = profileEnabled;
+            if (settings.controllerProfile == GyroControllerProfile.JoyCon2)
+                GUILayout.Label("需桥接工具提供 DS4 Raw 陀螺仪输出；速度模式使用固定 Y 轴。此选项不提供二代原生蓝牙连接。");
             GUILayout.Label("输入来源");
             bool inputEnabled = GUI.enabled;
             GUI.enabled = inputEnabled && !_runtime.IsPlaybackActive;
@@ -111,7 +127,7 @@ namespace Resource.Scripts.Debugging
             settings.angleDeadzone = ConsoleUi.Slider("角度死区", settings.angleDeadzone, 0f, 20f, "F2", "°");
             GUILayout.Label("回正按键");
             settings.recenterButton = (GyroRecenterButton)GUILayout.SelectionGrid((int)settings.recenterButton,
-                RecenterLabels, 4, GUILayout.Height(54f));
+                _runtime.Device != null && _runtime.Device.IsRightJoyCon ? JoyConRecenterLabels : InputPrompts.UsesNintendo ? NintendoRecenterLabels : RecenterLabels, 4, GUILayout.Height(54f));
             GUILayout.Label("回正保留世界当前朝向。角度连续累计，支持跨越 ±180°。");
             GUILayout.Space(8f);
             DrawCalibration();
@@ -162,6 +178,15 @@ namespace Resource.Scripts.Debugging
 
         private void DrawStatus(WorldRotator world)
         {
+            if (_runtime.Settings.mode == GyroControlMode.Wheel && !_runtime.IsPlaybackActive)
+            {
+                var wheel = _runtime.Wheel;
+                GUILayout.BeginVertical(GUI.skin.box);
+                GUILayout.Label("设备：" + (wheel != null ? wheel.DeviceName : "方向盘服务尚未就绪"));
+                GUILayout.Label(wheel != null ? wheel.Status : "等待初始化");
+                GUILayout.EndVertical();
+                return;
+            }
             GyroDevice device = _runtime.Device;
             bool connected = device != null && device.IsConnected;
             string model = device != null ? device.Model : "未连接";
@@ -170,7 +195,7 @@ namespace Resource.Scripts.Debugging
             string source = _runtime.Settings.inputSource == GyroInputSource.RightStick ? "右摇杆" :
                 _runtime.Settings.inputSource == GyroInputSource.Combined ?
                     (_runtime.HasFreshGyro ? "陀螺仪 + 右摇杆" : "两者叠加（当前仅右摇杆）") :
-                    (_runtime.HasFreshGyro ? "陀螺仪" : "已回退到右摇杆");
+                    (_runtime.HasFreshGyro ? "陀螺仪" : _runtime.Processor.UseJoyConWheelAxis ? "等待陀螺仪样本" : "已回退到右摇杆");
             if (_runtime.IsPlaybackActive) source = "CSV 回放（替代实时陀螺仪）";
             GUILayout.BeginVertical(GUI.skin.box);
             GUILayout.Label($"设备：{model}    连接：{transport}    状态：{(connected ? "在线" : "未连接 / 正在重试")}");
@@ -185,6 +210,38 @@ namespace Resource.Scripts.Debugging
             else if (world == null)
                 GUILayout.Label("当前场景没有世界旋转器；可以查看和调试传感器。");
             GUILayout.EndVertical();
+        }
+
+        private void DrawWheelControls(WorldRotator world)
+        {
+            var wheel = _runtime.Wheel;
+            if (wheel == null) return;
+            GyroSettings settings = _runtime.Settings;
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label("方向盘全行程 → 世界 360°（左端 −180°，中点 0°，右端 +180°）");
+            GUILayout.Label("方向盘角度与世界角度同步，停手后保持当前角度。");
+            GUILayout.Label("校准顺序：回正后开始 → 向左到底 → 向右到底 → 回正后完成。只转方向盘。");
+            GUILayout.Label($"当前原始值：{wheel.RawValue:F6}    对应角度：{wheel.Angle:F2}°");
+            GUILayout.Label($"左端 {settings.wheelLeft:F6}    中点 {settings.wheelCenter:F6}    右端 {settings.wheelRight:F6}");
+            GUILayout.Label("转向轴：" + settings.wheelAxisPath);
+            settings.invertDirection = GUILayout.Toggle(settings.invertDirection, "反转方向");
+            GUILayout.BeginHorizontal();
+            if (!wheel.IsCalibrating)
+            {
+                if (GUILayout.Button("开始校准", GUILayout.Height(30f))) wheel.BeginCalibration();
+            }
+            else if (GUILayout.Button("完成校准（已回正）", GUILayout.Height(30f)))
+            {
+                if (wheel.FinishCalibration(settings)) _runtime.Recenter();
+            }
+            if (GUILayout.Button("回正基准", GUILayout.Height(30f))) _runtime.Recenter();
+            if (GUILayout.Button("保存参数", GUILayout.Height(30f))) _runtime.SaveSettings();
+            GUILayout.EndHorizontal();
+            GUILayout.Label(wheel.Status);
+            if (world != null) GUILayout.Label($"世界当前角度（顺时针）：{world.ClockwiseAngleReadout:F2}°");
+            GUILayout.EndVertical();
+            settings.Validate();
+            GUILayout.Label(_runtime.SettingsStatus + "  ·  修改立即生效，点击保存才写入文件。");
         }
 
         private void DrawCalibration()

@@ -28,7 +28,21 @@ namespace Resource.Scripts
             new SceneSize("Maze_05"),
             new SceneSize("Maze_06"),
             new SceneSize("Maze_07"),
-            new SceneSize("Maze_08")
+            new SceneSize("Maze_08"),
+            new SceneSize("Maze_09"),
+            new SceneSize("Maze_10"),
+            new SceneSize("Maze_11"),
+            new SceneSize("Maze_12"),
+            new SceneSize("Maze_13"),
+            new SceneSize("Maze_14"),
+            new SceneSize("Maze_15"),
+            new SceneSize("Maze_16"),
+            new SceneSize("Maze_17"),
+            new SceneSize("Maze_18"),
+            new SceneSize("Maze_19"),
+            new SceneSize("Maze_20"),
+            new SceneSize("Maze_21"),
+            new SceneSize("Maze_22")
         };
 
         public bool TryGetSize(string sceneName, out float size)

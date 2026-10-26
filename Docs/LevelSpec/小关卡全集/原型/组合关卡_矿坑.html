@@ -1,0 +1,1286 @@
+<title>矿车逃亡</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600&display=swap">
+<style>
+/* Level picker, one game stage, a control row, then the notes. Single dark theme on purpose: it is the game's mine palette. */
+:root {
+  --bg: #120d0a;
+  --panel: #1d1612;
+  --line: #3a2c22;
+  --line-hi: #5a4535;
+  --ink: #eadfd2;
+  --muted: #a8968a;
+  --amber: #f0a64a;
+  --cyan: #3fd6e0;
+  --red: #e0607e;
+  --stage: #0a0706;
+  --scrim: rgba(10, 7, 6, 0.62);
+  --primary-bg: #3a2412;
+  --primary-fg: #ffe2bd;
+  --active-bg: #2c2018;
+  --kbd-bg: #160f0c;
+  --font-display: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --font-ui: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-num: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 28px; display: flex; flex-direction: column; gap: 12px; }
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.45rem; letter-spacing: 0.04em; text-wrap: balance; }
+.sub { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.newtag { font-style: normal; font-size: 11px; padding: 1px 5px; border-radius: 6px; background: #e8a04a; color: #241a10; margin-left: 4px; }
+.levels { display: flex; flex-wrap: wrap; gap: 8px; }
+.lv { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font: inherit; font-size: 0.92rem; padding: 8px 14px; border-radius: 999px; cursor: pointer; display: inline-flex; gap: 8px; align-items: baseline; }
+.lv b { font-family: var(--font-num); font-weight: 600; color: var(--amber); }
+.lv:hover { border-color: var(--line-hi); color: var(--ink); }
+.lv.active { background: var(--active-bg); border-color: var(--amber); color: var(--ink); }
+.lv:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.stage { position: relative; width: min(100%, calc(72vh * 1.6)); max-width: 100%; aspect-ratio: 16 / 10; margin: 0 auto; background: var(--stage); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.stage canvas { display: block; width: 100%; height: 100%; outline: none; }
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: var(--scrim); text-align: center; padding: 16px; }
+.overlay[hidden] { display: none; }
+.overlay p { margin: 0; color: var(--ink); font-size: 0.92rem; max-width: 34em; line-height: 1.6; }
+.overlay .row2 { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 0.95rem; padding: 9px 14px; border-radius: 6px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+.btn:hover { border-color: var(--line-hi); }
+.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.btn.primary { background: var(--primary-bg); border-color: var(--amber); color: var(--primary-fg); }
+.btn.big { font-size: 1.05rem; padding: 12px 22px; }
+.btn.hold { min-width: 88px; }
+.btn.active { background: var(--active-bg); border-color: var(--amber); }
+.btn[hidden] { display: none; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; color: var(--muted); cursor: pointer; margin-left: 4px; }
+.chk input { accent-color: var(--amber); width: 16px; height: 16px; margin: 0; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.pill { font-size: 0.8rem; padding: 4px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pill b { color: var(--ink); font-weight: 600; font-family: var(--font-num); }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; }
+summary { cursor: pointer; font-size: 0.92rem; color: var(--ink); }
+.tune { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 22px; margin-top: 10px; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; font-size: 0.85rem; min-width: 0; }
+.row input { grid-column: 1 / -1; width: 100%; accent-color: var(--amber); }
+.row output { font-family: var(--font-num); color: var(--amber); font-variant-numeric: tabular-nums; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 22px; font-size: 0.88rem; line-height: 1.7; }
+.notes > div { min-width: 0; }
+.notes h2 { margin: 0 0 4px; font-size: 0.95rem; font-family: var(--font-display); font-weight: 600; color: var(--amber); }
+.notes ol, .notes ul { margin: 0; padding-left: 1.2em; }
+.notes li { margin: 2px 0; }
+.notes .muted { color: var(--muted); }
+kbd { font-family: var(--font-num); font-size: 0.8em; padding: 1px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: var(--kbd-bg); }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>矿坑 · 4 个小关</h1>
+    <p class="sub">动作向关卡原型 · 一关一个机关，每关 4 到 6 拍、几秒钟</p>
+  </div>
+
+  <div class="levels" role="group" aria-label="选关">
+    <button class="lv active" type="button" data-level="0" aria-pressed="true"><b>1-1</b>落石</button>
+    <button class="lv" type="button" data-level="1" aria-pressed="false"><b>1-2</b>塌方</button>
+    <button class="lv" type="button" data-level="2" aria-pressed="false"><b>1-3</b>矿车</button>
+    <button class="lv" type="button" data-level="3" aria-pressed="false"><b>1-4</b>木板</button>
+  </div>
+
+  <div class="stage">
+    <canvas id="view" tabindex="0" aria-label="关卡画面，左右方向键旋转世界"></canvas>
+    <div class="overlay" id="startOverlay">
+      <div class="row2">
+        <button class="btn primary big" id="ovDemo" type="button">▶ 看演示通关</button>
+        <button class="btn big" id="ovPlay" type="button">自己玩</button>
+        <button class="btn big" id="ovNext" type="button" hidden>下一关 ▶</button>
+      </div>
+      <p id="ovText">演示会自动打完这一关：画面上方写着每一拍该怎么转，右下角的方向盘是手柄输入，遇到险情会慢动作。</p>
+    </div>
+  </div>
+
+  <div class="bar">
+    <button class="btn primary" id="btnDemo" type="button">▶ 看演示</button>
+    <button class="btn" id="btnPlay" type="button">自己玩</button>
+    <button class="btn" id="btnReset" type="button">重来</button>
+    <button class="btn hold" id="btnCcw" type="button" aria-label="逆时针旋转（按住）">↺ 逆时针</button>
+    <button class="btn hold" id="btnCw" type="button" aria-label="顺时针旋转（按住）">顺时针 ↻</button>
+    <label class="chk"><input type="checkbox" id="chkSlow" checked>险情慢动作</label>
+    <label class="chk"><input type="checkbox" id="chkChain" checked>演示连播下一关</label>
+    <div class="pills">
+      <span class="pill">用时 <b id="pTime">0.0 秒</b></span>
+      <span class="pill">死亡 <b id="pDeath">0</b></span>
+    </div>
+  </div>
+
+  <details>
+    <summary>调参（改了会从这一关开头重来）</summary>
+    <div class="tune">
+      <label class="row" for="tRot">旋转速度 <output id="oRot">180°/s</output><input id="tRot" type="range" min="90" max="300" step="5" value="180"></label>
+      <label class="row" for="tCave">塌方速度 <output id="oCave">×1.00</output><input id="tCave" type="range" min="0.6" max="1.6" step="0.05" value="1"></label>
+      <label class="row" for="tDelay">落石、木板松动前的停顿 <output id="oDelay">×1.00</output><input id="tDelay" type="range" min="0.5" max="1.8" step="0.05" value="1"></label>
+    </div>
+  </details>
+
+  <div class="notes">
+    <div>
+      <h2>四关各自的爽点</h2>
+      <ol>
+        <li>1-1 落石：你一转，石头也跟着滚；落地要马上再转，它们会砸在你刚站过的地方。</li>
+        <li>1-2 塌方：一转身后就开始塌，右、下、左、下、右、下一口气转完。</li>
+        <li>1-3 矿车：吊斗矿车越跑越快，弯道前连续大翻 180°，最后撞车飞出去。</li>
+        <li>1-4 木板：往竖井里一掉，头顶的木板就松了；落地马上转走。</li>
+      </ol>
+    </div>
+    <div>
+      <h2>操作</h2>
+      <ul>
+        <li><kbd>←</kbd> <kbd>Q</kbd> 逆时针，<kbd>→</kbd> <kbd>E</kbd> 顺时针，<kbd>R</kbd> 这一关重来</li>
+        <li id="padNote">手柄：摇杆横向或 L2 / R2，Options 重来</li>
+        <li class="muted">演示中按任意方向键就接手自己玩；画面上方一直提示下一拍。</li>
+      </ul>
+    </div>
+    <div>
+      <h2>和游戏一致的规则</h2>
+      <ul>
+        <li>玩家照 PlayerController：横向速度每步清零，只往屏幕下方掉；门转正（20° 以内）才开。</li>
+        <li>镜头大致对着整关，稍微跟着玩家；演示用 180°/s（游戏里现在是 135°/s，可以在调参里改）。</li>
+        <li class="muted">落石、塌方、吊斗矿车、木板是这个原型新加的，游戏里还没有。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+window.__ASSETS={"tiles": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAAAwCAYAAACG5f33AAACuUlEQVR42u1bO5LCMAy1MzkJBZncIEO9zdLsVXYoOESqnIaKeocbMNlir8JWZoxGsuQPsQ1xFceRYz9LTx+C7rqPm8rY5vmsv48ndA3TuH8Yg32JjHQs5J3TuNc6N4CfXwc1Xy/oWNcPD2OwL5GRjoW8s+sHVTSApbeuH1Sj1hbVigbw7/eH7VPPmDH7GR95ql8VgLHAb7Y7tdnuRECEtrZ0ECQaAe9ttjvynkQe65uDiAbQnsg+aanKU2GDcSSYPNQiqg/lXXNJ5sPmMmNdP6hp3Os2lpdizcMGjwMnxIQprpMqC7WO+XpR38fTrfXROumJpeIdah6uj5lriAkbDnXto4nRvBTP+oBpALWvsXEXSJwsNu5qXoE0dxrSZ7BUzsWBIfPGHpZrHTYHOgGUTMRpHbdxKhNZCqwQ5+mdiUC1xiaD4yHkz5nt0mBJ9tGkOAnJ2Ks272KCDVLXD3eXHmp60IRLM11u/2sx4ZmpnHEAVHhAlaHs5329J5TNqZXYWqI50LWZZ240hxNJVkyQJNdcDro6kcyBdGlOxATSjS8XUHFhaBGAKibkigGl6zDFhOYZvBCzYVhRzqWV0nUEc6BPP9b75fTCXDSQvaD60nGgNFRJDVopHl1CIcVlIrU4keBcOHWrPYwp9ssESN45CqpcKrcWExK0agBc0rR93tWWDFRuPnT9LnwHcJ7POisHqsNtNeHEBJ47lKHej61hdSJLZyLvwIc+RYzsGjiNe21+nILVDyoHX8qEIaj2uu6BdG4AYT3QFUhj11gFRwIOJctdw0C6rYVrOHPGPiTCsgtO1pcqiudAV7WbKqe5Pm/z+T5QAmjxHBj6XZ8LuFCtr44DUxcDYuesigMhCBiZcyaMHYhE3tV/i0A6lQlLWrEmXENb64GvWEyAJ+zqS2Ri5TkZXQJQNf/d9R+/Ie1yH4RvbQAAAABJRU5ErkJggg==", "idle": "data:image/png;base64,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", "float": "data:image/png;base64,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", "fallstart": "data:image/png;base64,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", "land": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASAAAABwCAYAAAC+eq3DAAAZCUlEQVR42u1dfXSU1Zn/vZAmcGJYQ74MyQykDBoCtZuIiaChxQ8QJAU1WnexBpkeyx6BrRazztZtSsENy+ralaSyng5LVA6UhhXPKBStjSalkmCTbgsJNcMSJgFkYJxdadadKZzZP4Z7c9933vedydfMOzPP75w5ZGbuTMLvuc/nfe69AIFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCYbwhEQUEQnxhe+HSgPK19QOH4lKXU0ichGRWgHjkfP6ddyGrpFA+oAGBeJSBRApAGAsFeLuhiWQwjrwvX1cDAPB0D8i4Vz4vevaRuJKBRApASGYFMDr3WryL4O8tuimoCw/+fdzogkQKQEhmBTAyTm/dG4ho4KKb4H+zE6n3lwWft/wxbhyyRApASGYFMPTc3/+P8hdb/hg675+8S3NMPDhjiRSAkMwKYPi5r5zbalDIhQwQKQApAPE/JpF/OOhlBvHghA27DL98XU1wYosKcC3FYshizzUUgDByBRCNS+r16Zoc6ynA9sKlAYpCRzj3w+DthibVcXryMCImxJUCqDw8je9H9j2EMVcALYNEGKO5f43Pj5rfCeE1JDuIU0wgBSAkswIYHVlP3oX5jU/jk+7/HHqRRf6LbsIyR/2o9IgMECkAKQCBz/3l62q4c/V0D8D/Zicq7r0b3z11kI+7MuBCxb13o+Leu0Oc74HO3XGVBUwgBSAkswIYCesHDkliZJ9VUojKf6tFe2cf0lJTg/N+0U1IKTSjOC8T7Z19Id9hte+Mq1LEBFIAQjIrgBFlIMrhH9LLAQC1X/pL2bi1180HALT/4pcjyizIAJECkAIQdKN3T/cA5t95F+B2hpQc5jc+Dbid+OjJf5FlC57G92XlCjELMKIMJpACEJJZAYyaCjMHDAB26xrNsfMbn+Y/O+v2wuu+yLMBpV4ZUQaGXYYfLwVgD5rm0VUAMkLDc8JFzz4ivd3QhKySQnytcDGcdXtDxl0ZcPE2FK1VYTXHYiQZGLoIPR4KwAwSKQIpQDxA5NVZtxd26xr+YDri6R7A5sEOrOl6DWu6XsP9h19U5dyIizJxsRnV+UEXAMCy6ZEQBfift3qRVVKItxuaUDz3ZgBAZm6OzIAxQTIBMKFSl25kkRDjFQA+HHiX/1yz6YdI6f0Cnu4BLHPUB+t01/Dmku/p8k/cRz73V7X/lHPr8/vR9PohHHn2O7A6WgEA/a6zWPXwopDvUMoAMN72GMnok380CqA0QkqvQkoQfQUwohIYEae37g14ugfgdV/E5r79OO0d5O81b5oOAMhd8h5/raJsBtJSU/l72+yDaHOeQ/vfNYbMfSPNe0MfyRpOAVLK7gTKgP91nUWaIuy8//CL3AiR8RkZ9yyNLc7L5AqQlpqKqQMbULUujY81mQvg8/tDFGCZox7tJY2aKQVB2/iwn6es/BA59snIyZiMDtcltB79hI9beNuN3CA56mdhm30Q2+xDhqrSMg3OD7pg+XqpvARhoONbJSMLYCw8wO6Kb8sEQEZoePxfXdDMJ7WeAjDOlVibtUyVf+I+PPcAUN8TnKu11nRU151B69FP4D58D3KXvAf34Xs0eWcQoyDlRlUjyEEyIvlivcDTPcCF0OY8B0f9LNlnquvO6CrACw9+P2TyK4txpBDJqwBGnv8LX3oK5eZs/n6tNV02Xov3i5e/AIChqOmplzTnf6xlYDgDxAhSKsDfvvDzYArQszrkc3oKYJtdo1oLElMB1n2d7MqQjApg5Pl//+EXeWpbbs7G4ysmISd7Ygj3bc5zPD0W4fP7cbDKFjL/jTT3DbkMr1Yn+NeND+G3rz2K3xy7gt8cu8KFoKYEFy9/wZWAwdM9oNkfxIQe8QmMCQylA2hznkOH61KQ10tXVY1Pm/McH9fhuoTT3kGc9gZT4DeXfC+E97cbmviDluW153+5OZsbHwBY8+J/8TGMa1brqbRMQ7k5m2cDzCCxvZLh5n6sYNgi9Ee/eh/z77wLbc5zMiHc8tgbQQXY+FBYD3Dyghf7j22UAODjx14IKNOA5etq4P/vQbz7RjPNehWUm7PR4bokUwCWArPJX27ORqVlmixKqq47oyoPgj427n8eX0dwbi5z1KM4L1MWgVZapqHK1ivTBy34/P4QGRhx7hsy9GUe8YP8AZkCtDnP8f1frACqFISoAEwQbq9HZoTCpWTJmhKwFAAIXn30dMcO5GRMDqnp6CkA419UALWWCGUaQEvz8vm/ebAjhOdaazp8s3dh1cOLwhogVi995sfBiFSvLQWIXWuE4XbDn966N7B8XQ2Wr6vBxctfhBBdUTYDC2+7EeXmbF0h+Px+nj8zzHttoybJ7Hcm8xEe4iRc5qiXrTwyBWg+cET3O7bZB7lcHPWzUJSZLvPAIt+LH60ma6OiA2wOMiMugrU8PL5iUtjvyl3yHr5ivg4AeHe02g6BtxuaYpYGTzAi8axeo1SA9s4+1R3w4RTAlJc/LHJPb91Le8bGUAGUWwMYUq9PpzObNHSApVwiqmy9XA9YMTocLKYU+Px+mSPQcr5JbYBE46OnAOx1Vvhkj3AewJSXH8jNzAqoeWO158m8Z4z938dSAZ7u2GFID2xUB6yW2opZQDiwyP+Wx94IkWM4x5tUBohFGmxVRIRInGhk2jv74KifxSOi9s4+TWMkeoDivExdoyMqhLg6kCzKobdhcTwVINlTXzUHrMdZuCxATXZiLU+c92qON5rz3XDL8B/96n1egxCNSrjag9IYMUVZ+VwLF+bJC17U9zRhmaOeH/GqZoTETZPJohxKDzyeCmAkD2wU7sXnWscMi/VMFo2GS59N5oKw36vmeKMlh5gbILUVp6xN34m45iOi33VWpiDtnX2oKJuBNuc5nLzg1fycnkdIlr1LeuH/WCmAET2wUYyPmAEojX+tNR1Vtl7ZNphwLQ5qshK/V00GSsebNBGQmhFiRqSibIaqEWLNiFpoev0Q/6xoyNqc51BpmYb90u/gdV8MWZYU+yTYSk2i1yiU/zfWfT7WCqDkWOxLUUvBkxHhopThgDnktNRUnkLLLndQyCMWMEwKtn7gkLR5sAPL2/ZFNH7BrcPvoWRG6IbMYAF1h+cgP2tIFILSKy9+tDphe4PUPPB4KoCRvK8RnW+kBWOtBRq190XHsV/6XUSRaNIZoNzMrIAy0tGKfoYDZcG0vbMPPz/WLzNEemlZ6vXpSL0+PWm2aSijn7FUAKN5X6MZoW1//p3mmOYDR7hBjyQCDZHH7F3cCYSL/FnUn1QGKJzhGCkqLdN0v2uH5yCWOepR8U9PygyPWmqQiEXSSCO7sVCAmd/uNZT3NZoctBprq2y9vJbGZLB7X0vI5uBIsar9p7ptKO++0Ry1iN9QBujkiR6cPNHDn7u9HmmsDBH7fhF/cP0JN2RO5GEvM0Ki8WEQf05UI6TngZUKMFIYyfsaCWKPmgjRyJjMBVwOasV9EUoHYTIXoLruDGqt6ai0TONnp6tFoNHsUJ9gFPLbO/tQPGc2iufMRkXZDL5/SwvhitAM9622YeuW7agom4HiObN5GtbmPIecjMn41HtVZoRYEVBNCRK9PqHngZUK0Hr0k2F54HAKQ4jMmLAzmCKRpfKY3N37WmRRkFbZIZpOdkK8CiXSInT+dAvyp1t0x/z8WD9uyJyIh241odIyDRv3P4/Ngx38jjJxbNGzj0iJWJDePNiBcB54OAqQlpoaogC+2bswZeWHhgn/jQS94rNYRFZzDFoQDY7a79NacYvmFpmYGyBl8TmS6GckYMvyDGLDYqVlGj71Xg0REAuLmSFK1l3yIzlWo9ycrakARgn/jZ5+jQeqbL188YUZPbW6Z7SioAmJKNCTJ3pQ862laHr9kO649s4+3HFzmup7bc5zKM7LjOrkSDQPrIUdnoOGCP+NAFNefkCLe9Z/pYXmA0eGnQY3HziCxx4Y2ki8cf/zqmOj1REdUwP0knVeYLTL7CONgtyH75GlE+wExRsyJ/KaUCTbB8gDY1gKwDyw1nJ/su2QF9sVaq3pI17ZEuew8mc9KPdORvt41phHQKIh0Eq/KspmoHrl7agom8EfVbZe2XNxTM23lgIA/1eE7YEimeFZcGuKrCD9qfcq7xMSU7FEjYSi6YHZZ0QPHMvw30iotabjs8KXUWXrDeFUayVYr7CfkzFZVoPrd53FyRM9/DUW+VdapuHpjh0x68eK2ZGsL1nnBcRCsvvwPbA9UISn7J6QsTNnlozod5w61a37vqPBF+IxcjImIy01FTdkTuR1oUrLNM0jPxLNAwOhh81rNYSazAVw98g9MIsalR6433UWg5c/xxPWFfzc4o37n+eXBqiF/0a6v2q8Ik/R+J8/40TzgSPwAWhz3o42G7hDLirKGIpUbUPyqLL18jvB1GQrtk2kZ0zB7n0t+Ozy51iADfj174Pzn527xQ6kE43/ePMfswio/j9Ow9HgkxmBqAl+yXtwNPhgte+E1b4TTxSYZe+Xm7PxB9efYpaqRBvMuJ64uiHEAzvqZ8Ht9UhFRRmSGHmGA/PA/a6zXAnSM6agedN0zRaKZL8hY9GyKlmrg9vrkebPq+RzjhkjJo+iogxJybmI4rxMrHp4EUzmAqT1rJZFTGJkW27OxsKXngr5e6JxTGvMDBAj02rfCUeDT3bJ4Hii+P6fqCqQUninvYOyrRpsJSgRjRDzwnMmvoz2zj7kLnmPG6Xv/vRL0FMAtZRBGV2JzXO+2btkLRT3H34x6bdjKM8xF7kGgPnzKgPMEClLFHorlDkZk7kMmH5Vr7wd6RlTQvbniZFwNFd8DbMKVlE2A0/ZP5aUEUdJSemIv3PmzBLVOlDT64ewuHEP7NY1YEZw9hcpyMmYzK/0UR5hya5ISRa0d/ZxLxmpAmh5YGDoPrfqlbeHeF+t6CfRoyEx/fL5/Vh42438sgVWd1SWEXIzswKiPMLtyWPyYXVS9lzZIhHpJtiEqQE9N7c0YLXvhN26BluOd2lONJ/Pp1vjiaQ+NHVgA//5s8KXZe8xI/Tlv3kGX7722q7tP+BF6Q7XJXzjq3n41HtVuJ0DgfHoVTKEF667Ea1HP+FRosjx/HmVAfH5Rx+3SXoKkJMxmZ/DVGXrBWxDClBrTde9UDLRoYykm14/xDv1r3T+Cs0HjsA0SV5HuzLgCgDArAdXSPJIaZZmVM4cqfI2GSDYGAo8JPuboj2vY2aAthzvkmBdE2DGSM8IaRmfSI2Q6HEd9Ru4EXr1rAtur0fKzcwKtC+r4rWK1et/xMdf3P4DVc+VKEZI6YXbO/v0FAAA8Fj9C9wg/fjbf47IA4sKsHtfCyDccLtx//NAPrAddEGhku+UwqH6JPv545/sCADAX+TlB53qxXrccXMaLyqLUB7E13r0Ez7PVz28CM2bpnNHkJaaGnUjFNOLCSMxOnorWU8UmPHqWVfY1S6R0CobAo76Ddes/xDE1QLL3DJZ7QIAfvvWtpBu6UTzwsqVLi0F2L5mFZQKEM4DKxVA6X3bnOfw9fShWlCi3xPGDP/jKyahytaL5gNTghF51UIAwOLGPWiq+yGs9p0hn826pUIe4cOGOxa8hllFLvz7W/8XMt5etRBWR2vI65t+8CKAl2XpcLRXe1OMLCS31yOxVE0LVo3XtVI7t9cjVdkQaD4Q7EmpXnl7oPnAEQxe/hzpGcFJMHj582ujC7BoWRVOnujBLStq8c6u+oSMgkQj/O6TfzVsBcBF6Hpge9VCLG7cIytGL7ztxhDvu3mwA4mW2oYz/JHeLqLEz2o34pvbXuCOIbvwOVx/vQu12cE5+ptjV/Dr3/t4BPpO3Xrct2k7frZ6JRpPdmP3vhZY5pah+uEzsk3I0a5zTkASwu31SNUrb1f1+mpIz5iC/OkW3LfaltBeWAQzRHoKwBWq9BXcsWC66l1h7Hf83r41+LnVK9HvOnvN+0LmfZMVTa8fgslcMOqjTlIKzcgtfQVTc2xYcGuKbBX3vk3bAQAHL5wJWZ0UV8PKzdlRXemdAIIs1RqKfkLfVxohccMqQR9MARb8qDHpuWBGmXWas8ibRZ6LG/cACC6MaOFPns90DZGjwYdvfn+vbLWrZmlpyGWfr9rfUv37ojWvyQAJEI0PW5FQ1ocSxQhppQFWRyu2HO+SthzvkpgiRKIA2XOfw5x7XuX7me64OQ0drkvocF2SjWPL8pa5ZSG9L8nQ5qC2+qW2pcJkLkD+dIss0lQrM0SCxY17eG1JLbqPJQxvgLTqP5GSPx4QjVCibNHQSgOGqwC5pa8gt/QVWbOh1dEKe9VC1CwtNVT4H+/QcxAh8r34Kf75u9k81WUlCACorjsTcj56tPqCDG+AxsIDhKsDsYgnPWMKfzC0HHTAebxT0wht3bJd1bPFcxrQ+uHJQOuHJ0f1/3E0+LB7XwtPAVqvXDZc+B9L3iPFV5/Rv6ZHSweuy5oqi6bEfq201FQebZrMBXjV/pZsg7BWtEYpmALD7R0aLloOOgAEtyhoRUL50y3cCCViGjAWClCztNSQ4X8seWeGX0z1xxPiYku5OVtmkLTkEI0oyPAG6NkP35dGqwAjipAO34M5E1/GnIkvhz14S8tAUQoQxGnvoCHD/1hD6bi0jtfQi/S1ZMCW6LUQab1tvKOgpC5Cs1s3xPOB0npWI61nNapsvfzh9noktT1lUwc2YOrABj4mUdMAtTSY1ebCKYCRw/9oRz8i79vsg7zhVS3yFMsCas5UrzdOC+LGYVEm4o0Z0UZcGKCiilJJ6QWYALYc75LUPMQ3t72A5+aWBiIyQmuPSkVFGdLCrxVLFWuPShVrj0pur4c/2Lily8tlD3FsIqcBX32mXtcLa73HeomMGv7HEsNR9gU/ahwV/2KqrfW7tc7vHu+aXNxEQNdlTcWVARffj6SsBcVyVSwZ0gA9/sOlCUYN/2MV/Ty+YlLIVqDRzH/xZAetaIpFVL7Zu+CbvQvNB46MW8SckAYoXC1oy/EuiQmICWkkYWoiYzRpwIMbNuhyH45/I4b/sQLruxrOXWnhGjgXN+7BaOZ/mrA5OJrOIK5rQMoUq6nuh2HHEEaWBpzPvil8iK/CP2uAM2L4Hy24vR5ptAfOR5RiafCvt8Wj5aADLQcdOHE16GC0bolJ+ggICLaYi7uzlRZ+y/EuSXyfoqCRpT7D5Z/1DOnxL4b/yYiKtUdlp0cqL1lg5y8poyLxebj5v7hxD4Yz/8WzgViUqrzw84bMieManabEkxDt1jVhDUpRRal0ur2Loh7i35CRUHVdaqAoM1111bSoKCNsxK/k3zTpCxRVlMq+S8k/O9dJ7SjiZ59bz/8WZbQpGp7xWmiJ+2X4SFKs0+1dgWRv8c/NzAqIO85HUgjVSwN0O6fdTtnkN0oBNBbov3Beaj3pHDNljrT4z668UnuopeZshbTK1ouKtUfHbZU3JVkU8IkCM7Z4PeSGryEneyJ8GF4hdLT8a6aGERRAk+GcoFjPf3ZWFkvXo8F50jQiJnstaLwKoSL0oiA1/mNdAE0mRDr/WVTUf+F8ct2KEQki3ftFPUEaYfgoC6Fjyb8RCqDxhkSc/ykk1uSLhEZTCFU1Jl8rDqsYFffeHfLamif/mhc/xds9RaMznvWHREXP5Ctx87fGXQqmtO6vnnWFVO+1PAX1BAUxmkLoSPlv/8Uv8USBGUYpfsYrIuF//7E/xM38jysB52ZmBZS9LP0XzktqRUrlkuXCbyyDz+8HFTONyT9TorTUVESr/kD8Uwo2bMy/ewX6/3gCaWlpTACq496fdB2s14ifaZmDQpMFp05104qKQfknmSTn/I87oZvy8gMAMNMyBwDQ3d2lOYFNefmBQpOFC8vn8+HUqW6a7MQ/8U81oBFY/3mVAUb8KecJAAC7O16ZB5vy8gP9F85LH33cxskOd4EhYfT8P3jrVwLEP83/hDNAprz8QFpaGic+XAjff+G8ZMrLD6xd/30qPEeRf1YAJf5p/idMDSg3Myvg8/s1yVcbz35+Z1+wEMc8B4X/xD/xTxHQsMCWbX1+P3x+P2Za5nBC9cDGsfNnWLhKIP6JfzJAI0Zx2dDd5D6fT3Ncd3cXL9IRiH/i33iIKwMkho8sHGUVfjWPwZ4nw42bxD/xH4/8x2UExPLa4QhMLT8mEP/EPxmgYeGBR9fy/HY4xEZawCMQ/8Q/GSBV5GZmBd7Zt1N2qDkQvrh238O0O574J/7JAI2S/JkzSyIiXA8lJaWUBhD/xL9BEDd9QG6vR3J/3MZb0QHggyO/lEx5+QGlRxA/xwpwhSYLf52KosQ/8W8MSEYnnll7n88nq/h3d3eFbaoSP8/g8/kgtqcTiH/inwyQrgUXC26nnCf4cQ0slHR7PSFHEojPTXn5sj00WkcYEIh/4p9SMBmU1f5CkwU+vz+g7HVQkllSUooSBA/YZs1YovAIxD/xTzUgXbi9Hgnd8juOIjmtX1lkY8U7pdeg6U38E/+Ugo1r7qxEJLkzgfgn/skAjVoIml6FQPwT/4bA/wOPlXiXB1tIjQAAAABJRU5ErkJggg==", "door": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAAAgCAYAAABEmHeFAAACeElEQVR42u3cv2uTQRzH8c8TAqKCWDso0haaoQUV2qdDBqeK4iIuLmYRuvQfENRFFMVFhCyCf0NcXMRFEJ0csjzt2A4OaSkKBqPo0KHqIJGzyZO7J32eO0PeXyglcH1e94Pv3T1faKQh49TJuV/mjzzH/+A/6/zAH/H1j7Ki5ufj169JkjrPX/zT7uOnzaioQZufTz9+JEnauXM3iD//9rUkaePC5SD+vY1EkvRwPh7L8eex/lEWNK7WnB6aNBu5TQY+fpF+yXbErKzWFVdrWlmtS5IWFqrW3932cbWmYY8ofHwffpSGu2abayTNhvNugI/vy4+y4ubx0i9sf2ubBHx8n37kipvw1PSiJKndbmm2sqRvXz9Lkra31qwdGTQJ+Pi+/cgV76Jm7O+AGdtba5kmAR8/hF9yuTv1w20xNb1oPa5c7274+EX5pYPgh64ua+fsscImweZP3L8Z1J951VDnxnIw/1byRntPb4/t+PNY/54E6JaTkmZDZ85dOnAGHz5y4m8nPmy+t7bHx/fp9yTA+npTRUVl7ry1DT6+Tz/1BCgisuwA+Pg+fE4A/LH2y/0y0OxEu91KfwlWxdpmfwbaJiGLP+HQpkj/aGBfYz7+PNa/bMvAycmZ1Ad+d2hjdm6YHWDQs38G9oU/8uvPOwA+7wDcQfGpArED4XMCsAPhUwWiCkQViCoQVSCqMFSBuIPi8w7AHRSfKhA7ED4nADsQPlUgqkBUgagCUQWiCkMViDso/sj71hNgUOy+fPfnv/ID3QG/PKgH9VtXakH9J/FFzVaWgt3BQ48/j/Uvp2VhEZnoOjh8fF9+JPV+666v6H43Cz5+KP83B7AOK07ebiAAAAAASUVORK5CYII=", "doorOpen": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAADAUlEQVR42u2bMWvbQBTHn0wWe3QGe0gK8aDSUnDkQdCu7dS1BDxmyRxKsIYOHTp0KWQp9BsUPHTIB3DWDk5cJaC4NEMHJ0MCFbSFbpavS1UkWad7J51OxLwHD2P7rN/z3bt39z/LADmt3TLZh59/WLtlsnbLZKDZiK+Gb8hCo89ff3MBAODNfSvW7ub20ijrSxNfLd+QgVp2H3VRdzxU1hnEL5dfywK3Wybb3TsEy+7D7t4hAAB0u7bwMWxv2X3IW6KIr4dv8ODYbMOaOx6iZwPx9fENWXi0vKSZ6LOiTiC+Xr6BhUfBG5vbAADg+zPY6vTg968fAABwfXUmDCSrE7D8eqMJA/c49v6nFwOYeiMt/HDzlbToZuyu8A0sPBz0qCUTIGrXV2dSnSDD9/0ZvJyMYm2OdpxYHKr59UZzicmzox0Hpt5IKf/V1y9SJf/tgx6KX8OsHWmDL7KNzW1hucKuXWn8OWMx18FPMnmumu9MJ2h26M50guLXigz+wD2G4L1TWhJk8QPGYq6Dn2TyXCX/4OIUzU36wcWpkL+UAKGccMdDePjoWeEMrjea/4P4fvlZ2B7LF1WAMvgyFUAFf987kZ75Sd/3TjL5a8kXzs/HpR1fdswnwjZYftagl8XPwyzCL8rD8LkVoAyTmQEiwywBqvmyS0BRft7Sz4uHKgBVAHECdLt2LAjfnwkvjGkTZqCoE7D8gMnHUZQfSIxHWiyy/EDxb4xpfGEFWF+/J7xwVptoR+SZgWnX9v1Z6uzgtVXB5zFFfVKET3sAwRKAUQEq+XlUQBF+UQWQjGel9gBBBXuAQPMeIKAKQBWAKgBvMBYVqICFZhWwIBWQoQJYBSoAPyBqVIDaBCAVQCpglU4C467nJBDn6k4C1TidBNJJIKkAUgF0DkDnAKukAuYVqIC5ZhUwJxVAKoD2ABnlmO4HqPh+gHfWU9jq9EgF3GEVsMbLwjIqAXZwUfyPXvz54+fl85NMnnFikeZjeQKz//2tLI1vACz/61SXhfemE786/l8ES8S8pRcSqgAAAABJRU5ErkJggg==", "lockLocked": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAsElEQVR42mNkIBNIiKv9R+a/eHmLkRxzmBhGwSgYYMA40LmAhVyLlVRt0KX+k+MQFnJcraRqw3Dz2l4UMXUtZ4Z7t4/QthyQEFf7D7Ocj18SRe7mtb0MSqo2GFFDs4Lo08fnVEmEA14SDi0HvHh5i/He7SMM6lrOGHKwREiXXABzRExYEAMDAwPDklXryMoBg6IgoggoKlr8V1S0+D+aC0YdMOqAUQeMOmDUAaNgSAMAYdo6NsNoe9UAAAAASUVORK5CYII=", "lockOpen": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAqklEQVR42mNgGAWjYKQDRnI1Soir/Ufmv3h5iyyzWMi1WH3/LlQJR7f/5DiEhRxXq+/fxXDFxh5FTOfIQYabjm4km8VEqu9hlvPxS6LIXbGxZ1DfvwsjaqjqAGTw6eNzqiRCpoHOBUxDLt9KiKv9t7/24L+wkDwKtr/24D+p8U92Lrjp6Magc+QgQ7iUKAMDAwPDymevycoBg6IgGgWjYBSMglEwCkbBKAAAjds10AcEzB0AAAAASUVORK5CYII=", "lockHint": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAsklEQVR42mNkIBNIiKv9R+a/eHmLkRxzmBhGwSgYYMA40LmAkVyL17iGoIiH7F5DlkNYyHH1GtcQBv9tS1HENnpFwx1Bs3JAQlztP8xyPn5JFDn/bUsZ1riGYEQNzQqiTx+fUyURDnhJOPSKYglxtf9HYqr+CwvJo+AjMVX/SY1/irPhJTMrBgYGBga9U8fIzoYDXhBRBBQVLf4rKlr8H80Fow4YdcCoA0YdMOqAUTCkAQBJbT6K1790SwAAAABJRU5ErkJggg==", "needle": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAAICAYAAADTLS5CAAAAH0lEQVR42mNgIAwYz595/J+BgYGBCSbConrnKgOKCACSNAVdvXwtkwAAAABJRU5ErkJggg=="};
+
+</script>
+<script>
+(() => {
+  'use strict';
+  const A = window.__ASSETS;
+  const DEG = Math.PI / 180;
+  // Player rules ported from the game's PlayerController / WorldRotator (fixed step 0.02, no own horizontal speed)
+  const G = 9.81, PR = 0.4, PC = [0.4, 1.13];
+  const DT = 0.02, SUB = 4, SKIN = 0.02, PIVOT_LAG = 8, VMAX = 16;
+  const HANG = 0.55, FEET = 1.05;          // rail -> bucket centre / rail -> player's feet, along screen-down
+  const CART_MAX = 11, CART_DRAG = 0.12;
+  const P = { rotSpeed: 180, caveMul: 1, delayMul: 1, slowmo: true, react: 0.12, intro: 1.2 };
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+
+  // ---------------- the four small levels (tiles, y down) ----------------
+  // One mechanic each. The door opens only while it stands upright on screen (within 20°).
+  const LEVELS = [
+    {
+      id: '1-1', name: '落石', w: 20, h: 18,
+      tip: '你一转，松石也跟着滚。落地别停，石头就在身后。',
+      carve: [[1, 1, 6, 5], [6, 3, 17, 5], [15, 5, 17, 10], [5, 10, 19, 12], [5, 12, 7, 16]],
+      start: { feet: [4.6, 5.0] },
+      door: { bx: 6, by: 16, dir: 0 },
+      rocks: [[1.5, 4.55, 0.45, 'right'], [2.45, 4.55, 0.45, 'right'], [1.95, 3.72, 0.42, 'right'], [17.6, 11.55, 0.42, 'left'], [18.5, 11.55, 0.42, 'left']],
+      rockDelay: 1.5,
+      plan: [
+        { t: 90, cap: '顺时针转 90°', sub: '掉进右边的隧道，松石跟着滚过来', next: () => lp()[0] > 16.1 && S.grounded },
+        { t: 0, cap: '落地马上逆时针转回来', sub: '往下掉，慢一步就被石头砸到', react: 0.55, next: () => lp()[1] > 11 && S.grounded },
+        { t: -90, cap: '继续逆时针：往左冲', sub: '右边那堆石头也松了', next: () => lp()[0] < 6 && S.grounded },
+        { t: 0, cap: '顺时针转正，掉进门', sub: '石头砸在你刚站的地方', react: 0.55, next: () => false },
+      ],
+    },
+    {
+      id: '1-2', name: '塌方', w: 18, h: 21,
+      tip: '一转，身后的隧道就开始塌。六拍一口气转完，别停。',
+      carve: [[1, 1, 5, 4], [5, 2, 16, 4], [14, 4, 16, 8], [4, 8, 16, 10], [4, 10, 6, 14], [4, 14, 16, 16], [14, 16, 16, 19]],
+      start: { feet: [3.6, 4.0] },
+      door: { bx: 15, by: 19, dir: 0 },
+      cave: { route: [[1, 1, 5, 4, 'R'], [5, 2, 16, 4, 'R'], [14, 4, 16, 8, 'D'], [4, 8, 16, 10, 'L'], [4, 10, 6, 14, 'D'], [4, 14, 16, 16, 'R'], [14, 16, 16, 19, 'D']], delay: 0.3, lag: 1.35 },
+      react: 0.4,
+      plan: [
+        { t: 90, cap: '顺时针转 90°', sub: '一转，身后就开始塌', next: () => lp()[0] > 15 && S.grounded },
+        { t: 0, cap: '逆时针：往下', sub: '', next: () => lp()[1] > 9 && S.grounded },
+        { t: -90, cap: '继续逆时针：往左', sub: '塌方追上来了', next: () => lp()[0] < 5 && S.grounded },
+        { t: 0, cap: '顺时针：往下', sub: '', next: () => lp()[1] > 15 && S.grounded },
+        { t: 90, cap: '继续顺时针：往右', sub: '别停', next: () => lp()[0] > 15 && S.grounded },
+        { t: 0, cap: '逆时针转正，掉进门', sub: '', next: () => false },
+      ],
+    },
+    {
+      id: '1-3', name: '矿车', w: 20, h: 18,
+      tip: '坐在吊斗里，转世界让矿车冲起来；弯道前大翻 180°。',
+      carve: [[2, 2, 18, 5], [15, 5, 18, 6], [2, 6, 18, 9], [2, 9, 5, 10], [2, 10, 19, 13], [17, 13, 19, 17]],
+      start: { riding: true },
+      track: [[3.5, 3.5], [16.5, 3.5], [16.5, 7.5], [3.5, 7.5], [3.5, 11.5], [15.5, 11.5]], cornerKeep: 0.7,
+      door: { bx: 18, by: 17, dir: 0 },
+      cave: { route: [[2, 2, 18, 5, 'R'], [15, 5, 18, 6, 'D'], [2, 6, 18, 9, 'L'], [2, 9, 5, 10, 'D'], [2, 10, 19, 13, 'R'], [17, 13, 19, 17, 'D']], delay: 0.5, speed: 8.3, hurry: [[6, 1.4]], lagEnd: 1.3, nearRide: 2.6 },
+      plan: [
+        { t: 90, cap: '顺时针转 90°：矿车冲起来', sub: '一动，身后就开始塌', next: () => S.cart.s > CUM[1] - 2.6 },
+        { t: -90, cap: '逆时针大翻 180°', sub: '弯道来了，掉头往左', next: () => S.cart.s > CUM[3] - 2.6 },
+        { t: 90, cap: '顺时针大翻 180°', sub: '前面的轨道断了！', next: () => S.cart.crashed },
+        { t: 0, cap: '撞车！马上逆时针转正', sub: '掉进门', react: 0.4, next: () => false },
+      ],
+    },
+    {
+      id: '1-4', name: '木板', w: 22, h: 20,
+      tip: '竖井顶上的木板，你一往下掉它就松。落地马上转走。',
+      carve: [[1, 1, 5, 4], [5, 2, 9, 4], [9, 1, 11, 12], [11, 10, 15, 12], [15, 6, 17, 19], [17, 17, 21, 19]],
+      start: { feet: [3.6, 4.0] },
+      door: { bx: 21, by: 18, dir: 90 },
+      planks: [{ x0: 9, x1: 11, top: 1.6, bottom: 11.82, wire: 9.5, delay: 0 }, { x0: 15, x1: 17, top: 6.6, bottom: 18.82, wire: 15.3, delay: 0 }],
+      plan: [
+        { t: 90, cap: '顺时针转 90°', sub: '冲进竖井，头顶有块松木板', next: () => lp()[0] > 10 && S.grounded },
+        { t: 0, cap: '逆时针：往下掉', sub: '木板跟着砸下来', next: () => lp()[1] > 11 && S.grounded },
+        { t: 90, cap: '落地马上顺时针', sub: '躲开木板', react: 0.45, next: () => lp()[0] > 16 && S.grounded },
+        { t: 0, cap: '逆时针：往下掉', sub: '又一块', next: () => lp()[1] > 18 && S.grounded },
+        { t: 90, cap: '落地马上顺时针', sub: '门在右边，转正就进', react: 0.45, next: () => false },
+      ],
+    },
+    // ======== new combo levels ========
+    {
+      id: '1-5', name: '石雨', isNew: true, w: 22, h: 18,
+      tip: '你一转，身后的松石就滚过来；竖井顶上的木板也在响。掉到底马上往左跑。',
+      carve: [[1, 1, 5, 4], [5, 2, 16, 4], [14, 1, 16, 14], [3, 12, 16, 14], [3, 14, 5, 16]],
+      start: { feet: [4.4, 4.0] },
+      door: { bx: 4, by: 16, dir: 0 },
+      rocks: [[1.5, 3.55, 0.45, 'right'], [2.45, 3.55, 0.45, 'right'], [1.95, 2.72, 0.42, 'right']],
+      rockDelay: 1.15,
+      planks: [{ x0: 14, x1: 16, top: 1.6, bottom: 13.82, wire: 6.0, delay: 0.3 }],
+      plan: [
+        { t: 90, cap: '顺时针转 90°', sub: '往右冲，身后的石头松了', next: () => lp()[0] > 14.6 && S.grounded },
+        { t: 0, cap: '逆时针转回来：掉进竖井', sub: '头顶的木板在响', react: 0.22, next: () => lp()[1] > 12.5 && S.grounded },
+        { t: -90, cap: '落地马上逆时针：往左跑', sub: '木板和石头一起砸下来', react: 0.25, next: () => lp()[0] < 4.6 && S.grounded },
+        { t: 0, cap: '顺时针转正，掉进门', sub: '', react: 0.22, next: () => false },
+      ],
+    },
+    {
+      id: '1-6', name: '断轨', isNew: true, w: 22, h: 20,
+      tip: '吊斗冲进竖井，轨道断在半空。摔到井底马上转走，头顶的木板跟着砸下来。',
+      carve: [[2, 2, 16, 5], [16, 1, 18, 12], [3, 10, 16, 12], [3, 9, 5, 18], [3, 16, 20, 18]],
+      start: { riding: true },
+      track: [[3.5, 3.5], [17, 3.5], [17, 7.2]], cornerKeep: 0.7,
+      door: { bx: 20, by: 17, dir: 90 },
+      planks: [{ x0: 16, x1: 18, top: 1.6, bottom: 11.82, wire: 3, delay: 0.2 }, { x0: 3, x1: 5, top: 9.6, bottom: 17.82, wire: 14.5, delay: 0.3 }],
+      plan: [
+        { t: 90, cap: '顺时针转 90°：吊斗冲起来', sub: '前面是竖井，顶上有块松木板', next: () => S.cart.s > CUM[1] - 2.2 },
+        { t: 0, cap: '逆时针转回来：冲下竖井', sub: '轨道断了！', react: 0.22, next: () => !S.riding && lp()[1] > 10.5 && S.grounded },
+        { t: -90, cap: '摔到井底马上逆时针：往左跑', sub: '木板砸下来了', react: 0.3, next: () => lp()[0] < 4.6 && S.grounded },
+        { t: 0, cap: '顺时针转回来：掉进第二个竖井', sub: '又一块', react: 0.22, next: () => lp()[1] > 16.5 && S.grounded },
+        { t: 90, cap: '落地马上顺时针：冲进门', sub: '', react: 0.3, next: () => false },
+      ],
+    },
+    {
+      id: '1-7', name: '塌井', isNew: true, w: 19, h: 21,
+      tip: '一转，身后就开始塌；每口竖井顶上都有块松木板。塌方和木板一起追你，别停。',
+      carve: [[1, 1, 5, 4], [5, 2, 15, 4], [13, 1, 15, 10], [3, 8, 15, 10], [3, 7, 5, 15], [3, 13, 17, 15], [15, 15, 17, 19]],
+      start: { feet: [3.6, 4.0] },
+      door: { bx: 16, by: 19, dir: 0 },
+      cave: { route: [[1, 1, 5, 4, 'R'], [5, 2, 15, 4, 'R'], [13, 4, 15, 8, 'D'], [3, 8, 15, 10, 'L'], [3, 10, 5, 13, 'D'], [3, 13, 17, 15, 'R'], [15, 15, 17, 19, 'D']], delay: 0.3, lag: 1.15 },
+      planks: [{ x0: 13, x1: 15, top: 1.6, bottom: 9.82, wire: 6, delay: 0.3 }, { x0: 3, x1: 5, top: 7.6, bottom: 14.82, wire: 11.5, delay: 0.35 }],
+      plan: [
+        { t: 90, cap: '顺时针转 90°', sub: '一转，身后就开始塌', next: () => lp()[0] > 13.6 && S.grounded },
+        { t: 0, cap: '逆时针：掉进竖井', sub: '木板在响', react: 0.17, next: () => lp()[1] > 8.5 && S.grounded },
+        { t: -90, cap: '落地马上逆时针：往左', sub: '木板砸下来，塌方也到了', react: 0.25, next: () => lp()[0] < 4.6 && S.grounded },
+        { t: 0, cap: '顺时针：掉进第二口竖井', sub: '', react: 0.17, next: () => lp()[1] > 13.5 && S.grounded },
+        { t: 90, cap: '落地马上顺时针：往右', sub: '别停', react: 0.25, next: () => lp()[0] > 15.6 && S.grounded },
+        { t: 0, cap: '逆时针转正，掉进门', sub: '', react: 0.17, next: () => false },
+      ],
+    },
+    {
+      id: '1-8', name: '滚石塌方', isNew: true, w: 19, h: 21,
+      tip: '塌方追在后面，你每转一次，那一边的松石也跟着滚过来。拐弯一刻都别停。',
+      carve: [[1, 1, 5, 4], [5, 2, 16, 4], [14, 4, 16, 8], [4, 8, 18, 10], [4, 10, 6, 14], [4, 14, 16, 16], [14, 16, 16, 19]],
+      start: { feet: [4.4, 4.0] },
+      door: { bx: 15, by: 19, dir: 0 },
+      cave: { route: [[1, 1, 5, 4, 'R'], [5, 2, 16, 4, 'R'], [14, 4, 16, 8, 'D'], [4, 8, 16, 10, 'L'], [4, 10, 6, 14, 'D'], [4, 14, 16, 16, 'R'], [14, 16, 16, 19, 'D']], delay: 0.3, lag: 1.2 },
+      rocks: [[1.5, 3.55, 0.45, 'right'], [2.45, 3.55, 0.45, 'right'], [17.5, 9.55, 0.45, 'left', 0.65], [16.55, 9.55, 0.45, 'left', 0.65], [17.05, 8.72, 0.42, 'left', 0.65]],
+      rockDelay: 1.05,
+      plan: [
+        { t: 90, cap: '顺时针转 90°', sub: '身后塌了，石头也松了', next: () => lp()[0] > 15 && S.grounded },
+        { t: 0, cap: '逆时针：往下', sub: '', react: 0.17, next: () => lp()[1] > 9 && S.grounded },
+        { t: -90, cap: '继续逆时针：往左', sub: '右边那堆石头也滚过来了', react: 0.17, next: () => lp()[0] < 5 && S.grounded },
+        { t: 0, cap: '顺时针：往下', sub: '', react: 0.17, next: () => lp()[1] > 15 && S.grounded },
+        { t: 90, cap: '继续顺时针：往右', sub: '别停', react: 0.17, next: () => lp()[0] > 15 && S.grounded },
+        { t: 0, cap: '逆时针转正，掉进门', sub: '', react: 0.17, next: () => false },
+      ],
+    },
+    {
+      id: '1-9', name: '大逃亡', isNew: true, w: 23, h: 22,
+      tip: '矿车、塌方、木板、落石全来了。坐车冲、撞车掉井、落地就跑。',
+      carve: [[2, 2, 21, 5], [18, 5, 21, 6], [3, 6, 21, 9], [3, 9, 5, 16], [3, 16, 21, 18], [19, 18, 21, 21]],
+      start: { riding: true },
+      track: [[3.5, 3.5], [19.5, 3.5], [19.5, 7.5], [4, 7.5]], cornerKeep: 0.7,
+      door: { bx: 20, by: 21, dir: 0 },
+      cave: { route: [[2, 2, 21, 5, 'R'], [18, 5, 21, 6, 'D'], [3, 6, 21, 9, 'L'], [3, 9, 5, 16, 'D'], [3, 16, 21, 18, 'R'], [19, 18, 21, 21, 'D']], delay: 0.5, speed: 8.3, hurry: [[6, 1.4]], lagEnd: 1.45, nearRide: 2.6 },
+      planks: [{ x0: 3, x1: 5, top: 6.6, bottom: 17.82, wire: 12, delay: 0.05 }],
+      rocks: [[6.0, 8.58, 0.42, 'left', 0.6], [7.0, 8.55, 0.45, 'left', 0.6]],
+      rockDelay: 1.5,
+      plan: [
+        { t: 90, cap: '顺时针转 90°：矿车冲起来', sub: '一动，身后就开始塌', next: () => S.cart.s > CUM[1] - 2.6 },
+        { t: -90, cap: '逆时针大翻 180°', sub: '前面的轨道断在竖井口', next: () => S.cart.crashed },
+        { t: 0, cap: '撞车！顺时针转回来：掉进竖井', sub: '木板和石头跟着下来', react: 0.25, next: () => lp()[1] > 16.5 && S.grounded },
+        { t: 90, cap: '落地马上顺时针：往右跑', sub: '塌方还在追', react: 0.2, next: () => lp()[0] > 19.6 && S.grounded },
+        { t: 0, cap: '逆时针转正，掉进门', sub: '', next: () => false },
+      ],
+    },
+    {
+      id: '1-10', name: '滚石矿车', isNew: true, w: 21, h: 18,
+      tip: '一转矿车就冲起来，身后的松石跟着滚。拐弯就大翻 180°，让石头砸在身后的墙上；下面那条隧道的石头会迎面冲过来，冲下去之前正好撞碎。',
+      carve: [[1, 2, 18, 5], [15, 5, 18, 6], [2, 6, 18, 9], [2, 9, 5, 10], [2, 10, 19, 13], [17, 13, 19, 17]],
+      start: { riding: true },
+      track: [[5, 3.5], [16.5, 3.5], [16.5, 7.5], [3.5, 7.5], [3.5, 11.5], [15.5, 11.5]], cornerKeep: 0.7,
+      door: { bx: 18, by: 17, dir: 0 },
+      rocks: [[1.5, 4.55, 0.45, 'right'], [2.45, 4.55, 0.45, 'right'], [1.95, 3.72, 0.42, 'right'], [9.6, 12.55, 0.45, 'left'], [10.5, 12.55, 0.45, 'left'], [10.05, 11.72, 0.42, 'left']],
+      rockDelay: 0.15,
+      plan: [
+        { t: 90, cap: '顺时针转 90°：矿车冲起来', sub: '身后的松石也滚过来了', next: () => S.cart.s > CUM[1] - 2.6 },
+        { t: -90, cap: '拐弯！逆时针大翻 180°', sub: '石头砸在身后的墙上；下面隧道里那堆石头也松了', next: () => S.cart.s > CUM[3] - 2.6 },
+        { t: 90, cap: '顺时针大翻 180°：冲下去', sub: '迎面冲来的石头刚好撞碎；前面的轨道断了！', next: () => S.cart.crashed },
+        { t: 0, cap: '撞车！马上逆时针转正', sub: '掉进门', react: 0.4, next: () => false },
+      ],
+    },
+
+  ];
+
+  // ---------------- current level (rebuilt by loadLevel) ----------------
+  let LI = 0, L = LEVELS[0], MW = 1, MH = 1, PLAN = L.plan;
+  let rock = new Uint8Array(1), rubble = new Uint8Array(1), routeD = new Float32Array(1);
+  let TRACK = null, CUM = [0], TLEN = 0, caveCells = [], DOOR = null, PLANKS = [];
+  const TS = 16;
+  const solidAt = (cx, cy) => cx < 0 || cy < 0 || cx >= MW || cy >= MH || rock[cy * MW + cx] === 1 || rubble[cy * MW + cx] === 1;
+  function trackAt(s) {
+    if (!TRACK) return { x: -99, y: -99, tx: 1, ty: 0, seg: 0 };
+    s = clamp(s, 0, TLEN);
+    let i = 0;
+    while (i < TRACK.length - 2 && s > CUM[i + 1]) i++;
+    const a = TRACK[i], b = TRACK[i + 1], Ls = CUM[i + 1] - CUM[i], f = (s - CUM[i]) / Ls;
+    return { x: a[0] + (b[0] - a[0]) * f, y: a[1] + (b[1] - a[1]) * f, tx: (b[0] - a[0]) / Ls, ty: (b[1] - a[1]) / Ls, seg: i };
+  }
+  function playerRouteD() {
+    let best = -1;
+    for (const o of PC) { const l = toLevel(S.px, S.py - o), cx = Math.floor(l[0]), cy = Math.floor(l[1]); if (cx >= 0 && cy >= 0 && cx < MW && cy < MH) best = Math.max(best, routeD[cy * MW + cx]); }
+    return best;
+  }
+  function setupLevel(i) {
+    LI = i; L = LEVELS[i]; MW = L.w; MH = L.h; PLAN = L.plan;
+    rock = new Uint8Array(MW * MH).fill(1); rubble = new Uint8Array(MW * MH); routeD = new Float32Array(MW * MH).fill(-1);
+    for (const [x0, y0, x1, y1] of L.carve) for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) rock[y * MW + x] = 0;
+    TRACK = L.track || null; CUM = [0];
+    if (TRACK) for (let k = 1; k < TRACK.length; k++) CUM.push(CUM[k - 1] + Math.hypot(TRACK[k][0] - TRACK[k - 1][0], TRACK[k][1] - TRACK[k - 1][1]));
+    TLEN = CUM[CUM.length - 1];
+    caveCells = [];
+    if (L.cave) {
+      let base = 0;
+      for (const [x0, y0, x1, y1, dir] of L.cave.route) {
+        for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+          const d = base + (dir === 'L' ? x1 - (x + 0.5) : dir === 'R' ? x + 0.5 - x0 : y + 0.5 - y0);
+          caveCells.push([d, x, y]);
+        }
+        base += dir === 'D' ? y1 - y0 : x1 - x0;
+      }
+      caveCells.sort((a, b) => a[0] - b[0]);
+      for (const [d, x, y] of caveCells) routeD[y * MW + x] = d;
+    }
+    const rot = -L.door.dir * DEG;
+    DOOR = { bx: L.door.bx, by: L.door.by, rot, ux: Math.sin(rot), uy: -Math.cos(rot), rx: Math.cos(rot), ry: Math.sin(rot) };
+    PLANKS = (L.planks || []).map(p => ({ h: 0.36, ...p }));
+  }
+
+  // ---------------- state ----------------
+  const S = {
+    mode: 'idle', theta: 0, tx: 0, ty: 0, px: 0, py: 0, vx: 0, vy: 0, grounded: true, airTime: 0, stick: 0, u: 0, uVis: 0, hist: [],
+    state: 'play', timer: 0, time: 0, runStart: 0, runTime: 0, step: 0, stepAt: 0, deaths: 0, riding: false,
+    cart: { s: 0, ps: 0, v: 0, active: false, crashed: false }, planks: [], rocks: [],
+    caveT0: -1, caveFront: -1, caveIdx: 0, anim: 'idle', animT: 0, flash: 0, flashColor: '', shake: 0, slow: 0, near: {},
+    fx: [], pops: [], needleA: 0, needleV: 0, unlocked: false, doorF: 0, hint: 0, cam: [0, 0], done: false, dbg: {},
+  };
+  const prev = { theta: 0, tx: 0, ty: 0, px: 0, py: 0, cs: 0, pky: [], cam: [0, 0] };
+  function snapshot() {
+    prev.theta = S.theta; prev.tx = S.tx; prev.ty = S.ty; prev.px = S.px; prev.py = S.py; prev.cs = S.cart.s;
+    prev.pky = S.planks.map(p => p.y);
+    prev.cam = [S.cam[0], S.cam[1]];
+    for (const r of S.rocks) { r.px = r.x; r.py = r.y; }
+  }
+
+  // ---------------- transforms ----------------
+  function toLevel(wx, wy) { const c = Math.cos(S.theta), s = Math.sin(S.theta), dx = wx - S.tx, dy = wy - S.ty; return [dx * c + dy * s, -dx * s + dy * c]; }
+  function toWorld(lx, ly) { const c = Math.cos(S.theta), s = Math.sin(S.theta); return [S.tx + lx * c - ly * s, S.ty + lx * s + ly * c]; }
+  function vW(x, y) { const c = Math.cos(S.theta), s = Math.sin(S.theta); return [x * c - y * s, x * s + y * c]; }
+  function vL(x, y) { const c = Math.cos(S.theta), s = Math.sin(S.theta); return [x * c + y * s, -x * s + y * c]; }
+  const lp = () => toLevel(S.px, S.py - PC[0]);
+  function railWorld() { const t = trackAt(S.cart.s); return toWorld(t.x, t.y); }
+  function doorTilt() { const u = vW(DOOR.ux, DOOR.uy); return Math.acos(clamp(-u[1], -1, 1)) / DEG; }
+
+  // ---------------- collision (level space, tiles) ----------------
+  function resolveCircleL(lx, ly, r, normals) {
+    for (let it = 0; it < 4; it++) {
+      let hit = false;
+      const x0 = Math.floor(lx - r), x1 = Math.floor(lx + r), y0 = Math.floor(ly - r), y1 = Math.floor(ly + r);
+      for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+        if (!solidAt(cx, cy)) continue;
+        const qx = clamp(lx, cx, cx + 1), qy = clamp(ly, cy, cy + 1);
+        const dx = lx - qx, dy = ly - qy, d2 = dx * dx + dy * dy;
+        if (d2 >= r * r) continue;
+        let nx, ny, pen;
+        if (d2 > 1e-9) { const d = Math.sqrt(d2); nx = dx / d; ny = dy / d; pen = r - d; }
+        else {
+          const opts = [[-1, 0, lx - cx], [1, 0, cx + 1 - lx], [0, -1, ly - cy], [0, 1, cy + 1 - ly]].sort((a, b) => a[2] - b[2]);
+          const o = opts.find(q => !solidAt(cx + q[0], cy + q[1])) || opts[0];
+          nx = o[0]; ny = o[1]; pen = o[2] + r;
+        }
+        lx += nx * pen; ly += ny * pen; hit = true;
+        if (normals) normals.push([nx, ny]);
+      }
+      if (!hit) break;
+    }
+    return [lx, ly];
+  }
+  function touchingL(lx, ly, r, normals) {
+    const x0 = Math.floor(lx - r), x1 = Math.floor(lx + r), y0 = Math.floor(ly - r), y1 = Math.floor(ly + r);
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+      if (!solidAt(cx, cy)) continue;
+      const qx = clamp(lx, cx, cx + 1), qy = clamp(ly, cy, cy + 1);
+      const dx = lx - qx, dy = ly - qy, d2 = dx * dx + dy * dy;
+      if (d2 >= r * r || d2 < 1e-9) continue;
+      const d = Math.sqrt(d2); normals.push([dx / d, dy / d]);
+    }
+  }
+  function resolveW(wx, wy, r, normals) {
+    const [lx, ly] = toLevel(wx, wy), ns = [];
+    const [nx, ny] = resolveCircleL(lx, ly, r, ns);
+    for (const n of ns) normals.push(vW(n[0], n[1]));
+    return vW(nx - lx, ny - ly);
+  }
+  function contactsNow() {
+    const ns = [];
+    for (const o of PC) { const [lx, ly] = toLevel(S.px, S.py - o); touchingL(lx, ly, PR + SKIN, ns); }
+    return ns.map(n => vW(n[0], n[1]));
+  }
+  function project(ns) {
+    for (let pass = 0; pass < 3; pass++) for (const n of ns) {
+      const vn = S.vx * n[0] + S.vy * n[1];
+      if (vn < 0) { S.vx -= vn * n[0]; S.vy -= vn * n[1]; }
+    }
+  }
+
+  // ---------------- reset ----------------
+  let lvlBase = null, lvlCv = null, lvlCtx = null;
+  function resetLevel(intro) {
+    S.theta = 0; S.tx = 0; S.ty = 0; S.stick = 0; S.u = 0; S.hist = [];
+    S.vx = 0; S.vy = 0; S.grounded = true; S.airTime = 0; S.state = intro ? 'intro' : 'play'; S.timer = intro ? P.intro : 0;
+    S.anim = 'idle'; S.animT = 0; S.flash = 0; S.shake = 0; S.slow = 0; S.near = {}; S.fx = []; S.pops = [];
+    S.needleA = 0; S.needleV = 0; S.doorF = 0; S.hint = 0;
+    S.toast = null;
+    rubble.fill(0);
+    if (lvlCtx) { lvlCtx.globalCompositeOperation = 'copy'; lvlCtx.drawImage(lvlBase, 0, 0); lvlCtx.globalCompositeOperation = 'source-over'; }
+    S.caveT0 = -1; S.caveFront = -1; S.caveIdx = 0; S.caveGap = 0;
+    S.rocks = (L.rocks || []).map(([x, y, r, rel, dl]) => ({ x, y, r, rel, dl: dl ?? L.rockDelay, vx: 0, vy: 0, st: 'held', t: 0, px: x, py: y, rot: 0 }));
+    S.cart = { s: 0, ps: 0, v: 0, active: false, crashed: false };
+    S.planks = PLANKS.map(p => ({ y: p.top, v: 0, st: 'held', t: 0 }));
+    S.riding = !!L.start.riding;
+    if (S.riding) S.cart.active = true;
+    S.step = 0; S.stepAt = S.time;
+    if (S.riding) { const rw = railWorld(); S.px = rw[0]; S.py = rw[1] + FEET; }
+    else { const w = toWorld(L.start.feet[0], L.start.feet[1]); S.px = w[0]; S.py = w[1]; }
+    S.unlocked = doorTilt() <= 20;
+    S.cam = camTarget(); S.done = false;
+    S.runStart = S.time + (intro ? P.intro : 0); S.runTime = 0;
+    snapshot();
+  }
+  function loadLevel(i) {
+    setupLevel(i);
+    lvlBase = buildLevel(); lvlCv = mk(lvlBase.width, lvlBase.height); lvlCtx = lvlCv.getContext('2d'); lvlCtx.drawImage(lvlBase, 0, 0);
+    S.mode = 'idle'; S.time = 0; S.deaths = 0; S.toast = null;
+    resetLevel(false);
+  }
+  function startRun(mode) {
+    S.dbg = {}; S.time = 0; S.toast = null;
+    S.mode = mode; S.deaths = 0;
+    resetLevel(P.intro > 0);
+  }
+
+  // ---------------- simulation ----------------
+  const input = { keys: 0, buttons: 0, pad: 0, auto: null };
+  function step(dt) {
+    S.time += dt;
+    snapshot();
+    const live = S.state === 'play' && S.mode !== 'idle';
+    let u = 0;
+    if (live && S.mode === 'demo') {
+      const react = PLAN[S.step].react ?? L.react ?? P.react;
+      const tgt = S.time - S.stepAt < react && S.step > 0 ? PLAN[S.step - 1].t : PLAN[S.step].t;
+      u = clamp((tgt * DEG - S.theta) * 4, -1, 1);
+    }
+    else if (live && input.auto) u = clamp(input.auto(S), -1, 1);
+    else if (live) {
+      S.stick += (input.pad - S.stick) * Math.min(1, dt * 12);
+      const st = Math.abs(S.stick) > 0.05 ? S.stick : 0;
+      u = st !== 0 ? st : clamp(input.keys + input.buttons, -1, 1);
+    }
+    S.u = u;
+    const dth = u * P.rotSpeed * DEG * dt;
+    const lc = [S.px, S.py - PC[0]];
+    S.hist.push(lc); if (S.hist.length > PIVOT_LAG) S.hist.shift();
+    if (dth !== 0) {
+      const pv = S.riding ? railWorld() : S.grounded ? lc : S.hist[0];
+      const c = Math.cos(dth), s = Math.sin(dth), rx = S.tx - pv[0], ry = S.ty - pv[1];
+      S.tx = pv[0] + rx * c - ry * s; S.ty = pv[1] + rx * s + ry * c; S.theta += dth;
+    }
+    if (live) {
+      stepCart(dt);
+      stepPlayer(dt);
+      stepRocks(dt);
+      stepPlanks(dt);
+      stepCave(dt);
+      checkHazards();
+      advancePlan();
+      if (!S.done) S.runTime = S.time - S.runStart;
+    } else if (S.mode !== 'idle' && S.state !== 'intro') { stepRocks(dt); stepPlanks(dt); }
+    updateDoor(dt);
+    stepFx(dt);
+    const tgt = camTarget(), kc = 1 - Math.exp(-7 * dt);
+    S.cam[0] += (tgt[0] - S.cam[0]) * kc; S.cam[1] += (tgt[1] - S.cam[1]) * kc;
+    if (S.state !== 'play') {
+      S.timer -= dt;
+      if (S.timer <= 0) {
+        if (S.state === 'intro') { S.state = 'play'; S.stepAt = S.time; S.runStart = S.time; }
+        else if (S.state === 'dead') resetLevel(false);
+        else if (S.state === 'clear') { S.state = 'over'; onRunOver(); }
+      }
+    }
+  }
+  // camera: mostly the level's centre, pulled part of the way toward the player, so the whole small level stays in view
+  function camTarget() {
+    const c = toWorld(MW / 2, MH / 2), f = 0.4;
+    return [c[0] + (S.px - c[0]) * f, c[1] + (S.py - 0.8 - c[1]) * f];
+  }
+
+  function stepPlayer(dt) {
+    if (S.riding) {
+      const rw = railWorld();
+      S.px = rw[0]; S.py = rw[1] + FEET; S.vx = 0; S.vy = 0; S.grounded = true; S.airTime = 0;
+      return;
+    }
+    S.vx = 0;
+    S.vy = Math.min(S.vy + G * dt, VMAX);
+    project(contactsNow());
+    for (let k = 0; k < SUB; k++) {
+      S.px += S.vx * dt / SUB; S.py += S.vy * dt / SUB;
+      const ns = [];
+      for (const o of [PC[0], PC[1], PC[0]]) { const cr = resolveW(S.px, S.py - o, PR, ns); S.px += cr[0]; S.py += cr[1]; }
+      project(ns);
+    }
+    const after = contactsNow();
+    project(after);
+    const grounded = after.some(n => n[1] < -0.5);
+    if (grounded && !S.grounded && S.airTime > 0.18) { S.anim = 'land'; S.animT = 0; if (S.airTime > 0.5) dust(lp(), 6); }
+    if (!grounded && S.grounded) { S.anim = 'fallstart'; S.animT = 0; }
+    S.airTime = grounded ? 0 : S.airTime + dt;
+    S.grounded = grounded;
+    const l = lp();
+    if (l[0] < -2 || l[1] < -2 || l[0] > MW + 2 || l[1] > MH + 2) die('掉出地图了');
+  }
+
+  function stepCart(dt) {
+    const c = S.cart; c.ps = c.s;
+    if (!TRACK || !c.active || c.crashed) return;
+    const tp = trackAt(c.s);
+    const a = G * (Math.sin(S.theta) * tp.tx + Math.cos(S.theta) * tp.ty);
+    if (Math.abs(c.v) < 0.05 && Math.abs(a) < G * 0.1) { c.v = 0; return; }
+    c.v = clamp(c.v + (a - CART_DRAG * c.v) * dt, -CART_MAX, CART_MAX);
+    c.s += c.v * dt;
+    const seg = trackAt(c.s).seg;
+    if (seg !== tp.seg && L.cornerKeep) { c.v *= L.cornerKeep; S.shake = Math.max(S.shake, 0.25); for (let k = 0; k < 8; k++) S.fx.push({ x: tp.x, y: tp.y, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6, life: 0.4, max: 0.4, k: 'spark', s: 0.09 }); }   // a sharp corner costs speed
+    if (c.s <= 0) { c.s = 0; c.v = Math.max(0, c.v); }
+    if (c.s >= TLEN) { c.s = TLEN; crash(); return; }
+    if (Math.abs(c.v) > 7 && Math.random() < 0.6) {   // sparks off the wheels
+      const t = trackAt(c.s);
+      S.fx.push({ x: t.x, y: t.y, vx: -t.tx * c.v * 0.35 + (Math.random() - 0.5) * 2, vy: -t.ty * c.v * 0.35 + (Math.random() - 0.5) * 2, life: 0.35, max: 0.35, k: 'spark', s: 0.08 });
+    }
+  }
+  function crash() {
+    const c = S.cart; c.crashed = true;
+    const tp = trackAt(TLEN), vw = vW(tp.tx * c.v, tp.ty * c.v);
+    S.riding = false; S.vx = 0; S.vy = clamp(vw[1], -VMAX, VMAX); c.v = 0;
+    S.shake = Math.max(S.shake, 0.7);
+    for (let i = 0; i < 26; i++) S.fx.push({ x: tp.x + 0.4, y: tp.y + (Math.random() - 0.5), vx: 3 + Math.random() * 6, vy: (Math.random() - 0.5) * 8, life: 0.9, max: 0.9, k: 'debris', s: 0.12 + Math.random() * 0.12, grav: 1 });
+    pop('哐！');
+  }
+
+  function stepRocks(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta), R = S.rocks, s25 = Math.sin(25 * DEG);
+    for (const r of R) {
+      if (r.st === 'held') {
+        const go = r.rel === 'left' ? gx < -s25 : r.rel === 'right' ? gx > s25 : gy < Math.cos(25 * DEG);
+        if (go) { r.st = 'shake'; r.t = r.dl * P.delayMul; }
+        continue;
+      }
+      if (r.st === 'shake') { r.t -= dt; if (r.t <= 0) r.st = 'free'; continue; }
+      r.vx += G * gx * dt; r.vy += G * gy * dt;
+      const sp = Math.hypot(r.vx, r.vy); if (sp > 15) { r.vx *= 15 / sp; r.vy *= 15 / sp; }
+      for (let k = 0; k < 2; k++) {
+        r.x += r.vx * dt / 2; r.y += r.vy * dt / 2;
+        const ns = [];
+        const q = resolveCircleL(r.x, r.y, r.r, ns);
+        r.x = q[0]; r.y = q[1];
+        for (const n of ns) {
+          const vn = r.vx * n[0] + r.vy * n[1];
+          if (vn < 0) {
+            if (vn < -3.5) { r.dead = true; shatter(r, n); break; }   // a hard hit smashes the rock where you just were
+            r.vx -= 1.2 * vn * n[0]; r.vy -= 1.2 * vn * n[1];
+            r.vx *= 0.995; r.vy *= 0.995;   // rolls freely along the floor
+          }
+        }
+        if (r.dead) break;
+      }
+      r.rot += (r.vx * gy - r.vy * gx) * dt / r.r;
+    }
+    for (let i = 0; i < R.length; i++) for (let j = i + 1; j < R.length; j++) {
+      const a = R[i], b = R[j];
+      if (a.st !== 'free' && b.st !== 'free') continue;
+      const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), m = a.r + b.r;
+      if (d >= m || d < 1e-6) continue;
+      const nx = dx / d, ny = dy / d, pen = (m - d) / 2;
+      if (a.st === 'free') { a.x -= nx * pen; a.y -= ny * pen; }
+      if (b.st === 'free') { b.x += nx * pen; b.y += ny * pen; }
+      const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+      if (rv < 0) { const im = -rv * 0.6; a.vx -= nx * im; a.vy -= ny * im; b.vx += nx * im; b.vy += ny * im; }
+    }
+    S.rocks = R.filter(r => !r.dead && !rubble[Math.floor(r.y) * MW + Math.floor(r.x)]);
+  }
+
+  function stepPlanks(dt) {
+    const gy = Math.cos(S.theta), l = lp();
+    PLANKS.forEach((d, i) => {
+      const pk = S.planks[i];
+      const inShaft = S.state === 'play' && l[0] > d.x0 && l[0] < d.x1 && l[1] > d.top;
+      if (pk.st === 'held') {
+        // you drop into its shaft: it starts to creak
+        if (inShaft && gy > Math.cos(45 * DEG)) { pk.st = 'creak'; pk.t = 2.5; pk.wire = false; S.shake = Math.max(S.shake, 0.12); pop('嘎吱…'); }
+        return;
+      }
+      if (pk.st === 'creak') {
+        // you pass the tripwire near the bottom: it snaps a moment later
+        if (!pk.wire && inShaft && l[1] > d.wire) { pk.wire = true; pk.t = Math.min(pk.t, d.delay * P.delayMul); }
+        pk.t -= dt; if (pk.t <= 0) { pk.st = 'free'; pop('咔嚓'); }
+        return;
+      }
+      if (pk.st !== 'free') return;
+      pk.v += (G * gy - 0.1 * pk.v) * dt;
+      pk.y += pk.v * dt;
+      if (pk.y < d.top) { pk.y = d.top; pk.v = 0; }
+      if (pk.y >= d.bottom) {
+        pk.y = d.bottom; pk.st = 'down'; pk.v = 0; S.shake = Math.max(S.shake, 0.55);
+        for (let k = 0; k < 22; k++) S.fx.push({ x: d.x0 + Math.random() * (d.x1 - d.x0), y: d.bottom - 0.2, vx: (Math.random() - 0.5) * 7, vy: -Math.random() * 6, life: 0.8, max: 0.8, k: 'wood', s: 0.1 + Math.random() * 0.12, grav: 1 });
+      }
+    });
+  }
+
+  function shatter(r, n) {
+    S.shake = Math.max(S.shake, 0.35);
+    for (let i = 0; i < 14; i++) S.fx.push({ x: r.x - n[0] * r.r, y: r.y - n[1] * r.r, vx: n[0] * (2 + Math.random() * 4) + (Math.random() - 0.5) * 5, vy: n[1] * (2 + Math.random() * 4) + (Math.random() - 0.5) * 5, life: 0.7, max: 0.7, k: 'debris', s: 0.1 + Math.random() * 0.14, grav: 1 });
+    dust([r.x, r.y], 6);
+  }
+  function fillCave() {
+    while (S.caveIdx < caveCells.length && caveCells[S.caveIdx][0] <= S.caveFront) {
+      const [, cx, cy] = caveCells[S.caveIdx++];
+      rubble[cy * MW + cx] = 1;
+      paintRubble(cx, cy);
+      if (Math.random() < 0.5) dust([cx + 0.5, cy + 0.5], 2);
+    }
+  }
+  function stepCave(dt) {
+    if (!L.cave) return;
+    if (S.caveT0 < 0) {
+      if (Math.cos(S.theta) < Math.cos(20 * DEG)) { S.caveT0 = S.time; S.shake = Math.max(S.shake, 0.3); pop('轰隆隆…'); }
+      return;
+    }
+    if (S.time - S.caveT0 < L.cave.delay) { S.shake = Math.max(S.shake, 0.06); return; }
+    if (S.caveFront < 0) { S.caveFront = 0; S.caveHist = [[S.time, 0]]; }
+    const dp = playerRouteD(), gap = dp < 0 ? 0 : dp - S.caveFront;
+    const H = S.caveHist;
+    H.push([S.time, Math.max(H[H.length - 1][1], dp)]);
+    const lag = S.cart.crashed && L.cave.lagEnd ? L.cave.lagEnd : L.cave.lag;
+    if (lag) {
+      // the collapse retraces your path exactly `lag` seconds behind you: stop longer than that and it buries you
+      const tq = S.time - lag / P.caveMul;
+      while (H.length > 1 && H[1][0] <= tq) H.shift();
+      const target = H[0][0] <= tq ? H[0][1] : 0;
+      S.caveFront = Math.min(S.caveFront + 16 * dt, Math.max(S.caveFront, target));
+    } else {
+      // it never lets you get far ahead: when the gap opens up it hurries to stay right behind you
+      while (H.length > 2 && H[1][0] < S.time - 3) H.shift();
+      const hz = L.cave.hurry || [[4, 1.9], [2.5, 1.35]], h = hz.find(q => gap > q[0]), hurry = h ? h[1] : 1;
+      S.caveFront += L.cave.speed * P.caveMul * hurry * dt;
+    }
+    S.caveGap = gap;
+    fillCave();
+    S.shake = Math.max(S.shake, 0.1);
+  }
+
+  function die(msg) {
+    if (S.state !== 'play') return;
+    S.state = 'dead'; S.timer = 0.9; S.flash = 0.5; S.flashColor = 'rgba(196,48,80,'; S.deaths++;
+    S.shake = Math.max(S.shake, 0.4);
+    toast(msg, 'dead');
+  }
+  function clear() {
+    if (S.state !== 'play') return;
+    S.state = 'clear'; S.timer = 2.0; S.flash = 0.45; S.flashColor = 'rgba(63,214,224,'; S.doorF = 0; S.done = true;
+    S.runTime = S.time - S.runStart;
+    toast(L.id + ' 通关！' + S.runTime.toFixed(1) + ' 秒', 'clear');
+  }
+  function nearMiss(kind) {
+    if (S.time - (S.near[kind] ?? -9) < 1.6) return;
+    S.near[kind] = S.time;
+    pop('险！', true);
+    if (P.slowmo && (!window.__mineHeadless || window.__mineVideo)) S.slow = 0.42;
+  }
+
+  const dbgMin = (k, v) => { S.dbg[k] = Math.min(S.dbg[k] ?? 99, v); };
+  function checkHazards() {
+    if (S.state !== 'play') return;
+    const cs = PC.map(o => toLevel(S.px, S.py - o));
+    // cave-in
+    if (L.cave) {
+      let caveNear = false;
+      for (const c of cs) {
+        const R0 = S.riding ? 3.2 : 1.4;
+        for (let cy = Math.floor(c[1] - R0); cy <= Math.floor(c[1] + R0); cy++) for (let cx = Math.floor(c[0] - R0); cx <= Math.floor(c[0] + R0); cx++) {
+          if (cx < 0 || cy < 0 || cx >= MW || cy >= MH || !rubble[cy * MW + cx]) continue;
+          const qx = clamp(c[0], cx, cx + 1), qy = clamp(c[1], cy, cy + 1), d = Math.hypot(c[0] - qx, c[1] - qy);
+          dbgMin('cave', d - PR);
+          if (d < PR - 0.15) return die('被塌方埋住了');
+          if (d < PR + (S.riding && L.cave.nearRide ? L.cave.nearRide : 0.9)) caveNear = true;
+        }
+      }
+      if (caveNear) nearMiss('cave');
+    }
+    // rocks
+    const pv = vL(S.vx, S.vy);
+    for (const r of S.rocks) {
+      if (r.st !== 'free') continue;
+      const rel = Math.hypot(r.vx - pv[0], r.vy - pv[1]);
+      for (const c of cs) {
+        const d = Math.hypot(c[0] - r.x, c[1] - r.y);
+        if (rel > 2.5) dbgMin('rock', d - r.r - PR);
+        if (d < r.r + PR - 0.1 && rel > 2.5) return die('被落石砸中了');
+        if (d < r.r + PR + 2.0 && rel > 3) nearMiss('rock');
+      }
+    }
+    // planks
+    for (let i = 0; i < PLANKS.length; i++) {
+      const d = PLANKS[i], pk = S.planks[i];
+      if (pk.st !== 'free' || pk.v <= 2) continue;
+      for (const c of cs) {
+        const inX = c[0] > d.x0 - PR && c[0] < d.x1 + PR, dy = Math.abs(c[1] - pk.y);
+        if (inX) dbgMin('plank' + i, dy - d.h / 2 - PR);
+        if (inX && dy < d.h / 2 + PR - 0.08) return die('被木板砸中了');
+        if (inX && dy < d.h / 2 + PR + 1.0) nearMiss('plank');
+      }
+    }
+    // door
+    const c = cs[0], dx = c[0] - DOOR.bx, dy = c[1] - DOOR.by;
+    const u = dx * DOOR.rx + dy * DOOR.ry, v = dx * DOOR.ux + dy * DOOR.uy;
+    if (Math.abs(u) < 0.95 && v > -0.2 && v < 2.0) { if (S.unlocked) clear(); else S.hint = 1; }
+  }
+
+  function advancePlan() {
+    while (S.step < PLAN.length - 1 && PLAN[S.step].next()) { S.step++; S.stepAt = S.time; }
+  }
+
+  function updateDoor(dt) {
+    const tilt = doorTilt();
+    if (S.unlocked && tilt > 23) S.unlocked = false;
+    else if (!S.unlocked && tilt <= 20) S.unlocked = true;
+    if (S.hint > 0) S.hint = Math.max(0, S.hint - dt);
+    S.needleV += (-40 * Math.sin(S.needleA) - 5 * S.needleV) * dt;
+    S.needleA += S.needleV * dt;
+    if (S.state === 'clear' || S.state === 'over') S.doorF = Math.min(3, S.doorF + dt * 10);
+  }
+
+  // ---------------- effects ----------------
+  function dust(at, n) {
+    for (let i = 0; i < n; i++) S.fx.push({ x: at[0] + (Math.random() - 0.5) * 0.8, y: at[1] + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 1.6, vy: (Math.random() - 0.5) * 1.6, life: 0.9, max: 0.9, k: 'dust', s: 0.18 + Math.random() * 0.22 });
+  }
+  function pop(text, big) { S.pops.push({ text, t: 0, big: !!big }); if (S.pops.length > 3) S.pops.shift(); }
+  function stepFx(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta);
+    for (const p of S.fx) {
+      p.life -= dt;
+      const g = p.grav ? G : p.k === 'dust' ? 0.6 : 0;
+      p.vx += gx * g * dt; p.vy += gy * g * dt;
+      if (p.k === 'dust') { p.vx *= 1 - 1.5 * dt; p.vy *= 1 - 1.5 * dt; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+    S.fx = S.fx.filter(p => p.life > 0);
+    if (S.fx.length > 260) S.fx.splice(0, S.fx.length - 260);
+    for (const p of S.pops) p.t += dt;
+    S.pops = S.pops.filter(p => p.t < (p.big ? 0.9 : 0.8));
+    S.shake *= Math.exp(-6 * dt);
+    if (S.flash > 0) S.flash = Math.max(0, S.flash - dt);
+  }
+
+  // ---------------- art ----------------
+  const COL = {
+    airDark: [16, 11, 9], air: [30, 22, 17], rimHi: [196, 140, 86], rim: [138, 98, 62], mid: [78, 57, 41], deep: [43, 32, 25],
+    beam: [94, 60, 34], beamHi: [128, 84, 48], rail: [150, 150, 160], sleeper: [88, 58, 34],
+  };
+  const put = (d, i, c) => { d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255; };
+  const shade = (c, k) => [clamp(c[0] + k, 0, 255), clamp(c[1] + k, 0, 255), clamp(c[2] + k * 0.8, 0, 255)];
+  const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  const rgb = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+  function buildLevel() {
+    const W = MW * TS, H = MH * TS, cv = mk(W, H), g = cv.getContext('2d');
+    const img = g.createImageData(W, H), d = img.data;
+    const open = (cx, cy) => !(cx < 0 || cy < 0 || cx >= MW || cy >= MH || rock[cy * MW + cx] === 1);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const cx = (x / TS) | 0, cy = (y / TS) | 0, i = (y * W + x) * 4, n = hash(x >> 1, y >> 1);
+      const isOpen = open(cx, cy);
+      let dmin = 99;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        if (open(cx + ox, cy + oy) === isOpen) continue;
+        const rx0 = (cx + ox) * TS, ry0 = (cy + oy) * TS;
+        const ddx = Math.max(rx0 - x, 0, x - (rx0 + TS - 1)), ddy = Math.max(ry0 - y, 0, y - (ry0 + TS - 1));
+        dmin = Math.min(dmin, Math.hypot(ddx, ddy));
+      }
+      let col;
+      if (isOpen) {
+        col = mixc(COL.airDark, COL.air, clamp((dmin - 1) / 9, 0, 1));
+        col = shade(col, (n - 0.5) * 6 + (hash(cx, cy) - 0.5) * 4);
+      } else {
+        col = dmin < 1.5 ? COL.rimHi : dmin < 4 ? COL.rim : dmin < 10 ? COL.mid : COL.deep;
+        if (n > 0.94) col = shade(col, 16); else if (n < 0.05) col = shade(col, -12);
+        if (dmin > 10 && hash(x >> 3, y >> 3) > 0.8) col = shade(col, 5);
+      }
+      put(d, i, col);
+    }
+    g.putImageData(img, 0, 0);
+    g.save(); g.scale(TS, TS);
+    // wooden support frames across corridors (only where both ends sit on rock)
+    const isRock = (cx, cy) => cx < 0 || cy < 0 || cx >= MW || cy >= MH || rock[cy * MW + cx] === 1;
+    const beams = [], lights = [];
+    for (const [x0, y0, x1, y1] of L.carve) {
+      const w = x1 - x0, h = y1 - y0;
+      if (w > h && h <= 3) {
+        for (let x = x0 + 2.4; x < x1 - 1.2; x += 3.3) if (isRock(Math.floor(x), y0 - 1) && isRock(Math.floor(x), y1) && isRock(Math.floor(x + 0.3), y0 - 1) && isRock(Math.floor(x + 0.3), y1)) beams.push([x, y0, y1, 'v']);
+        const mx = Math.floor((x0 + x1) / 2) + 0.5; if (isRock(Math.floor(mx), y0 - 1)) lights.push([mx, y0 + 0.4]);
+      } else if (h > w && w <= 3) {
+        for (let y = y0 + 2.4; y < y1 - 1.2; y += 3.3) if (isRock(x0 - 1, Math.floor(y)) && isRock(x1, Math.floor(y)) && isRock(x0 - 1, Math.floor(y + 0.3)) && isRock(x1, Math.floor(y + 0.3))) beams.push([y, x0, x1, 'h']);
+      } else lights.push([(x0 + x1) / 2, y0 + 0.4]);
+    }
+    for (const [a, b0, b1, o] of beams) {
+      g.fillStyle = rgb(COL.beam);
+      if (o === 'v') { g.fillRect(a, b0, 0.28, b1 - b0); g.fillStyle = rgb(COL.beamHi); g.fillRect(a, b0, 0.08, b1 - b0); }
+      else { g.fillRect(b0, a, b1 - b0, 0.28); g.fillStyle = rgb(COL.beamHi); g.fillRect(b0, a, b1 - b0, 0.08); }
+    }
+    // the rail: sleepers + two rails
+    if (TRACK) {
+      g.lineCap = 'round';
+      for (let s = 0; s <= TLEN; s += 0.7) {
+        const t = trackAt(s), nx = -t.ty, ny = t.tx;
+        g.strokeStyle = rgb(COL.sleeper); g.lineWidth = 0.16;
+        g.beginPath(); g.moveTo(t.x - nx * 0.42, t.y - ny * 0.42); g.lineTo(t.x + nx * 0.42, t.y + ny * 0.42); g.stroke();
+      }
+      for (const off of [-0.22, 0.22]) {
+        g.strokeStyle = rgb(COL.rail); g.lineWidth = 0.07; g.beginPath();
+        TRACK.forEach((p, i) => {
+          const a = TRACK[Math.max(0, i - 1)], b = TRACK[Math.min(TRACK.length - 1, i + 1)];
+          let tx = b[0] - a[0], ty = b[1] - a[1]; const Ln = Math.hypot(tx, ty); tx /= Ln; ty /= Ln;
+          const k = i > 0 && i < TRACK.length - 1 ? 1.41 : 1;
+          const x = p[0] - ty * off * k, y = p[1] + tx * off * k;
+          i ? g.lineTo(x, y) : g.moveTo(x, y);
+        });
+        g.stroke();
+      }
+      // broken rail end + warning stripes
+      const e = trackAt(TLEN);
+      g.save(); g.translate(e.x, e.y); g.rotate(Math.atan2(e.ty, e.tx));
+      g.fillStyle = '#d9a23a'; g.fillRect(0.2, -1.15, 0.3, 2.3);
+      g.fillStyle = '#2a1d14'; for (let k = 0; k < 4; k++) g.fillRect(0.2, -1.0 + k * 0.6, 0.3, 0.25);
+      g.restore();
+    }
+    // lanterns
+    for (const [x, y] of lights) {
+      const gr = g.createRadialGradient(x, y, 0, x, y, 2.2);
+      gr.addColorStop(0, 'rgba(255,190,110,0.32)'); gr.addColorStop(1, 'rgba(255,190,110,0)');
+      g.fillStyle = gr; g.fillRect(x - 2.2, y - 2.2, 4.4, 4.4);
+      g.fillStyle = '#ffd08a'; g.fillRect(x - 0.12, y - 0.1, 0.24, 0.3);
+      g.fillStyle = '#5a3a1e'; g.fillRect(x - 0.16, y - 0.2, 0.32, 0.1);
+    }
+    g.restore();
+    return cv;
+  }
+  function paintRubble(cx, cy) {
+    if (!lvlCtx) return;
+    const g = lvlCtx, x = cx * TS, y = cy * TS;
+    g.fillStyle = '#3a2c22'; g.fillRect(x, y, TS, TS);
+    for (let k = 0; k < 6; k++) {
+      const h1 = hash(cx * 7 + k, cy * 13 - k), h2 = hash(cx * 3 - k, cy * 5 + k * 2), h3 = hash(cx + k * 11, cy + k * 17);
+      const px = x + h1 * TS * 0.8, py = y + h2 * TS * 0.8, s = 3 + h3 * 7;
+      g.fillStyle = h3 > 0.6 ? '#6b5240' : h3 > 0.3 ? '#56412f' : '#7d7266';
+      g.beginPath(); g.moveTo(px, py + s * 0.5); g.lineTo(px + s * 0.4, py); g.lineTo(px + s, py + s * 0.3); g.lineTo(px + s * 0.8, py + s); g.lineTo(px + s * 0.1, py + s * 0.9); g.closePath(); g.fill();
+    }
+  }
+
+  // ---------------- drawing ----------------
+  const view = document.getElementById('view'), ctx = view.getContext('2d');
+  const IMG = {};
+  function tinted(src, rgba) { const c = mk(src.width, src.height), g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = rgba; g.fillRect(0, 0, c.width, c.height); return c; }
+  const ANIMS = { idle: { img: 'idle', n: 4, f: 0.2, loop: true }, fallstart: { img: 'fallstart', n: 2, f: 0.06, next: 'float' },
+    float: { img: 'float', n: 6, f: 0.09, loop: true }, land: { img: 'land', n: 3, f: 0.07, next: 'idle' } };
+  function animFrame(dt) {
+    let a = ANIMS[S.anim];
+    if (!S.grounded && (S.anim === 'idle' || S.anim === 'land')) { S.anim = 'fallstart'; S.animT = 0; a = ANIMS.fallstart; }
+    if (S.grounded && (S.anim === 'float' || S.anim === 'fallstart')) { S.anim = 'idle'; S.animT = 0; a = ANIMS.idle; }
+    S.animT += dt;
+    let idx = Math.floor(S.animT / a.f);
+    if (idx >= a.n) { if (a.loop) idx %= a.n; else { S.anim = a.next; S.animT = 0; a = ANIMS[S.anim]; idx = 0; } }
+    return { img: a.img, idx };
+  }
+
+  let K = 40, CX = 0, CY = 0, alpha = 1, W = 0, H = 0;
+  function resize() {
+    const r = view.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    view.width = Math.max(320, Math.round(r.width * dpr)); view.height = Math.max(200, Math.round(r.height * dpr));
+  }
+  function render(dt) {
+    W = view.width; H = view.height;
+    K = Math.min(H / (Math.max(MW, MH) + 3), W / (Math.max(MW, MH) + 8)); CX = W / 2; CY = H * 0.53;
+    const lp_ = (a, b) => a + (b - a) * alpha;
+    const th = lp_(prev.theta, S.theta), Tx = lp_(prev.tx, S.tx), Ty = lp_(prev.ty, S.ty);
+    const Px = lp_(prev.px, S.px), Py = lp_(prev.py, S.py);
+    let camx = lp_(prev.cam[0], S.cam[0]), camy = lp_(prev.cam[1], S.cam[1]);
+    if (S.shake > 0.01) { camx += (Math.random() - 0.5) * S.shake * 0.9; camy += (Math.random() - 0.5) * S.shake * 0.9; }
+    const c = Math.cos(th), s = Math.sin(th);
+    const ox = CX + K * (Tx - camx), oy = CY + K * (Ty - camy);
+    const level = () => ctx.setTransform(K * c, K * s, -K * s, K * c, ox, oy);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#0a0706'; ctx.fillRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = false;
+    level();
+    ctx.fillStyle = 'rgb(43,32,25)'; ctx.fillRect(-40, -40, MW + 80, MH + 80);
+    ctx.drawImage(lvlCv, 0, 0, MW, MH);
+    // door
+    ctx.save(); ctx.translate(DOOR.bx, DOOR.by); ctx.rotate(DOOR.rot);
+    if (S.state === 'clear' || S.state === 'over') ctx.drawImage(IMG.doorOpen, Math.floor(S.doorF) * 32, 0, 32, 32, -1, -2, 2, 2);
+    else ctx.drawImage(IMG.door, (Math.floor(S.time * 7) % 6) * 32, 0, 32, 32, -1, -2, 2, 2);
+    const lock = (S.unlocked || S.state === 'clear' || S.state === 'over') ? IMG.lockOpen : (S.hint > 0 && Math.floor(S.hint * 8) % 2 === 0) ? IMG.lockHint : IMG.lockLocked;
+    ctx.drawImage(lock, -1, -2, 2, 2);
+    ctx.translate((15.5 - 16) / 16, -2 + 10.5 / 16); ctx.rotate(-(th + DOOR.rot) + S.needleA);
+    ctx.drawImage(IMG.needle, -1 / 16, 0, 2 / 16, 8 / 16);
+    ctx.restore();
+    // planks
+    PLANKS.forEach((d, i) => {
+      const pk = S.planks[i], pky = lp_(prev.pky[i] ?? pk.y, pk.y), w = d.x1 - d.x0;
+      ctx.save();
+      if (pk.st === 'creak') ctx.translate((Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.08);
+      ctx.fillStyle = '#8b5a2b'; ctx.fillRect(d.x0 + 0.02, pky - d.h / 2, w - 0.04, d.h);
+      ctx.fillStyle = '#a8743c'; ctx.fillRect(d.x0 + 0.02, pky - d.h / 2, w - 0.04, 0.07);
+      ctx.fillStyle = '#5e3a1a'; for (let k = 0; k < 3; k++) ctx.fillRect(d.x0 + 0.4 + k * 0.95, pky - 0.05, 0.5, 0.04);
+      if (pk.st === 'held' || pk.st === 'creak') { ctx.fillStyle = '#4a3020'; ctx.fillRect(d.x0 - 0.05, pky - 0.3, 0.2, 0.25); ctx.fillRect(d.x1 - 0.15, pky - 0.3, 0.2, 0.25); }
+      ctx.restore();
+    });
+    // rocks
+    for (const r of S.rocks) {
+      const rx = lp_(r.px, r.x), ry = lp_(r.py, r.y);
+      ctx.save(); ctx.translate(rx, ry);
+      if (r.st === 'shake') ctx.translate((Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.08);
+      ctx.rotate(r.rot);
+      ctx.fillStyle = '#5f5a55'; ctx.beginPath();
+      for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2, rr = r.r * (0.86 + 0.14 * hash(k, r.r * 10)); k ? ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#8e8780'; ctx.beginPath(); ctx.arc(-r.r * 0.25, -r.r * 0.25, r.r * 0.35, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#3a3633'; ctx.lineWidth = 0.05; ctx.beginPath(); ctx.moveTo(r.r * 0.1, -r.r * 0.4); ctx.lineTo(r.r * 0.3, 0.1); ctx.lineTo(r.r * 0.05, r.r * 0.45); ctx.stroke();
+      ctx.restore();
+    }
+    // particles
+    for (const p of S.fx) {
+      const a = clamp(p.life / p.max, 0, 1);
+      ctx.globalAlpha = p.k === 'dust' ? a * 0.55 : a;
+      ctx.fillStyle = p.k === 'spark' ? '#ffd37a' : p.k === 'wood' ? '#a8743c' : p.k === 'debris' ? '#8a8a92' : '#8a7462';
+      const sz = p.k === 'dust' ? p.s * (1.6 - a * 0.6) : p.s;
+      ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+    }
+    ctx.globalAlpha = 1;
+    const toS = (wx, wy) => [CX + K * (wx - camx), CY + K * (wy - camy)];
+    let bS = null;
+    if (TRACK) {
+      // cart: trolley on the rail (level space) + bucket hanging along screen-down
+      const ct = trackAt(lp_(prev.cs, S.cart.s));
+      ctx.save(); ctx.translate(ct.x, ct.y); ctx.rotate(Math.atan2(ct.ty, ct.tx));
+      if (S.cart.crashed) ctx.rotate(0.35);
+      ctx.fillStyle = '#2b2b31'; ctx.fillRect(-0.55, -0.16, 1.1, 0.32);
+      ctx.fillStyle = '#1a1a1e'; for (const wx of [-0.38, 0.38]) { ctx.beginPath(); ctx.arc(wx, 0, 0.2, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const rwx = Tx + ct.x * c - ct.y * s, rwy = Ty + ct.x * s + ct.y * c;
+      const rS = toS(rwx, rwy); bS = toS(rwx, rwy + HANG);
+      ctx.strokeStyle = '#6f6f78'; ctx.lineWidth = Math.max(1, K * 0.06);
+      ctx.beginPath(); ctx.moveTo(rS[0], rS[1]); ctx.lineTo(bS[0], bS[1] - K * 0.3); ctx.stroke();
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // player
+    const fr = animFrame(dt), sc = K * 1.54 / 92, pS = toS(Px, Py);
+    let src = IMG[fr.img];
+    if (S.state === 'dead') src = IMG[fr.img + 'Red'];
+    ctx.globalAlpha = S.state === 'clear' ? Math.max(0, 1 - (2.0 - S.timer) * 1.6) : S.state === 'over' ? 0 : 1;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(src, fr.idx * 96, 0, 96, 112, Math.round(pS[0] - 49.5 * sc), Math.round(pS[1] - 112 * sc), Math.round(96 * sc), Math.round(112 * sc));
+    ctx.globalAlpha = 1;
+    if (bS) {
+      // bucket front (covers the legs while riding)
+      ctx.save(); ctx.translate(bS[0], bS[1]);
+      const bw = K * 1.5, bh = K * 0.85;
+      ctx.fillStyle = '#4c4f59'; ctx.beginPath(); ctx.moveTo(-bw / 2, -bh * 0.35); ctx.lineTo(bw / 2, -bh * 0.35); ctx.lineTo(bw * 0.4, bh * 0.65); ctx.lineTo(-bw * 0.4, bh * 0.65); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#8d919c'; ctx.fillRect(-bw / 2 - K * 0.04, -bh * 0.35 - K * 0.08, bw + K * 0.08, K * 0.12);
+      ctx.fillStyle = '#353841'; ctx.fillRect(-bw * 0.32, -bh * 0.05, bw * 0.64, K * 0.06); ctx.fillRect(-bw * 0.28, bh * 0.25, bw * 0.56, K * 0.06);
+      ctx.restore();
+    }
+    // speed lines
+    const spd = S.riding ? Math.abs(S.cart.v) : Math.abs(S.vy);
+    if (spd > 7.5) {
+      let dx = 0, dy = -1;
+      if (S.riding) { const t = trackAt(S.cart.s); const w = vW(t.tx * Math.sign(S.cart.v), t.ty * Math.sign(S.cart.v)); dx = -w[0]; dy = -w[1]; }
+      else if (S.vy < 0) dy = 1;
+      ctx.strokeStyle = 'rgba(255,236,210,0.28)'; ctx.lineWidth = Math.max(1, K * 0.035);
+      const n = Math.min(14, Math.floor((spd - 7) * 2.2));
+      for (let k = 0; k < n; k++) {
+        const h1 = hash(k * 3.1, Math.floor(S.time * 14) + k), h2 = hash(k * 7.7, Math.floor(S.time * 14) - k);
+        const off = (h1 - 0.5) * K * 7, along = (h2 - 0.2) * K * 6, len = K * (1.2 + spd * 0.12);
+        const x0 = pS[0] - dy * off + dx * along, y0 = pS[1] - K * 0.8 + dx * off + dy * along;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + dx * len, y0 + dy * len); ctx.stroke();
+      }
+    }
+    // cave mood: soft vignette
+    const vg = ctx.createRadialGradient(CX, CY, H * 0.3, CX, CY, H * 0.95);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    if (S.flash > 0) { ctx.fillStyle = S.flashColor + Math.min(0.35, S.flash).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+    drawHud(pS);
+  }
+
+  function drawHud(pS) {
+    const u = Math.max(1, H / 640);
+    ctx.textBaseline = 'alphabetic';
+    // pops near the player
+    for (const p of S.pops) {
+      const a = 1 - p.t / (p.big ? 0.9 : 0.8), rise = p.t * K * 1.6;
+      ctx.globalAlpha = clamp(a * 1.5, 0, 1);
+      ctx.font = `600 ${Math.round((p.big ? 34 : 20) * u)}px "Noto Serif SC", serif`;
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 4 * u; ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillStyle = p.big ? '#ff8a6a' : '#ffe2bd';
+      const x = pS[0] + (p.big ? K * 1.6 : 0), y = pS[1] - K * 2.4 - rise;
+      ctx.strokeText(p.text, x, y); ctx.fillText(p.text, x, y);
+    }
+    ctx.globalAlpha = 1;
+    if (S.toast && S.time - S.toast.t < (S.toast.kind === 'clear' ? 2.0 : 0.9)) {
+      const a = clamp((S.time - S.toast.t) / 0.15, 0, 1);
+      ctx.globalAlpha = a; ctx.textAlign = 'center';
+      ctx.font = `600 ${Math.round(34 * u)}px "Noto Serif SC", serif`;
+      ctx.lineWidth = 6 * u; ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.fillStyle = S.toast.kind === 'clear' ? '#3fd6e0' : '#ff7a8f';
+      ctx.strokeText(S.toast.text, CX, CY - H * 0.18); ctx.fillText(S.toast.text, CX, CY - H * 0.18);
+      ctx.globalAlpha = 1;
+    }
+    // level badge, top-left
+    ctx.textAlign = 'left'; ctx.fillStyle = '#f0a64a'; ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`;
+    ctx.fillText(L.id, 14 * u, 26 * u);
+    ctx.fillStyle = '#eadfd2'; ctx.font = `600 ${Math.round(16 * u)}px "Noto Serif SC", serif`;
+    ctx.fillText(L.name, 14 * u + ctx.measureText(L.id).width + 40 * u, 26 * u);
+    if (S.state === 'intro') { drawIntro(u); return; }
+    if (S.mode === 'idle') return;
+    // caption of the current beat
+    const st = PLAN[S.step], age = S.time - S.stepAt, ap = clamp(age / 0.22, 0, 1);
+    if (S.state === 'play' || S.state === 'dead') {
+      const bw = Math.min(W * 0.62, 520 * u), bh = (st.sub ? 64 : 46) * u, bx = CX - bw / 2, by = 12 * u - (1 - ap) * 10 * u;
+      ctx.globalAlpha = 0.25 + 0.75 * ap;
+      ctx.fillStyle = 'rgba(14,9,7,0.78)'; rr(bx, by, bw, bh, 10 * u); ctx.fill();
+      ctx.strokeStyle = 'rgba(240,166,74,0.55)'; ctx.lineWidth = 1.5 * u; rr(bx, by, bw, bh, 10 * u); ctx.stroke();
+      ctx.textAlign = 'left'; ctx.fillStyle = '#f0a64a'; ctx.font = `600 ${Math.round(13 * u)}px ui-monospace, Menlo, monospace`;
+      ctx.fillText(`第 ${S.step + 1} 拍`, bx + 14 * u, by + 28 * u);
+      ctx.textAlign = 'center'; ctx.fillStyle = '#fff1df'; ctx.font = `600 ${Math.round(21 * u)}px "Noto Serif SC", serif`;
+      ctx.fillText(st.cap, CX + 20 * u, by + 30 * u);
+      if (st.sub) { ctx.fillStyle = '#cdb8a4'; ctx.font = `${Math.round(14 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`; ctx.fillText(st.sub, CX + 20 * u, by + 52 * u); }
+      ctx.globalAlpha = 1;
+    }
+    // timer + mode
+    ctx.textAlign = 'left'; ctx.fillStyle = '#eadfd2'; ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`;
+    ctx.fillText(S.runTime.toFixed(1) + ' s', 14 * u, H - 18 * u);
+    ctx.fillStyle = S.mode === 'demo' ? '#f0a64a' : '#a8968a'; ctx.font = `${Math.round(12 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(S.mode === 'demo' ? '演示中' : '自己玩', 14 * u, H - 38 * u);
+    // beat timeline
+    const n = PLAN.length, gap = 26 * u, tw = (n - 1) * gap, tx0 = CX - tw / 2, ty = H - 26 * u;
+    ctx.fillStyle = 'rgba(14,9,7,0.6)'; rr(tx0 - 16 * u, ty - 14 * u, tw + 32 * u, 28 * u, 14 * u); ctx.fill();
+    ctx.strokeStyle = 'rgba(234,223,210,0.25)'; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.moveTo(tx0, ty); ctx.lineTo(tx0 + tw, ty); ctx.stroke();
+    for (let i = 0; i < n; i++) {
+      const x = tx0 + i * gap, done = i < S.step || S.state === 'clear' || S.state === 'over', cur = i === S.step && S.state === 'play';
+      ctx.beginPath(); ctx.arc(x, ty, (cur ? 7 + Math.sin(S.time * 10) * 1.5 : 5) * u, 0, Math.PI * 2);
+      ctx.fillStyle = done ? '#f0a64a' : cur ? '#fff1df' : 'rgba(20,14,11,0.9)'; ctx.fill();
+      ctx.strokeStyle = done || cur ? '#f0a64a' : 'rgba(234,223,210,0.45)'; ctx.lineWidth = 1.5 * u; ctx.stroke();
+    }
+    // steering wheel = the controller input
+    const wx = W - 52 * u, wy = H - 52 * u, wr = 30 * u;
+    S.uVis += (S.u - S.uVis) * 0.25;
+    ctx.save(); ctx.translate(wx, wy);
+    ctx.fillStyle = 'rgba(14,9,7,0.7)'; ctx.beginPath(); ctx.arc(0, 0, wr + 10 * u, 0, Math.PI * 2); ctx.fill();
+    const full = Math.abs(S.u) > 0.95;
+    if (Math.abs(S.uVis) > 0.05) {
+      ctx.strokeStyle = full ? '#f0a64a' : 'rgba(240,166,74,0.6)'; ctx.lineWidth = 4 * u; ctx.beginPath();
+      ctx.arc(0, 0, wr + 5 * u, -Math.PI / 2, -Math.PI / 2 + S.uVis * 1.4, S.uVis < 0); ctx.stroke();
+    }
+    ctx.rotate(S.uVis * 75 * DEG);
+    ctx.strokeStyle = '#eadfd2'; ctx.lineWidth = 4 * u; ctx.beginPath(); ctx.arc(0, 0, wr, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.moveTo(-wr, 0); ctx.lineTo(wr, 0); ctx.moveTo(0, 0); ctx.lineTo(0, wr); ctx.stroke();
+    ctx.fillStyle = '#f0a64a'; ctx.beginPath(); ctx.arc(0, -wr, 4 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#eadfd2'; ctx.beginPath(); ctx.arc(0, 0, 6 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#a8968a'; ctx.textAlign = 'center'; ctx.font = `${Math.round(11 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(S.u > 0.05 ? '顺时针' : S.u < -0.05 ? '逆时针' : '手柄', wx, wy - wr - 16 * u);
+  }
+  // title card shown for a moment when a level starts
+  function drawIntro(u) {
+    const t = P.intro - S.timer, a = clamp(Math.min(t / 0.18, S.timer / 0.25), 0, 1);
+    ctx.globalAlpha = a * 0.72; ctx.fillStyle = '#0a0706'; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = a; ctx.textAlign = 'center';
+    ctx.fillStyle = '#f0a64a'; ctx.font = `600 ${Math.round(22 * u)}px ui-monospace, Menlo, monospace`;
+    ctx.fillText('矿坑 ' + L.id, CX, CY - 40 * u);
+    ctx.fillStyle = '#fff1df'; ctx.font = `600 ${Math.round(52 * u)}px "Noto Serif SC", serif`;
+    ctx.fillText(L.name, CX, CY + 22 * u);
+    ctx.fillStyle = '#cdb8a4'; ctx.font = `${Math.round(16 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(L.tip, CX, CY + 62 * u);
+    ctx.globalAlpha = 1;
+  }
+  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+  // ---------------- page UI ----------------
+  function toast(text, kind) { S.toast = { text, kind, t: S.time }; }
+  const $ = (id) => document.getElementById(id);
+  const pTime = $('pTime'), pDeath = $('pDeath'), overlay = $('startOverlay'), ovText = $('ovText');
+  const ovDemo = $('ovDemo'), ovPlay = $('ovPlay'), ovNext = $('ovNext');
+  let lastHud = -1;
+  function updateHud() { pTime.textContent = S.runTime.toFixed(1) + ' 秒'; pDeath.textContent = String(S.deaths); }
+  function showOverlay(kind) {
+    overlay.hidden = false;
+    const nx = LEVELS[LI + 1];
+    if (kind === 'start') {
+      ovDemo.textContent = '▶ 看演示通关'; ovPlay.textContent = '自己玩';
+      ovNext.hidden = true;
+      ovText.textContent = L.id + ' ' + L.name + '：' + L.tip;
+    } else {
+      ovDemo.textContent = S.mode === 'demo' ? '▶ 再看一遍' : '▶ 看演示';
+      ovPlay.textContent = S.mode === 'demo' ? '自己玩这关' : '再玩一次';
+      ovNext.hidden = !nx;
+      if (nx) ovNext.textContent = '下一关 ' + nx.id + ' ' + nx.name + ' ▶';
+      ovText.textContent = L.id + ' ' + (S.mode === 'demo' ? '演示通关' : '通关') + '，用时 ' + S.runTime.toFixed(1) + ' 秒' + (S.deaths ? '，死亡 ' + S.deaths + ' 次' : '') + (nx ? '。' : '。矿坑的关都过完了。');
+    }
+  }
+  function onRunOver() {
+    if (window.__mineHeadless) return;
+    showOverlay('over');
+    if (S.mode === 'demo' && LEVELS[LI + 1] && $('chkChain') && $('chkChain').checked) {
+      overlay.hidden = true; selectLevel(LI + 1, false); begin('demo');
+    }
+  }
+  (() => { const box = document.querySelector('.levels'); if (!box) return; box.innerHTML = ''; LEVELS.forEach((lv, i) => { const b = document.createElement('button'); b.className = 'lv' + (i === 0 ? ' active' : ''); b.type = 'button'; b.dataset.level = String(i); b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false'); b.innerHTML = '<b>' + lv.id + '</b>' + lv.name + (lv.isNew ? ' <i class="newtag">新</i>' : ''); box.appendChild(b); }); })();
+  const lvButtons = [...document.querySelectorAll('[data-level]')];
+  function selectLevel(i, show) {
+    loadLevel(i);
+    lvButtons.forEach(b => { const on = +b.dataset.level === i; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    if (show) showOverlay('start');
+  }
+  lvButtons.forEach(b => b.addEventListener('click', () => { selectLevel(+b.dataset.level, true); }));
+  function begin(mode) { overlay.hidden = true; startRun(mode); view.focus({ preventScroll: true }); }
+  ovDemo.addEventListener('click', () => begin('demo'));
+  ovPlay.addEventListener('click', () => begin('play'));
+  ovNext.addEventListener('click', () => { const m = S.mode === 'demo' ? 'demo' : 'play'; selectLevel(LI + 1, false); begin(m); });
+  $('btnDemo').addEventListener('click', () => begin('demo'));
+  $('btnPlay').addEventListener('click', () => begin('play'));
+  $('btnReset').addEventListener('click', () => { if (S.mode === 'idle') begin('play'); else { overlay.hidden = true; resetLevel(false); } view.focus({ preventScroll: true }); });
+  $('chkSlow').addEventListener('change', (e) => { P.slowmo = e.target.checked; });
+
+  const held = new Set();
+  const KEYMAP = { ArrowLeft: -1, KeyQ: -1, KeyA: -1, ArrowRight: 1, KeyE: 1, KeyD: 1 };
+  function syncKeys() { let v = 0; for (const k of held) v += KEYMAP[k]; input.keys = clamp(v, -1, 1); }
+  function takeOver() { if (S.mode === 'idle' || S.state === 'over') begin('play'); else if (S.mode === 'demo') S.mode = 'play'; }
+  window.addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+    if (KEYMAP[e.code] !== undefined) { e.preventDefault(); held.add(e.code); syncKeys(); takeOver(); }
+    else if (e.code === 'KeyR') { e.preventDefault(); if (S.mode !== 'idle') { overlay.hidden = true; resetLevel(false); } }
+  });
+  window.addEventListener('keyup', (e) => { if (held.delete(e.code)) syncKeys(); });
+  window.addEventListener('blur', () => { held.clear(); syncKeys(); input.buttons = 0; });
+  const holdBtn = (id, dir) => {
+    const b = $(id);
+    const on = (e) => { e.preventDefault(); input.buttons = dir; b.classList.add('active'); takeOver(); };
+    const off = () => { if (input.buttons === dir) input.buttons = 0; b.classList.remove('active'); };
+    b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
+  };
+  holdBtn('btnCcw', -1); holdBtn('btnCw', 1);
+  let padReset = false;
+  // some hosts (e.g. an embedded page) block the gamepad API and the call throws: then keyboard / buttons only
+  let padOK = true;
+  function pollPad() {
+    if (!padOK) return;
+    let v = 0, rs = false, pads = [];
+    try { pads = (navigator.getGamepads && navigator.getGamepads()) || []; }
+    catch (e) {
+      padOK = false; input.pad = 0;
+      const note = $('padNote');
+      if (note) note.textContent = '手柄：这个网页里浏览器不让读手柄，用本地的 html 文件打开就能用（摇杆横向或 L2 / R2，Options 重来）';
+      return;
+    }
+    for (const p of pads) {
+      if (!p) continue;
+      const ax = [p.axes[2] || 0, p.axes[0] || 0].find(a => Math.abs(a) > 0.18) || 0;
+      const trig = ((p.buttons[7] && p.buttons[7].value) || 0) - ((p.buttons[6] && p.buttons[6].value) || 0);
+      v = Math.abs(trig) > 0.05 ? trig : ax;
+      rs = !!(p.buttons[9] && p.buttons[9].pressed);
+      if (v) break;
+    }
+    input.pad = v;
+    if (v && S.mode === 'demo') S.mode = 'play';
+    if (rs && !padReset && S.mode !== 'idle') { overlay.hidden = true; resetLevel(false); }
+    padReset = rs;
+  }
+  const sliders = [['tRot', 'oRot', 'rotSpeed', v => v + '°/s'], ['tCave', 'oCave', 'caveMul', v => '×' + v.toFixed(2)], ['tDelay', 'oDelay', 'delayMul', v => '×' + v.toFixed(2)]];
+  for (const [id, out, key, fmt] of sliders) {
+    const el = $(id), o = $(out);
+    if (!el) continue;
+    el.addEventListener('input', () => { P[key] = parseFloat(el.value); o.textContent = fmt(P[key]); if (S.mode !== 'idle') { overlay.hidden = true; startRun(S.mode); } });
+  }
+
+  // ---------------- boot ----------------
+  let last = 0, acc = 0;
+  let loopErr = false;
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    if (window.__mineStop) return;
+    try {
+      const now = ts / 1000; let dt = last ? now - last : 0; last = now; dt = Math.min(dt, 0.1);
+      pollPad();
+      if (!window.__mineHeadless) {
+        let scale = 1;
+        if (S.slow > 0) { S.slow -= dt; scale = 0.32; }
+        acc += dt * scale;
+        while (acc >= DT) { step(DT); acc -= DT; }
+        alpha = acc / DT;
+      } else alpha = 1;
+      render(dt);
+      if (S.time - lastHud > 0.1 || S.time < lastHud) { lastHud = S.time; updateHud(); }
+    } catch (e) { if (!loopErr) { loopErr = true; console.error(e); } }
+  }
+  const load = (src) => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+  Promise.all(Object.entries(A).map(([k, v]) => load(v).then(im => { IMG[k] = im; }))).then(() => {
+    for (const k of ['idle', 'float', 'fallstart', 'land']) IMG[k + 'Red'] = tinted(IMG[k], 'rgba(226,70,96,0.6)');
+    resize(); window.addEventListener('resize', resize);
+    selectLevel(0, true);
+    window.__mineReady = true;
+    requestAnimationFrame(frame);
+  });
+  window.__mine = {
+    S, P, LEVELS, step, startRun, loadLevel, resetLevel, input, DT, lp, trackAt,
+    get L() { return L; }, get LI() { return LI; }, get PLAN() { return PLAN; }, get CUM() { return CUM; }, get TLEN() { return TLEN; },
+    render: () => render(0), renderAt: (a, dt) => { alpha = a; render(dt); },
+  };
+})();
+</script>

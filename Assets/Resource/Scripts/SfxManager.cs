@@ -54,7 +54,6 @@ namespace Resource.Scripts
         [SerializeField] private AudioClip _wallBumpClip;
         [SerializeField] private AudioClip _playerDeathClip;
         [SerializeField] private AudioClip _doorOpenClip;
-        [SerializeField] private AudioClip _oxygenPickupClip;
         [SerializeField] private AudioClip _buttonClickClip;
         [SerializeField] private AudioClip _uiMoveClip;
         [SerializeField] private AudioClip _uiBackClip;
@@ -272,7 +271,6 @@ namespace Resource.Scripts
         public void PlayUIMove() => PlayClip(_uiMoveClip);
         public void PlayUIBack() => PlayClip(_uiBackClip);
         public void PlayUIError() => PlayClip(_uiErrorClip);
-        public void PlayOxygenPickup() => PlayClip(_oxygenPickupClip);
 
         private void PlayClip(AudioClip clip)
         {

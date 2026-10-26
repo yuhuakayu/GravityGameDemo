@@ -1,0 +1,1970 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:dark}body{margin:0;font:14px/1.5 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>迷宫动作关</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600&display=swap">
+<style>
+/* Level picker, one game stage, a control row, then the notes. Single dark theme on purpose: it is the game's cave palette. */
+:root {
+  --bg: #0e0e1c;
+  --panel: #17172b;
+  --line: #2c2c4a;
+  --line-hi: #44446e;
+  --ink: #e6e2ff;
+  --muted: #9a97bd;
+  --accent: #9fa8ff;
+  --cyan: #3fd6e0;
+  --red: #ff7a8f;
+  --stage: #0c0c1a;
+  --scrim: rgba(10, 10, 22, 0.62);
+  --primary-bg: #23234a;
+  --primary-fg: #eef0ff;
+  --active-bg: #1f1f3c;
+  --kbd-bg: #121226;
+  --font-display: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --font-ui: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-num: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 28px; display: flex; flex-direction: column; gap: 12px; }
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.45rem; letter-spacing: 0.04em; text-wrap: balance; }
+.sub { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.newtag { font-style: normal; font-size: 11px; padding: 1px 5px; border-radius: 6px; background: #e8a04a; color: #241a10; margin-left: 4px; }
+.levels { display: flex; flex-wrap: wrap; gap: 8px; }
+.lv { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font: inherit; font-size: 0.92rem; padding: 8px 14px; border-radius: 999px; cursor: pointer; display: inline-flex; gap: 8px; align-items: baseline; }
+.lv b { font-family: var(--font-num); font-weight: 600; color: var(--accent); }
+.lv:hover { border-color: var(--line-hi); color: var(--ink); }
+.lv.active { background: var(--active-bg); border-color: var(--accent); color: var(--ink); }
+.lv:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stage { position: relative; width: min(100%, calc(72vh * 1.6)); max-width: 100%; aspect-ratio: 16 / 10; margin: 0 auto; background: var(--stage); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.stage canvas { display: block; width: 100%; height: 100%; outline: none; }
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: var(--scrim); text-align: center; padding: 16px; }
+.overlay[hidden] { display: none; }
+.overlay p { margin: 0; color: var(--ink); font-size: 0.92rem; max-width: 34em; line-height: 1.6; }
+.overlay .row2 { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 0.95rem; padding: 9px 14px; border-radius: 6px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+.btn:hover { border-color: var(--line-hi); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.primary { background: var(--primary-bg); border-color: var(--accent); color: var(--primary-fg); }
+.btn.big { font-size: 1.05rem; padding: 12px 22px; }
+.btn.hold { min-width: 88px; }
+.btn.active { background: var(--active-bg); border-color: var(--accent); }
+.btn[hidden] { display: none; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; color: var(--muted); cursor: pointer; margin-left: 4px; }
+.chk input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.pill { font-size: 0.8rem; padding: 4px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pill b { color: var(--ink); font-weight: 600; font-family: var(--font-num); }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; }
+summary { cursor: pointer; font-size: 0.92rem; color: var(--ink); }
+.tune { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 22px; margin-top: 10px; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; font-size: 0.85rem; min-width: 0; }
+.row input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.row output { font-family: var(--font-num); color: var(--accent); font-variant-numeric: tabular-nums; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 22px; font-size: 0.88rem; line-height: 1.7; }
+.notes > div { min-width: 0; }
+.notes h2 { margin: 0 0 4px; font-size: 0.95rem; font-family: var(--font-display); font-weight: 600; color: var(--accent); }
+.notes ol, .notes ul { margin: 0; padding-left: 1.2em; }
+.notes li { margin: 2px 0; }
+.notes .muted { color: var(--muted); }
+.maps { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+.maps pre { margin: 0; font-family: var(--font-num); font-size: 0.78rem; line-height: 1.25; color: var(--ink); background: var(--kbd-bg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
+.maps figure { margin: 0; }
+.maps figcaption { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+kbd { font-family: var(--font-num); font-size: 0.8em; padding: 1px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: var(--kbd-bg); }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>迷宫 · 第二轮 13 关</h1>
+    <p class="sub">Maze_01～05 重做 · 只用游戏里已有的墙、尖刺、激光、重力锁门</p>
+  </div>
+
+  <div class="levels" role="group" aria-label="选关" id="lvRow">
+    <button class="lv active" type="button" data-level="0" aria-pressed="true"><b>01</b>之字</button>
+    <button class="lv" type="button" data-level="1" aria-pressed="false"><b>02</b>甩尾</button>
+    <button class="lv" type="button" data-level="2" aria-pressed="false"><b>03</b>闪光闸</button>
+    <button class="lv" type="button" data-level="3" aria-pressed="false"><b>04</b>大回环</button>
+    <button class="lv" type="button" data-level="4" aria-pressed="false"><b>05</b>翻天</button>
+  </div>
+
+  <div class="stage">
+    <canvas id="view" tabindex="0" aria-label="关卡画面，左右方向键旋转世界"></canvas>
+    <div class="overlay" id="startOverlay">
+      <div class="row2">
+        <button class="btn primary big" id="ovDemo" type="button">▶ 看演示通关</button>
+        <button class="btn big" id="ovPlay" type="button">自己玩</button>
+        <button class="btn big" id="ovNext" type="button" hidden>下一关 ▶</button>
+      </div>
+      <p id="ovText">演示会自动打完这一关：画面上方写着每一拍该怎么转，右下角的方向盘是手柄输入，遇到险情会慢动作。</p>
+    </div>
+  </div>
+
+  <div class="bar">
+    <button class="btn primary" id="btnDemo" type="button">▶ 看演示</button>
+    <button class="btn" id="btnPlay" type="button">自己玩</button>
+    <button class="btn" id="btnReset" type="button">重来</button>
+    <button class="btn hold" id="btnCcw" type="button" aria-label="逆时针旋转（按住）">↺ 逆时针</button>
+    <button class="btn hold" id="btnCw" type="button" aria-label="顺时针旋转（按住）">顺时针 ↻</button>
+    <label class="chk"><input type="checkbox" id="chkSlow" checked>险情慢动作</label>
+    <label class="chk"><input type="checkbox" id="chkChain" checked>演示连播下一关</label>
+    <div class="pills">
+      <span class="pill">用时 <b id="pTime">0.0 秒</b></span>
+      <span class="pill">死亡 <b id="pDeath">0</b></span>
+    </div>
+  </div>
+
+  <details>
+    <summary>调参（改了会从这一关开头重来）</summary>
+    <div class="tune">
+      <label class="row" for="tRot">旋转速度 <output id="oRot">135°/s</output><input id="tRot" type="range" min="90" max="240" step="5" value="135"></label>
+    </div>
+  </details>
+
+  <div class="notes" id="notes">
+    <div>
+      <h2>五关各自的爽点</h2>
+      <ul>
+        <li>01 之字：右、回正、左、回正、右、回正，转晚一点就擦着尖刺掉进洞；最后把横着的门转正。</li>
+        <li>02 甩尾：竖井里越掉越快，快到底才甩向左边，贴着整排尖刺飞过去。</li>
+        <li>03 闪光闸：先整个翻过来往上掉；激光一闪就转，冲过去它就在身后亮起。</li>
+        <li>04 大回环：绕着尖刺块一直顺时针转满一圈，四道激光一道接一道。</li>
+        <li>05 翻天：等激光灭了掉下去，甩过尖刺，撞墙后接着转 90°，往上掉进天花板上的门。</li>
+      </ul>
+    </div>
+    <div>
+      <h2>操作</h2>
+      <ul>
+        <li><kbd>←</kbd> <kbd>Q</kbd> 逆时针，<kbd>→</kbd> <kbd>E</kbd> 顺时针，<kbd>R</kbd> 这一关重来</li>
+        <li id="padNote">手柄：摇杆横向或 L2 / R2，Options 重来</li>
+        <li class="muted">演示中按任意方向键就接手自己玩；画面上方一直提示下一拍。</li>
+      </ul>
+    </div>
+    <div>
+      <h2>和游戏一致的规则</h2>
+      <ul>
+        <li>玩家照 PlayerController：自己不会走，只往屏幕下方掉；贴着墙滑动会被卡住。</li>
+        <li>尖刺是整格判定；激光照 LaserEmitter：一直照到墙，熄灭前闪 0.5 秒，发射器本身是实心的小块。</li>
+        <li>门照 GoalDoor：碰到门那一格、并且门正立（20° 以内）才过关。</li>
+        <li>镜头照 MazeCameraFit：对准迷宫中心，大小固定，转到任何角度都装得下。旋转速度默认 135°/s（游戏里的值）。</li>
+      </ul>
+    </div>
+    <div>
+      <h2>地图（一格 = 2×2 地砖，字母和 MazeSceneBuilder 一样）</h2>
+      <div class="maps" id="mapList"></div>
+    </div>
+  </div>
+</div>
+<script>
+window.__ASSETS={"tiles": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAAAwCAYAAACG5f33AAACuUlEQVR42u1bO5LCMAy1MzkJBZncIEO9zdLsVXYoOESqnIaKeocbMNlir8JWZoxGsuQPsQ1xFceRYz9LTx+C7rqPm8rY5vmsv48ndA3TuH8Yg32JjHQs5J3TuNc6N4CfXwc1Xy/oWNcPD2OwL5GRjoW8s+sHVTSApbeuH1Sj1hbVigbw7/eH7VPPmDH7GR95ql8VgLHAb7Y7tdnuRECEtrZ0ECQaAe9ttjvynkQe65uDiAbQnsg+aanKU2GDcSSYPNQiqg/lXXNJ5sPmMmNdP6hp3Os2lpdizcMGjwMnxIQprpMqC7WO+XpR38fTrfXROumJpeIdah6uj5lriAkbDnXto4nRvBTP+oBpALWvsXEXSJwsNu5qXoE0dxrSZ7BUzsWBIfPGHpZrHTYHOgGUTMRpHbdxKhNZCqwQ5+mdiUC1xiaD4yHkz5nt0mBJ9tGkOAnJ2Ks272KCDVLXD3eXHmp60IRLM11u/2sx4ZmpnHEAVHhAlaHs5329J5TNqZXYWqI50LWZZ240hxNJVkyQJNdcDro6kcyBdGlOxATSjS8XUHFhaBGAKibkigGl6zDFhOYZvBCzYVhRzqWV0nUEc6BPP9b75fTCXDSQvaD60nGgNFRJDVopHl1CIcVlIrU4keBcOHWrPYwp9ssESN45CqpcKrcWExK0agBc0rR93tWWDFRuPnT9LnwHcJ7POisHqsNtNeHEBJ47lKHej61hdSJLZyLvwIc+RYzsGjiNe21+nILVDyoHX8qEIaj2uu6BdG4AYT3QFUhj11gFRwIOJctdw0C6rYVrOHPGPiTCsgtO1pcqiudAV7WbKqe5Pm/z+T5QAmjxHBj6XZ8LuFCtr44DUxcDYuesigMhCBiZcyaMHYhE3tV/i0A6lQlLWrEmXENb64GvWEyAJ+zqS2Ri5TkZXQJQNf/d9R+/Ie1yH4RvbQAAAABJRU5ErkJggg==", "idle": "data:image/png;base64,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", "float": "data:image/png;base64,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", "fallstart": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAABwCAYAAABIFn9yAAAUWklEQVR42u1de3BT153+LngtGOFshIyNjSTwIgc/KLsmgAOJSdgECA+X0Dg0OyQY0EzDboDtZqkXb7MlZJkVy0I7DdBpmZpiQiYsMcSMCBQIheI4YGBNF+JHsFyDLEMwuM7E9RBpYbR/iHM496WXLftKOt+MxnpcXcnfOd/vdX7nCuDg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg4ODg0DKEWPzS203zfNLn1riPCXw4Of/hIikWSZ/+t8/DmGcSH7ADPi4Czn/ceQBC/MLVpQCArka3iHzp46z1r3IRcP7jQwDbTfN8asSzoK/NmgAAOPLyv/KQiPMfEoZo+csR8gGokg8Axjefh/frXtH7lOJUDs5/zHiA7aZ5voUH/0P85Okv5ZbnzedVj+HhEOc/ZgXQtnm/34LMmgDvx/VIXjxZ/WDJwHABcP5DhSarQCL3efpLJD+uVyU5UGy63TSPV4Y4/7GXA7CxpxqO7KhUHRAOzn/MCkCaPHU1unGu6hMZsbL4lIPzHy8eQFphmL7zLVxr/N9HTz4st2HWBMx32PtkyTgSm39NCYDUnYl77Wp0w/txPQpffAE/bD1Kj7vvdqHwxRdQ+OILMvdbXf9BQIvGwfnXrADWuI8JbGxpzDOh6FdlqKu/Dl1yst/yzJqAJJMFOekG1NVfl53DVrE7qFvn4PxrNgRa4z4msAPxb/ppAICyv/gb0XGrRkwHANT99tOIYluOgeGfhEHbTfN85Kal/1fT6wAk8ZIttjA49+ZPMb1kAY1Ju3aeotZLqWLBy6Khh0LR4F9r4zBEqwPAklhhW6l67PSdb9H7zg370d15h8ajSoRzTxBGAtyP/Ct5BC6AAG44a/2rwpEdlTDmmfCsaQ6cG/bLjrvvdlGLo1aXVhoALoKB5Z9Mei1WhTTfDQoAORMn0ed+7z5B75dufAdJLffQ1ejGfIfdn6g9xMdz/1nmhskAHNlRyUOhMHKmSPmXhkLSkEgLY6DtZrjVpXCeuYyldb+m5Hq8XlS+fwy169+AzXEWANDu6sDSJbNk55CKAOD9QaHmX8Rg9JX/7s47sD5XoCgCLQhAswthbBKWk26gz+uSkzHSvRbFq3X0ObNlDDxeLwCgauNYVG0ci2mWVMVFGh7+BJ/80eSfnHPh6lK0bd4/6JUhQcuD0NXoxoMZVdhS4e81v+C6i7Pnr9HjZj71BCUdAD2OxSrjfJkF4iFQYN7ZcLGr0Q17kz9kqXHehMOeLXpPyYYbAfk/ePGqwJ5bev7BDokELU9+AJT8MpseJRtu4Oz5a+g8Phtpc0+i8/hsVeIJapw3UfcvO+lgSvMCLgR56AP49/2y/P/j1o/8HqBpuex9wfg/WlwuqyxJE2ciiIEOUQUtDgBxv4uPb8M0Syp9vcymD4n4Oz33AACjUoajPLc0KPFcCHIBEBEQAQDAM5MehT0zpiaFxP8F1120374lXFq21ackAu/XvTixr4qOBRcAY4EWH98Gj9cLXXIypllSsWLRMIxKHSqb/DXOmzQ+ZeHxekO2Pjw5ludIW/7vDyL+n5mkw5PL9gEAfr7ulZD47+zuEgBATQBKGMix0FQSzE7Kc787hWmWVEo+AKzc9kf6+gXXXVxw3QUAFFkzUWTNxDRLKo1HyYCwiRi7OLNwdSnmvFbCZ7xKAWLh6lIZ//ZDbTBbxsBsGRMy/2kGow8ApuxdJ7DjEGjfAJsvRBua2hF2JsNPynO3TPj33gvI6TGIQqAiayaKy1tEg6IGUpWQWiUWyY/recu0xPqzye+dnnsyngsnj4uYfyIC1hsE80TRDk015QEOXrwqPHfLRCdlW7c4xiyz6VFVXRvwHFsqeungOOzZyDLosfj4NkUvwHqeRC+PSic/APx02irRMXX11xU7QIPxb07PUOSWHQvZhpuHXija4zJEq4PAWhEWpOa8YtGwoOdLm3sS37GMAACRCNRcfqLH/Ud2VIrCULXNLh6vFzXOm6JbMP7N6Rm+NIPRR0IiNRGwj8l3adu83xetsGiIli1QkTVTdExxeQu1RCQZDgarOQkerxdZBn1ISThfKPPnX1L+2UleV38dDns29Qh19ddVxcDyX2TNRE66AfMddvEOMyYxDpYgx20OIJ38UpTZ9KgpfxSHShdkpCCx55PL9qHoyiu0NEc+gxAtXRtYuLo04a4zusZ9TJAKX2r9g4WebGhUOHkc/VtXfx2fXZmBOz33UOO8iSJrJkalDAd8oJ2jxjyT4rgvXF0K79e9ITc6xqwHULK6UuuvRnYoKLPp/aSHUIUi6xCJ5gnIRhgAWFhzIOSYn0W7q0M0PnX111E4eRxqnDfRfLsbADDa4PfcB4U/YGndrwEAzjOXRdafFUPy43rMea0kahW7IVqZ/Gz8qRZ7shUFEg4Fq0KYLWMUrZpSAsZ2iyZiTpBmMPrYyc9acSk+v3g/4Lkq3z9G38sK6aOL7bjTcw+jDUNRZM2kIpCGQ+z4nNhXhRP7qqLSOzREC5aHfWxvqpRZ/zKbHsXlLaI+oEDlTTWxFFkzRSubUrfb1egWiWAg69GxhhlTw4+eiQiIN2ZFMN9hpwtgamEwGwr1V76miRAoknhbqUKk5pJ1ycmiNgp7UyW6O+/IEi7ymCySRTP21KL1l1p6NesfDkg+wIqgxnkTX3U/wFfdD6gICLLWvypM2btOmLJ3nUAEwYZnrBj6w0trJgle4z4mmNMzfNOQGtLxwTwAK5Cz56+h3dWBMttybKnoxcGLV4WDuIpLaVtlJTkighP7qhK6P0g6cSPF5k3bAwrpq+4HuNNzDw57NorL4QNA2yeIINQM5Zr1x+IjCSZQW10sLm9BVXUttegA8MGB07LmuHCsHSCuQkiRSG0SxPo3NzShuaFJNnn7goyxVtHj5oYm6gUIRqUMx95D38Jhz0aRNRNK6wVxXQViJ6VSBYdNZlkRhOshPLl7UGbTU5c7+7f/KbPwbPyZaJWgnPxc5OTn0kkvnbzhJMFKCTH5DDYUYj3B3kPf0lyNzIloC2FILAwMmcykEUta3QnFm5gtY0Tb9pSatFgkSp+QNPYP1eKHmwSzIpDmA6wI2OSY3KIpAs0IIFDd/4MDp+l9sgmGre6oQbpPlT2PlFh6DZyH4RBJgOPZCyglvuyEHQg47NmifQZqcyNa3mCIVgYi0OvBrH0owmFFQxZjiOik/edk8sfzotjPbFN80tX0wsnjRAlopGhuaELp6/NkIpJ6AWLMZkxNoiJgV+zJOIVS9IhZAZjTM3xq1p/U/9VQVV0bdiJcVV2LZd971Ej38tTv0FCIhEPS/arxJoKf2ab4SAjDetSBQOX7x1C9aZbocx07PLAfasNow1CMShlOQ6GPLraLQtpoeIJBL4Oy5UoymdndXsF6UFjc6blHF1lYS8J6EpJEl9n09HPSDEYfa/m0fCm//oD9UBscU7NFlvjzi/dVrb9qXlAeOF9Q8gKyEGiHx39BXdtKNHXfF41jkTUTF1x38d2/TqeiKLJmosZ5UzZmMSsAYv3LbHqkzT1JG93I5Cx56emIFmNGpQzH0iWzRKvHbDVI17Qcz0zS4bMrHhRZM3Gnx+A72+wU2HAoXuP/H4yxwLHD4w8JV8vj787uLqH09Uf/+/jxeRF9Tmtro3K1afEv8PnH/4CuugeKV5MelTKcimCaJRVXXX8W9XLpkpPh8Xr7RQSDFgKlGYw+En4Qy9/c0ISq6lqkzT2JrQc+hyd3T0ALZLaMoaXNYN6l3dWB5oYmmhh7cveIKhnSzTcs4nG/sK1iN2wVu+HY4UFxeQv+qeKSIBVBf1jY0tfnqYpgV4eLXnfUVrEbufeSkHsviYqAHRvSP8SGQ+yWy0ghDKYAWOtfsuEGNv5kG6wTJ1PLTwZCKVlmm7VYjyENidq6e2kyrGtaDk/uHvT2fAN9ymMoeelpUfWJXMEAcYy3Jxb4iNWtsK3Erg5XwMQ3zWD09dUDOOzZ+JPpPdXjate/Qe//1d//iN7fs/0nouPauntF4RBBjfNmxMn7oIdAJNGtqq6VVXs6u7uE6VOKfOcu1QjkMXF7WVkpQStIo1KGY1TKcJS89DT1LOxCWlV1LXRNy6l4QukvijcEm/x5eQXweDwRnXv8+Dy0tjaiuLwFDvta2eusKHZ1uB4qdA3q6q+j3dWB5Wvepa9/ssce1KBGIoJBEwBreR32bHgCDMz0KUU+ADh3qUbmlkMpj+mSk6m4iBjYfAB4hX6ngxe74nrCb/risgDbypDDhkCTv7W1MaT8oLO7SyB9PqIE+KEo5uz8EHOYsSFGikQDALBg+aPL2/zP4S0iL0AS45jxAFKrTWJ9cqnDs+ev0WOkJLMu+dylGoFYbZLQquUCJI+QCmbpklmo2jhWtSIUtyLoI0h4E44IpM8RUVRViyt+vT3fAAD0KY/Rx7PmF9NcDiiTeQW/CBD22A3KQJPkd8WiYVi57Y+oqq5Fb883tE/kfv3vcCt1AszDxKXM+26/m8x+eZHse1+seNl3+5YLvzn8rezzapw3ac4w86knRAtkzi/qkT/0PdmFtuJdBJEYKqVqEg1dIgyzyOewITBpyGMFQOZGu6uDCuTWDadMCOGOXdJgkhpsY/t9twtJJsujL/vw/qVf/NIHAH+ZnkEFMdV2kP7Tdb98ygf4G7Y+u+IRWX3SGr10ySx8cOA0rBMno2TJDVHvULRWHWMxP2CTZsVqksrzFbaVffY0ZKJLK3/tLv9rpFlvwfLyoDmCGgZ9Jbjy/WMwW8ZAn/IY2l0dqCieicoN7/hfe/hXCuOThTA+WYgkkwVJJgtaDh6WhVRpc09ixtQkWjpjk9+331go2zLJllKnWVIxUO24HH0XRsZYKxYsL6d5QjhjN+ACYEufxeUt1M2Fi/8uWyfyDG11l31ECDOfzRGyslKEwlXnhe//eD9KR43GlYrNAIDSeQWymv+uisOK35OLYODAVgBz8nOhT3mM3licPupQfH/GWCv1COGEQAMqAOmEItY/VPcXNJ6TCIHFJNt6lM4rUHxfpCLk6L9QK1Abdk5+Lk4fdaDz+GzkD30v4Lkc9mxte4BgmLPzQ/rTO09v/pXqcX/u+lNAIbw9sUBGQlt3L/7rh6n0oq9su3TJhhui7kPWWyUy1OL/QL8cGbEQjs9WbM5rbmhC/tD3UFzeguLyFox0r1W9BWuRH9QkWDqhSGYfLNT5/patqoMQKEFjRXXizb8TLXSRpJfsVz17/hqaG5ow0r1WVBEiFSvySyeJhv7gP1QvQMqiDswG26Gkg7+NnYQ2SmsKoVacBk0ArFsqs+nR8GAt0mTZfUdY55yz80MA90KzZI6zsD20MmwnKFvxCRQKJcL6QLjY9MVlwQb0W54UaIKz3PfnOAxaCEQWNgIlQwBUrU8wVzzCOFLxeeJGSdUnEdsfwsH6358S+pP/UIUgvUXr/4u6AEjXJxv+kJXfQCCVgPZvh/fr96mrv0571KVdpGbLGJRsuKHYXcqrQvGJqAtAuqgUyaVMAiVc/jBIDuI5Zj6bI0i9Sk5+Ljy5exSFqLSNMtERiH+1xa5gnjshBJBmMPrYFdYVi4apWv9A8b+SO+2v5CucHWeJ6gVGGEfKRMDyH42KUNx4ABak9UGt9q/2/Ix3dyqSTHqF1AaAlEKzslJCjiGVfgaU5wGnhBHGkbjvdtF+LKkXUBoDpVJ0Qgmgs7tLKLPpVcOewsnjaJdmsCs/BBqAOTs/DGqFAnmYmU89gdNHHTh91IGGB/4WXemlOkYbhkZ8JbpESIb7o8N0MBD1MmjhqvNCmsFIL8GhtNOLbG4haGvr8RFRkIk7492dwN0vZbEpS3yp20UtTpLJAlvFbmwqLFAUXiD4N3Bk0/ZqduLzUqjYwrP8s8YpEP9awoANpjk9w5dl0ONsszPiz2yruyxzqVmFBQI7IKUb36EDoCSSQPkKmdxEsGStgGy2SPTJH03+4z4HaL99S+jL5A8l2dr0xWWBbZ8OJ1lWmtwkfIt2LToeqkF95T8hkuBouWGpRZIOQiS5C1kwK9lwg8c6A8w/F0AUXHe45Uti9eP9KhFa5Z8LoJ/xgzEWPhM5/7EtgHCSqXWrl8VULBpv/EuhVf7j0gNU2FZi6469fMZqNFnmAuhHcnd1uHiTGuc/YsRUgpdmMPqkzXWknVlaplSqWWu9Jh2L/LffviUo7ZWIFf5jzgNMf2ERTGYrxlvzMd6aH7Klmvnd+SFdw4YjsfiPOQGc+/Qw3O3OoMedGjaCEr/irR/BZLZSK8ancWTo7O4SpPyr8Rkr/MdUODB9SpFPp9Oh1dkAANQCNTZeVgyDzOkZPpPZCp3O39jm8XjQ2trI+3k4/7HnAczpGSLylayT9Pj227cEcmVpQP0HGzgSl/+YEECawejzeL2q5Cuh/fYtwZye4Vu15sc85OH8qyIpFgaA7dIEgLy8gqADRu5/cmC3yF3z8IfzH9NJMADkTC6k9wNdv55UKkipNNjAcSQe/zElANZ6EHdMEiwlNDZepgkaB+c/bjwAcauBBoodLH65c85/3Ajge6+tEsWUSnGnWmVC7TiOxOU/pgSQZjD6PjmwW3Y1t1Biy3AqGByJw/+QWCKf/BZVuMnUgiUr+ezl/CsiKVbID2RZwrm+Z15eAdB4mV/oNkz+O7u7hM5LNTCnZ9CxOFP7qWBOz/DFMv9JWieeWBuPxwOdTidafg/lx9dIAkZ6UXhSHBn/4z0eH1vxIdWdQFtGY4F/zYdA0nIbG0umGYx0r6malxhvzUdzfZ2oH4Xv8+0b/2dqPxXIj5bHOv9CrFggglAbqtgedXN6ho94jlZng2oPO0fi8a/pEKizu0tAo3hjhS45OaTl9Ly8AuQ9/PEG4q4J+Xxqc/5jJgmOxEpI3bH0l+YjPW/CiiCO+U+Iy6KQ+JM3xHH+YyoH6Gv82l8WjSN++f9/DQMNWJVSnskAAAAASUVORK5CYII=", "land": "data:image/png;base64,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", "door": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAAAgCAYAAABEmHeFAAACeElEQVR42u3cv2uTQRzH8c8TAqKCWDso0haaoQUV2qdDBqeK4iIuLmYRuvQfENRFFMVFhCyCf0NcXMRFEJ0csjzt2A4OaSkKBqPo0KHqIJGzyZO7J32eO0PeXyglcH1e94Pv3T1faKQh49TJuV/mjzzH/+A/6/zAH/H1j7Ki5ufj169JkjrPX/zT7uOnzaioQZufTz9+JEnauXM3iD//9rUkaePC5SD+vY1EkvRwPh7L8eex/lEWNK7WnB6aNBu5TQY+fpF+yXbErKzWFVdrWlmtS5IWFqrW3932cbWmYY8ofHwffpSGu2abayTNhvNugI/vy4+y4ubx0i9sf2ubBHx8n37kipvw1PSiJKndbmm2sqRvXz9Lkra31qwdGTQJ+Pi+/cgV76Jm7O+AGdtba5kmAR8/hF9yuTv1w20xNb1oPa5c7274+EX5pYPgh64ua+fsscImweZP3L8Z1J951VDnxnIw/1byRntPb4/t+PNY/54E6JaTkmZDZ85dOnAGHz5y4m8nPmy+t7bHx/fp9yTA+npTRUVl7ry1DT6+Tz/1BCgisuwA+Pg+fE4A/LH2y/0y0OxEu91KfwlWxdpmfwbaJiGLP+HQpkj/aGBfYz7+PNa/bMvAycmZ1Ad+d2hjdm6YHWDQs38G9oU/8uvPOwA+7wDcQfGpArED4XMCsAPhUwWiCkQViCoQVSCqMFSBuIPi8w7AHRSfKhA7ED4nADsQPlUgqkBUgagCUQWiCkMViDso/sj71hNgUOy+fPfnv/ID3QG/PKgH9VtXakH9J/FFzVaWgt3BQ48/j/Uvp2VhEZnoOjh8fF9+JPV+666v6H43Cz5+KP83B7AOK07ebiAAAAAASUVORK5CYII=", "doorOpen": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAADAUlEQVR42u2bMWvbQBTHn0wWe3QGe0gK8aDSUnDkQdCu7dS1BDxmyRxKsIYOHTp0KWQp9BsUPHTIB3DWDk5cJaC4NEMHJ0MCFbSFbpavS1UkWad7J51OxLwHD2P7rN/z3bt39z/LADmt3TLZh59/WLtlsnbLZKDZiK+Gb8hCo89ff3MBAODNfSvW7ub20ijrSxNfLd+QgVp2H3VRdzxU1hnEL5dfywK3Wybb3TsEy+7D7t4hAAB0u7bwMWxv2X3IW6KIr4dv8ODYbMOaOx6iZwPx9fENWXi0vKSZ6LOiTiC+Xr6BhUfBG5vbAADg+zPY6vTg968fAABwfXUmDCSrE7D8eqMJA/c49v6nFwOYeiMt/HDzlbToZuyu8A0sPBz0qCUTIGrXV2dSnSDD9/0ZvJyMYm2OdpxYHKr59UZzicmzox0Hpt5IKf/V1y9SJf/tgx6KX8OsHWmDL7KNzW1hucKuXWn8OWMx18FPMnmumu9MJ2h26M50guLXigz+wD2G4L1TWhJk8QPGYq6Dn2TyXCX/4OIUzU36wcWpkL+UAKGccMdDePjoWeEMrjea/4P4fvlZ2B7LF1WAMvgyFUAFf987kZ75Sd/3TjL5a8kXzs/HpR1fdswnwjZYftagl8XPwyzCL8rD8LkVoAyTmQEiwywBqvmyS0BRft7Sz4uHKgBVAHECdLt2LAjfnwkvjGkTZqCoE7D8gMnHUZQfSIxHWiyy/EDxb4xpfGEFWF+/J7xwVptoR+SZgWnX9v1Z6uzgtVXB5zFFfVKET3sAwRKAUQEq+XlUQBF+UQWQjGel9gBBBXuAQPMeIKAKQBWAKgBvMBYVqICFZhWwIBWQoQJYBSoAPyBqVIDaBCAVQCpglU4C467nJBDn6k4C1TidBNJJIKkAUgF0DkDnAKukAuYVqIC5ZhUwJxVAKoD2ABnlmO4HqPh+gHfWU9jq9EgF3GEVsMbLwjIqAXZwUfyPXvz54+fl85NMnnFikeZjeQKz//2tLI1vACz/61SXhfemE786/l8ES8S8pRcSqgAAAABJRU5ErkJggg==", "lockLocked": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAsElEQVR42mNkIBNIiKv9R+a/eHmLkRxzmBhGwSgYYMA40LmAhVyLlVRt0KX+k+MQFnJcraRqw3Dz2l4UMXUtZ4Z7t4/QthyQEFf7D7Ocj18SRe7mtb0MSqo2GFFDs4Lo08fnVEmEA14SDi0HvHh5i/He7SMM6lrOGHKwREiXXABzRExYEAMDAwPDklXryMoBg6IgoggoKlr8V1S0+D+aC0YdMOqAUQeMOmDUAaNgSAMAYdo6NsNoe9UAAAAASUVORK5CYII=", "lockOpen": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAqklEQVR42mNgGAWjYKQDRnI1Soir/Ufmv3h5iyyzWMi1WH3/LlQJR7f/5DiEhRxXq+/fxXDFxh5FTOfIQYabjm4km8VEqu9hlvPxS6LIXbGxZ1DfvwsjaqjqAGTw6eNzqiRCpoHOBUxDLt9KiKv9t7/24L+wkDwKtr/24D+p8U92Lrjp6Magc+QgQ7iUKAMDAwPDymevycoBg6IgGgWjYBSMglEwCkbBKAAAjds10AcEzB0AAAAASUVORK5CYII=", "lockHint": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAsklEQVR42mNkIBNIiKv9R+a/eHmLkRxzmBhGwSgYYMA40LmAkVyL17iGoIiH7F5DlkNYyHH1GtcQBv9tS1HENnpFwx1Bs3JAQlztP8xyPn5JFDn/bUsZ1riGYEQNzQqiTx+fUyURDnhJOPSKYglxtf9HYqr+CwvJo+AjMVX/SY1/irPhJTMrBgYGBga9U8fIzoYDXhBRBBQVLf4rKlr8H80Fow4YdcCoA0YdMOqAUTCkAQBJbT6K1790SwAAAABJRU5ErkJggg==", "needle": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAAICAYAAADTLS5CAAAAH0lEQVR42mNgIAwYz595/J+BgYGBCSbConrnKgOKCACSNAVdvXwtkwAAAABJRU5ErkJggg=="};
+
+</script>
+<script>
+(() => {
+const M = () => window.__maze;
+const lp = () => M().lp();
+const gnd = () => M().S.grounded;
+const LZ = (i) => typeof i === 'string' ? M().LASERS.find(l => l.cx + ',' + l.cy === i) : M().LASERS[i];
+// the laser has just started blinking (its last 0.5 s before switching off): the moment to go
+const blink = (i) => { if (M().P.noWait) return true; const l = LZ(i), p = M().laserPhase(l); return l.off > 0 && p >= l.on - 0.5 && p < l.on; };
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+window.__MAZE_LEVELS = [
+  {
+    id: '4', name: '之字', tip: '转过去冲，到洞口马上转回来掉下去。转晚了撞尖刺。',
+    map: [
+      "#########",
+      "#P.....X#",
+      "#####..##",
+      "#X......#",
+      "##..#####",
+      "#.....X##",
+      "####..###",
+      "####.]###",
+      "#########"],
+    plan: [
+      { t: 90, cap: '顺时针 90°', sub: '往右冲', cue: 7.5, next: b => lp()[0] > b.cue },
+      { t: 0, cap: '到洞口马上转回来', sub: '掉下去，转晚了撞尖刺', react: 0.36, next: () => lp()[1] > 6 && gnd() },
+      { t: -90, cap: '逆时针 90°', sub: '往左冲', cue: 10, next: b => lp()[0] < b.cue },
+      { t: 0, cap: '转回来', sub: '', react: 0.36, next: () => lp()[1] > 10 && gnd() },
+      { t: 90, cap: '顺时针 90°', sub: '往右', cue: 6.5, next: b => lp()[0] > b.cue },
+      { t: 0, cap: '转回来，掉下去', sub: '', react: 0.36, next: () => lp()[1] > 14 && gnd() },
+      { t: 90, cap: '门是横着的：顺时针 90° 把它转正', sub: '门正了才开', next: () => false },
+    ],
+  },
+  {
+    id: '5', name: '甩尾', tip: '掉进竖井越掉越快，快到底时甩向左边，飞过整排尖刺；撞墙后再转回来掉进门。',
+    map: [
+      "##########",
+      "#P......X#",
+      "######..##",
+      "######..##",
+      "######..##",
+      "#.......##",
+      "#.......##",
+      "#.......##",
+      "#DXXXXXX##",
+      "##########"],
+    plan: [
+      { t: 90, cap: '顺时针 90°', sub: '往右冲', cue: 8.75, next: b => lp()[0] > b.cue },
+      { t: 0, cap: '转回来，掉进竖井', sub: '', react: 0.36, cue: 7, next: b => lp()[1] > b.cue },
+      { t: -90, cap: '甩！逆时针 90°', sub: '飞过尖刺地面', react: 0.54, next: () => lp()[0] < 3 && gnd() },
+      { t: 0, cap: '撞到墙再转回来', sub: '早了就掉进尖刺', next: () => false },
+    ],
+  },
+  {
+    id: '6', name: '闪光闸', tip: '先把世界翻过来往上掉。激光会闪：一闪就转，灭的时候正好冲过去。',
+    map: [
+      "##########",
+      "#.....####",
+      "#..#>.####",
+      "#..#..####",
+      "#..#..####",
+      "#..#..####",
+      "#..#..v..#",
+      "#P.#....]#",
+      "##########"],
+    lasers: { '4,2': { on: 1.3, off: 1.7 }, '6,6': { on: 1.0, off: 1.8 } },
+    plan: [
+      { t: 180, cap: '顺时针翻 180°', sub: '往上掉', next: () => lp()[1] < 4 && gnd() },
+      { t: 90, cap: '逆时针 90°', sub: '往右', next: () => lp()[0] > 10.5 && gnd() },
+      { t: 90, cap: '等激光闪', sub: '一闪就转', next: () => blink('4,2') },
+      { t: 0, cap: '灭了！逆时针：往下掉', sub: '穿过激光', react: 0.55, next: () => lp()[1] > 14 && gnd() },
+      { t: 0, cap: '等激光闪', sub: '', next: () => blink('6,6') },
+      { t: 90, cap: '灭了！顺时针 90°', sub: '穿过激光，门在右墙上', react: 0.5, next: () => false },
+    ],
+  },
+  {
+    id: '7', name: '大回环', tip: '绕着尖刺块转一整圈。每次只转 90°，转早了会被甩到尖刺上；激光一闪就冲。',
+    map: [
+      "##########",
+      "#......^.#",
+      "#<XXXXXX.#",
+      "#.X####X.#",
+      "#.X####X.#",
+      "#.X####X.#",
+      "#.X####X.#",
+      "#.XXXXXX>#",
+      "#D#Pv....#",
+      "##########"],
+    lasers: { '4,8': { on: 1.0, off: 1.6 }, '8,7': { on: 1.0, off: 1.6 }, '7,1': { on: 1.0, off: 1.6 }, '1,2': { on: 1.0, off: 1.6 } },
+    plan: [
+      { t: 0, cap: '等激光闪', sub: '一闪就转', next: () => blink('4,8') },
+      { t: 90, cap: '灭了！顺时针 90°', sub: '往右', react: 0.45, next: () => lp()[0] > 16.5 && gnd() },
+      { t: 90, cap: '等激光闪', sub: '', next: () => blink('8,7') },
+      { t: 180, cap: '灭了！顺时针：往上', sub: '穿过激光', react: 0.45, next: () => lp()[1] < 3.5 && gnd() },
+      { t: 180, cap: '等激光闪', sub: '', next: () => blink('7,1') },
+      { t: 270, cap: '灭了！顺时针：往左', sub: '穿过激光', react: 0.45, next: () => lp()[0] < 3.5 && gnd() },
+      { t: 270, cap: '等激光闪', sub: '', next: () => blink('1,2') },
+      { t: 360, cap: '灭了！顺时针：往下，转满一圈', sub: '门在最下面', react: 0.45, next: () => false },
+    ],
+  },
+  {
+    id: '8', name: '翻天', tip: '等激光灭了掉下去，到底甩过整排尖刺，撞墙后接着转：门在天花板上。',
+    map: [
+      "##########",
+      "##U#P....#",
+      "##.####>.#",
+      "##.####..#",
+      "##.####..#",
+      "##.......#",
+      "##.......#",
+      "##.......#",
+      "##XXXXXXX#",
+      "##########"],
+    lasers: { '7,2': { on: 2.3, off: 1.6 } },
+    plan: [
+      { t: 90, cap: '顺时针 90°', sub: '往右', next: () => lp()[0] > 16.5 && gnd() },
+      { t: 90, cap: '等激光闪', sub: '一闪就转', next: () => blink('7,2') },
+      { t: 0, cap: '灭了！转回来，掉下去', sub: '穿过激光', react: 0.6, cue: 6.5, next: b => lp()[1] > b.cue },
+      { t: -90, cap: '甩！逆时针', sub: '贴着尖刺飞过去', react: 0.445, next: () => lp()[0] < 5 && gnd() },
+      { t: -180, cap: '接着逆时针，翻过来', sub: '往上掉，门在天花板上', next: () => false },
+    ],
+  },
+  {
+    id: 'A', name: '摆锤门', mech: 'pend', isNew: true, tip: '新机关「摆锤」：带刺的铁球挂在链子上，它的"下"跟着世界一起转。往右转，球被甩到右上方让开路；到洞口转回来往下掉时，它也会荡回来，要抢在它前面掉下去。',
+    map: [
+      "##########",
+      "#........#",
+      "#P.......#",
+      "#####.####",
+      "#####.####",
+      "#.....####",
+      "#D....####",
+      "##########"],
+    pends: [{ cx: 9, cy: 2, len: 3.0, r: 0.85 }],
+    plan: [
+      { t: 90, cap: '顺时针 90°：往右冲', sub: '铁球被甩向右上方，从它下面钻过去', cue: 6.5, next: b => lp()[0] > b.cue },
+      { t: 0, cap: '到洞口马上转回来：掉下去', sub: '铁球荡回来了，抢在它前面', react: 0.3, next: () => lp()[1] > 10.5 && gnd() },
+      { t: -90, cap: '逆时针 90°：往左冲', sub: '', next: () => lp()[0] < 3.2 && gnd() },
+      { t: 0, cap: '顺时针转回来：掉进门', sub: '', next: () => false },
+    ],
+  },
+  {
+    id: 'C', name: '弹弹块', mech: 'jelly', isNew: true, tip: '新机关「弹弹块」：粉色的果冻块，掉上去会被弹回屏幕上方（每次少一点）。这间屋子两边全是尖刺，在下面不能转；掉下去踩弹弹块弹起来，快到最高点时顺时针转，往右甩进出口，再转回来落到门口。',
+    map: [
+      "##########",
+      "#P...#####",
+      "####.#####",
+      "##X...####",
+      "##X......#",
+      "##X......#",
+      "##X...X#D#",
+      "##X...X###",
+      "##X...X###",
+      "##X...X###",
+      "##X...X###",
+      "##XJJJX###",
+      "##########"],
+    plan: [
+      { t: 90, cap: '顺时针 90°：冲到洞口', sub: '', next: () => lp()[0] > 8.5 && gnd() },
+      { t: 0, cap: '逆时针转回来：掉进尖刺井', sub: '两边全是尖刺，千万别转；底下是弹弹块', next: () => M().S.vy < 0 && lp()[1] < 20 },
+      { t: 0, cap: '弹起来了！先别转', sub: '快到最高点再转', cue: 12.4, next: b => M().S.vy < 0 && lp()[1] < b.cue },
+      { t: 90, cap: '顺时针 90°：往右甩进出口', sub: '', cue: 15.0, next: b => lp()[0] > b.cue },
+      { t: 0, cap: '逆时针转回来：落到门口', sub: '', next: () => false },
+    ],
+  },
+  {
+    id: 'C2', name: '弹弹屋', mech: 'jelly', isNew: true, tag: '新变体', tagc: '#3b7dd8', tip: '弹弹块的变体：一间四面都是尖刺的屋子，只有地上、右墙、天花板各有一块弹弹块，门在左墙上。掉下去被弹起来，快到最高点时顺时针转 90°，"掉"向下一块弹弹块；一路顺时针转三下，最后正好"掉"进门。转得太早，人会被甩偏撞上尖刺；太晚就又掉回同一块，越弹越低。',
+    map: [
+      "##XXXJJXX##",
+      "X...P.....X",
+      "X.........J",
+      "#[........J",
+      "X.........X",
+      "X.........X",
+      "X.........X",
+      "X.........X",
+      "X.........X",
+      "##XXJXXXX##"],
+    plan: [
+      { t: 0, cap: '先别转：掉下去，踩底下的弹弹块', sub: '四面都是尖刺，只有粉色的弹弹块能碰', next: () => M().S.jellyT > M().S.stepAt && M().S.vy > -0.5 && !gnd() },
+      { t: 90, cap: '弹到最高点：顺时针转 90°', sub: '横着"掉"向右墙的弹弹块', react: 0.0, next: () => M().S.jellyT > M().S.stepAt && M().S.vy > -0.5 && !gnd() },
+      { t: 180, cap: '又弹回来了，快停住时继续顺时针', sub: '倒过来"掉"向天花板的弹弹块', react: 0.0, next: () => M().S.jellyT > M().S.stepAt && M().S.vy > -0.5 && !gnd() },
+      { t: 270, cap: '再弹回来，快到最高点再顺时针一下', sub: '正好"掉"进左墙上的门', react: 0.0, next: () => false },
+    ],
+  },
+  {
+    id: 'F', name: '冰面', mech: 'ice', isNew: true, tip: '新机关「冰面」：冰上没有摩擦：世界斜一点就滑起来，摆平了也停不下来，反着斜才刹得住；冲出冰面的边，人会带着这个速度飞过去。先使劲往右斜，冲起来飞过尖刺坑；再反着斜刹车，慢慢滑到门的坑上掉进去。冲太快会飞过门撞到尽头的尖刺。',
+    map: [
+      "############",
+      "#P........X#",
+      "#iii.iiDiii#",
+      "####X#######",
+      "############"],
+    plan: [
+      { t: 30, cap: '顺时针斜 30°：在冰上冲起来', sub: '冰上没摩擦，越滑越快', next: () => lp()[0] > 10.6 && gnd() },
+      { t: () => { const S = M().S, th = S.theta, v = S.vx * Math.cos(th) + S.vy * Math.sin(th), vd = Math.sqrt(Math.max(0, 9.8 * (15 - lp()[0]))) + 1.2; return clamp(-(v - vd) * 20, -35, 25); },
+        cap: '飞过尖刺坑了！马上反着斜：刹车', sub: '太快会飞过门', react: 0.05, next: () => lp()[1] > 4.2 },
+      { t: 0, cap: '摆正：掉进门', sub: '', next: () => false },
+    ],
+  },
+  {
+    id: 'H', name: '翻镜', mech: 'mirror', isNew: true, tip: '新机关「翻镜」：镜子装在中间的轴上，像跷跷板一样总往"下"那边倒：世界顺时针一斜它就成 \\，逆时针一斜就成 /（摆正时不动），激光打到它就拐 90°。上下两条路都被同一道激光管着：往哪边斜，激光就被反射到哪条路上。直接往左走，镜子把激光打到上面这条路，正好扫到你；先往右掉到下面，再往左冲，这时激光被反射到上面去了。',
+    map: [
+      "############",
+      "#........P.#",
+      "#.######.#.#",
+      "#.#>....m#.#",
+      "#.######.#.#",
+      "#[.........#",
+      "############"],
+    plan: [
+      { t: 90, cap: '顺时针转 90°：往右滑到竖井口', sub: '世界往右斜，镜子倒成 \\，激光被反射到下面那条路', next: () => lp()[0] > 20 && gnd() },
+      { t: 0, cap: '转回来：顺着右边的竖井掉下去', sub: '摆正时镜子不动，激光还在下面，可它在你左边两格', next: () => lp()[1] > 10 && gnd() },
+      { t: -90, cap: '逆时针转 90°：往左冲进门', sub: '一往左斜镜子就翻成 /，激光被反射到上面，下面的路空出来了', next: () => false },
+    ],
+  },
+  {
+    id: 'H2', name: '抖镜', mech: 'mirror', isNew: true, tag: '新变体', tagc: '#3b7dd8', tip: '翻镜的变体：竖井左右交替装着翻镜，每面镜子底下有一道激光往上打。世界往哪边斜过 10°，所有镜子一起翻（摆正时不动）：往右斜，左边的镜子把激光打进墙里、右边的打进竖井；往左斜正好反过来。从井口掉下去，每掉过一道激光，马上往下一面镜子的反方向抖一下再摆正，让下一道激光让开。抖早了，刚掉过的那道会扫到你；抖晚了，下一道就打中你。',
+    map: [
+      "##########",
+      "#P....####",
+      "#####.####",
+      "#####.####",
+      "#####.####",
+      "###M..####",
+      "###.#.####",
+      "###^#.####",
+      "#####.####",
+      "#####.####",
+      "#####..M##",
+      "#####.#.##",
+      "#####.#^##",
+      "#####.####",
+      "#####.####",
+      "###M..####",
+      "###.#.####",
+      "###^#.####",
+      "#####.####",
+      "#####.####",
+      "#####..M##",
+      "#####.#.##",
+      "#####.#^##",
+      "#####D####",
+      "##########"],
+    plan: [
+      { t: 90, cap: '顺时针转 90°：滑到井口', sub: '往右斜，镜子都翻成 \\，第一道激光打在墙里', next: () => lp()[0] > 10.5 && gnd() },
+      { t: 0, cap: '转正：掉下竖井', sub: '第二道激光正横在井里', next: () => lp()[1] > 12.6 },
+      { t: -20, cap: '刚掉过第一道：马上往左抖一下', sub: '镜子翻成 /，第二道激光让开了', react: 0.0, next: () => M().S.mir[1] === 1 },
+      { t: 0, cap: '摆正，接着掉', sub: '摆正时镜子不动', react: 0.0, next: () => lp()[1] > 22.6 },
+      { t: 20, cap: '掉过第二道：往右抖一下', sub: '第三道让开', react: 0.0, next: () => M().S.mir[2] === -1 },
+      { t: 0, cap: '摆正', sub: '', react: 0.0, next: () => lp()[1] > 32.6 },
+      { t: -20, cap: '掉过第三道：再往左抖', sub: '第四道让开', react: 0.0, next: () => M().S.mir[3] === 1 },
+      { t: 0, cap: '摆正，掉进门', sub: '', react: 0.0, next: () => false },
+    ],
+  },
+  {
+    id: 'I', name: '拧门', mech: 'screw', isNew: true, tip: '新机关「拧门」：门口的铁栅被一根大螺栓拴着，螺栓跟着世界一起转：世界顺时针转多少，它就拧松多少；逆时针转又拧回去。顺时针转满一圈，螺栓拧出来，铁栅就开了。门就在你脚下，隔着拧门打不开：绕着中间的尖刺块，一次顺时针转 90°，滑到头再转下一下，转满一圈正好从左边掉下来，穿过拧开的铁栅进门。没滑到头就转，会被甩到尖刺上。',
+    map: [
+      "#######",
+      "#.....#",
+      "#.XXX.#",
+      "#.XXX.#",
+      "#P....#",
+      "#Z#####",
+      "#D#####",
+      "#######"],
+    plan: [
+      { t: 90, cap: '顺时针转 90°：往右滑到底', sub: '拧门的螺栓跟着世界转：顺时针拧松', next: () => lp()[0] > 11 && gnd() },
+      { t: 180, cap: '继续顺时针：倒过来，往上掉到右上角', sub: '中间是尖刺块，没滑到底就转会被甩上去', next: () => lp()[1] < 3 && gnd() },
+      { t: 270, cap: '继续顺时针：往左滑到左上角', sub: '已经拧开四分之三', next: () => lp()[0] < 3 && gnd() },
+      { t: 360, cap: '转满一圈：螺栓拧出来了，顺着左边掉进门', sub: '', next: () => false },
+    ],
+  },
+  {
+    id: 'I2', name: '双圈拧门', mech: 'screw', isNew: true, tag: '新变体', tagc: '#3b7dd8', tip: '拧门的变体：两道拧门，黄箭头的那道顺时针拧开，蓝箭头的那道逆时针拧开（往反方向转会拧回去）。上面一圈绕着尖刺一次顺时针转 90°，转满一圈黄门开，掉进下面一圈；下面这圈要反过来逆时针转，转满一圈蓝门开，掉进门。没滑到头就转，会被甩到尖刺上。',
+    map: [
+      "########",
+      "####...#",
+      "####.X.#",
+      "####P..#",
+      "####Z###",
+      "##...###",
+      "##.X.###",
+      "##...###",
+      "####z###",
+      "####D###",
+      "########"],
+    plan: [
+      { t: 90, cap: '顺时针转 90°：往右滑到头', sub: '上面这道黄门顺时针拧开', next: () => lp()[0] > 13 && gnd() },
+      { t: 180, cap: '继续顺时针：倒过来，往上掉', sub: '没滑到头就转，会被甩到尖刺上', next: () => lp()[1] < 4 && gnd() },
+      { t: 270, cap: '继续顺时针：往左滑', sub: '黄门拧开四分之三了', next: () => lp()[0] < 10 && gnd() },
+      { t: 360, cap: '转满一圈：黄门开了，掉进下面一圈', sub: '下面这道蓝门要逆时针拧', next: () => lp()[1] > 15 && gnd() },
+      { t: 270, cap: '反过来，逆时针转：往左滑', sub: '黄门在你头顶又拧上了', next: () => lp()[0] < 6 && gnd() },
+      { t: 180, cap: '继续逆时针：倒过来，往上掉', sub: '', next: () => lp()[1] < 12 && gnd() },
+      { t: 90, cap: '继续逆时针：往右滑', sub: '蓝门拧开四分之三了', next: () => lp()[0] > 9 && gnd() },
+      { t: 0, cap: '转满一圈：蓝门开了，掉进门', sub: '', next: () => false },
+    ],
+  },
+];
+})();
+</script>
+<script>
+(() => {
+  'use strict';
+  const A = window.__ASSETS;
+  const DEG = Math.PI / 180;
+  // Player rules ported from the game's PlayerController / WorldRotator (fixed step 0.02, no own horizontal speed)
+  const G = 9.81, PR = 0.4, PC = [0.4, 1.13];
+  const DT = 0.02, SUB = 4, SKIN = 0.02, PIVOT_LAG = 8, VMAX = 16;
+  const P = { rotSpeed: 135, slowmo: true, react: 0.12, intro: 1.2 };
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+
+  // ---------------- the five maze levels ----------------
+  // One map character = one maze cell = 2 x 2 units, exactly like MazeSceneBuilder.
+  // # wall   . air   P start   X spikes (whole cell kills)   > < ^ v laser (emitter on the wall behind the arrow)
+  // D door on the floor   U door on the ceiling   [ door on the left wall   ] door on the right wall
+  // The door opens only while it stands upright on screen (within 20 degrees).
+  // lasers: { 'col,row': { on, off } }  off = 0 means always on; every cycle starts switched on.
+  const LEVELS = window.__MAZE_LEVELS || [];
+
+  // ---------------- current level ----------------
+  let LI = 0, L = null, CW = 1, CH = 1, MW = 2, MH = 2, PLAN = [];
+  let solid = new Uint8Array(1), SPIKES = [], LASERS = [], BOXES = [], DOOR = null, START = [1, 2], PENDS = [], CRUMBS = [];
+  // new mechanism (proposal): crumbling blocks '%'. Stand on one and it cracks, gone CRUMB_T seconds later;
+  // hit it falling faster than CRUMB_SMASH and you smash straight through. Gone for good until you retry.
+  const CRUMB_T = 0.6, CRUMB_SMASH = 9;
+  // new mechanism (proposal): jelly blocks 'J'. Land on one and it throws you straight back up the screen at JELLY_K of
+  // your landing speed (a soft landing just sticks). Turn the world while you fly up and the bounce bends with it.
+  const JELLY_K = 0.92, JELLY_MIN = 3;
+  // new mechanism (proposal): one-way grates 'n' 's' 'e' 'w'. You pass through only going that way (n = level up,
+  // s = down, e = right, w = left); coming the other way it is a solid block. Turn the world and the same grate is a
+  // door one moment and a floor the next.
+  const OW_DIR = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }, OW_KEYS = ['', 'n', 's', 'e', 'w'];
+  let ow = new Int8Array(1);
+  // new mechanism (proposal): slime walls '~'. A wall coated in green goo: touch it and you stick for STICK_T seconds,
+  // whatever "down" is. Turn the world while you hang there, then drop off the new way - a stop in the middle of a shaft.
+  const STICK_T = 1.2, STICK_CD = 0.5;
+  // new mechanism (proposal): ice 'i'. A wall cell with a frictionless top: standing on ice you keep your speed along it,
+  // so a slight tilt sends you sliding - and levelling out does not stop you. Lean the other way to brake. Slide off the
+  // edge fast and you fly on with that speed (the only way to move sideways through the air) until you land.
+  const ICE_MAX = 9;
+  // new mechanism (proposal): crates 'B', plates 'o' and iron gates 'G'. A wooden crate one cell big falls toward "down"
+  // like you do, cell by cell (once the world leans past CRATE_SLIDE it also slides along a floor), and it is solid: you can
+  // stand on it, it can rest on your head. While a crate (or you) sits on a plate every gate is open; take it off and the
+  // gates shut again - never on you or on a crate.
+  const CRATE_ACC = G / 2, CRATE_MAX = 8, CRATE_SLIDE = 0.34;
+  let CRATES0 = [], PLATES = [], GATES = [];
+  // new mechanism (proposal): screw gates 'Z'. The gate is bolted shut by a big screw that turns with the world: every
+  // degree you turn the world clockwise unscrews it, counter-clockwise screws it back in (never past fully shut). One full
+  // clockwise turn (SCREW_OPEN degrees) and the bolt is out: the gate is open while it stays out.
+  const SCREW_OPEN = 350;
+  let SCREWS = [];
+  // new mechanism (proposal): sliding gates 'H' (where the iron slab starts) and 'h' (the other end of its one-cell track,
+  // right next to H). The slab slides toward whichever end of the track is "down" once gravity along the track reaches
+  // SLIDE_MIN; with gravity (nearly) across the track it stays where it is. It never slides into you or a crate: it waits.
+  // One end is a slot in the wall (the pocket): slab in the pocket = the passage is open.
+  const SLIDE_MIN = 0.34, SLIDE_MAX = 6;
+  let SLIDES = [];
+  // new mechanism (proposal): sand ':' (a map cell full of sand = 4 grains, one per tile). Each grain falls toward "down"
+  // and speeds up like you do; when it is blocked it tries the free neighbour (of 8) that is most "downhill", but only
+  // moves that are within SAND_ANG of gravity: so a pile keeps slopes up to 35 degrees and runs once you tilt it more.
+  // Grains are solid: you stand on them, they cover spike teeth, they stop lasers. They never move into you.
+  const SAND_COS = Math.cos(55 * DEG), SAND_MAX = 14;
+  let SAND0 = [], sandAt = new Uint8Array(1);
+  // new mechanism (proposal): swing mirrors 'm' (starts as /) and 'M' (starts as \). A mirror plank on a pivot in the middle
+  // of a solid cell; like a seesaw it tips to the downhill side: lean the world clockwise past 10 degrees and it lies \,
+  // counterclockwise and it lies / (in between it keeps its last way). A laser that hits it turns 90 degrees.
+  const MIRROR_TIP = Math.sin(10 * DEG);
+  let MIRRORS = [], mirTile = new Int16Array(1);
+  const TS = 16;
+  const cellAt = (cx, cy) => (cx < 0 || cy < 0 || cx >= CW || cy >= CH ? '#' : L.map[cy][cx]);
+  const solidAt = (x, y) => x < 0 || y < 0 || x >= MW || y >= MH || solid[y * MW + x] === 1;
+  // scene name shown in the HUD: the game's Maze_NN (proposal levels A, B, ... continue after Maze_14)
+  const sceneName = (lv) => lv.mech ? ('ABCDEFGHIJKL'.indexOf(lv.id) >= 0 ? 'Maze_' + (15 + 'ABCDEFGHIJKL'.indexOf(lv.id)) : '迷宫 ' + lv.id) : 'Maze_' + String(lv.id).padStart(2, '0');
+  const DOORS = { D: { dir: 0, b: [1, 2] }, U: { dir: 180, b: [1, 0] }, '[': { dir: -90, b: [0, 1] }, ']': { dir: 90, b: [2, 1] } };
+  const ARROWS = { '>': [1, 0], '<': [-1, 0], '^': [0, -1], 'v': [0, 1] };
+  function setupLevel(i) {
+    LI = i; L = LEVELS[i]; PLAN = L.plan;
+    CW = L.map[0].length; CH = L.map.length; MW = CW * 2; MH = CH * 2;
+    solid = new Uint8Array(MW * MH); ow = new Int8Array(MW * MH);
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { const c = cellAt(x >> 1, y >> 1); solid[y * MW + x] = c === '#' || c === '%' || c === 'J' || c === '~' || c === 'i' || c === 'G' || c === 'm' || c === 'M' || c === 'Z' || c === 'z' ? 1 : 0; }
+    SPIKES = []; LASERS = []; BOXES = []; DOOR = null; PENDS = L.pends || []; CRUMBS = []; CRATES0 = []; PLATES = []; GATES = []; SCREWS = []; SLIDES = []; SAND0 = []; MIRRORS = []; mirTile = new Int16Array(MW * MH); L.jelly = L.map.some(r => r.includes('J'));
+    const cfgs = L.lasers || {};
+    for (let cy = 0; cy < CH; cy++) for (let cx = 0; cx < CW; cx++) {
+      const c = L.map[cy][cx], x0 = cx * 2, y0 = cy * 2, mx = x0 + 1, my = y0 + 1;
+      if (c === 'P') START = [mx, y0 + 2];
+      else if (OW_DIR[c]) { for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) { solid[(y0 + y) * MW + x0 + x] = 0; ow[(y0 + y) * MW + x0 + x] = OW_KEYS.indexOf(c); } L.oneway = true; }
+      else if (c === '%') CRUMBS.push({ cx, cy });
+      else if (c === 'B') CRATES0.push([cx, cy]);
+      else if (c === 'm' || c === 'M') { MIRRORS.push({ cx, cy, s0: c === 'm' ? 1 : -1 }); for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) mirTile[(y0 + y) * MW + x0 + x] = MIRRORS.length; }
+      else if (c === 'o') PLATES.push({ cx, cy });
+      else if (c === ':') { for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) SAND0.push([x0 + x, y0 + y]); }
+      else if (c === 'H') {
+        const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dy]) => cellAt(cx + dx, cy + dy) === 'h') || [0, 0];
+        // the pocket end: its two side neighbours (across the track) are rock
+        const rock = (x, y) => '#%J~iX'.includes(cellAt(x, y));
+        const pocketAt = (x, y) => nb[0] ? rock(x, y - 1) && rock(x, y + 1) : rock(x - 1, y) && rock(x + 1, y);
+        SLIDES.push({ cx, cy, dx: nb[0], dy: nb[1], open: pocketAt(cx + nb[0], cy + nb[1]) ? 1 : pocketAt(cx, cy) ? 0 : -1 });
+      }
+      else if (c === 'Z' || c === 'z') SCREWS.push({ cx, cy, dir: c === 'Z' ? 1 : -1, vert: !'#%J~iX'.includes(cellAt(cx - 1, cy)) || !'#%J~iX'.includes(cellAt(cx + 1, cy)) });
+      else if (c === 'G') GATES.push({ cx, cy, vert: !'#%J~iX'.includes(cellAt(cx - 1, cy)) || !'#%J~iX'.includes(cellAt(cx + 1, cy)) });
+      else if (c === 'X') {
+        // as in the game since spike fix 6: each spike cell is 2 x 2 tiles; a tile with no open side (or next to a
+        // laser mount) is a solid base block, the rest carry teeth that point to their open sides and kill (1 x 1)
+        for (let sy = 0; sy < 2; sy++) for (let sx = 0; sx < 2; sx++) {
+          const dx = sx === 0 ? -1 : 1, dy = sy === 0 ? -1 : 1;
+          const face = (ox, oy) => { const n = cellAt(cx + ox, cy + oy); if (n === '#' || n === 'X' || n === '~' || n === 'i') return 0; const out = ox < 0 ? '<' : ox > 0 ? '>' : oy < 0 ? '^' : 'v'; return n === out ? 2 : 1; };
+          const h = face(dx, 0), v = face(0, dy), tx = x0 + sx, ty = y0 + sy;
+          if (h === 2 || v === 2 || (h === 0 && v === 0)) { solid[ty * MW + tx] = 1; continue; }
+          const dirs = [];
+          if (v === 1) dirs.push(dy < 0 ? 'up' : 'down');
+          if (h === 1) dirs.push(dx < 0 ? 'left' : 'right');
+          SPIKES.push({ x0: tx, y0: ty, x1: tx + 1, y1: ty + 1, cx, cy, dirs });
+        }
+      }
+      else if (DOORS[c]) {
+        const d = DOORS[c], rot = -d.dir * DEG;
+        DOOR = { kind: c, cx, cy, bx: x0 + d.b[0], by: y0 + d.b[1], rot, ux: Math.sin(rot), uy: -Math.cos(rot), rx: Math.cos(rot), ry: Math.sin(rot) };
+      } else if (ARROWS[c]) {
+        const [dx, dy] = ARROWS[c], cfg = cfgs[cx + ',' + cy] || {};
+        const ex = mx - dx * 0.875, ey = my - dy * 0.875;
+        const hx = dx ? 0.125 : 0.325, hy = dx ? 0.325 : 0.125;
+        const box = { x0: ex - hx, y0: ey - hy, x1: ex + hx, y1: ey + hy };
+        BOXES.push(box);
+        LASERS.push({ cx, cy, dx, dy, ex, ey, sx: ex + dx * 0.16, sy: ey + dy * 0.16, on: cfg.on ?? 2, off: cfg.off ?? 0, box, len: 0, lastIn: -9, wasOn: true });
+      }
+    }
+    sandAt = new Uint8Array(MW * MH);
+    for (const l of LASERS) l.len = castBeam(l);
+  }
+  // beams are axis-aligned in the level: walk until a wall tile or another emitter's body
+  function castBeam(l) {
+    let best = 100;
+    if (l.dx) {
+      const ty = Math.floor(l.sy);
+      for (let x = Math.floor(l.sx) + (l.dx > 0 ? 0 : 0); x >= -1 && x <= MW; x += l.dx) {
+        if (solidAt(x, ty)) { best = l.dx > 0 ? x - l.sx : l.sx - (x + 1); break; }
+      }
+    } else {
+      const tx = Math.floor(l.sx);
+      for (let y = Math.floor(l.sy); y >= -1 && y <= MH; y += l.dy) {
+        if (solidAt(tx, y)) { best = l.dy > 0 ? y - l.sy : l.sy - (y + 1); break; }
+      }
+    }
+    for (const o of LASERS) {
+      if (o === l) continue;
+      const b = o.box;
+      if (l.dx && l.sy > b.y0 && l.sy < b.y1) {
+        const d = l.dx > 0 ? b.x0 - l.sx : l.sx - b.x1;
+        if (d > 0) best = Math.min(best, d);
+      } else if (l.dy && l.sx > b.x0 && l.sx < b.x1) {
+        const d = l.dy > 0 ? b.y0 - l.sy : l.sy - b.y1;
+        if (d > 0) best = Math.min(best, d);
+      }
+    }
+    return Math.max(0, best);
+  }
+  // a laser bouncing off the mirrors: a list of axis-aligned segments (the plank sits in the middle of its cell)
+  function traceBeam(l) {
+    const segs = []; let x = l.sx, y = l.sy, dx = l.dx, dy = l.dy, from = 0;
+    for (let n = 0; n < 10; n++) {
+      let end = null, hitM = 0;
+      if (dx) {
+        const ty = Math.floor(y);
+        for (let tx = Math.floor(x + dx * 1e-3); tx >= -1 && tx <= MW; tx += dx) {
+          const m = tx >= 0 && tx < MW && ty >= 0 && ty < MH ? mirTile[ty * MW + tx] : 0;
+          if (m && m === from) continue;
+          if (m) { end = [MIRRORS[m - 1].cx * 2 + 1, y]; hitM = m; break; }
+          if (solidAt(tx, ty)) { end = [dx > 0 ? tx : tx + 1, y]; break; }
+        }
+      } else {
+        const tx = Math.floor(x);
+        for (let ty = Math.floor(y + dy * 1e-3); ty >= -1 && ty <= MH; ty += dy) {
+          const m = tx >= 0 && tx < MW && ty >= 0 && ty < MH ? mirTile[ty * MW + tx] : 0;
+          if (m && m === from) continue;
+          if (m) { end = [x, MIRRORS[m - 1].cy * 2 + 1]; hitM = m; break; }
+          if (solidAt(tx, ty)) { end = [x, dy > 0 ? ty : ty + 1]; break; }
+        }
+      }
+      if (!end) break;
+      segs.push([x, y, end[0], end[1]]);
+      if (!hitM) break;
+      const st = S.mir ? S.mir[hitM - 1] : MIRRORS[hitM - 1].s0;
+      [dx, dy] = st > 0 ? [-dy, -dx] : [dy, dx];
+      x = end[0]; y = end[1]; from = hitM;
+    }
+    l.segs = segs; l.len = segs.reduce((a, q) => a + Math.abs(q[2] - q[0]) + Math.abs(q[3] - q[1]), 0);
+  }
+  function stepMirrors() {
+    const gx = Math.sin(S.theta); let flipped = false;
+    MIRRORS.forEach((m, k) => {
+      const want = gx > MIRROR_TIP ? -1 : gx < -MIRROR_TIP ? 1 : S.mir[k];
+      if (want !== S.mir[k]) { S.mir[k] = want; flipped = true; }
+      const tgt = S.mir[k] > 0 ? -Math.PI / 4 : Math.PI / 4;
+      S.mirA[k] += (tgt - S.mirA[k]) * 0.35;
+    });
+    if (flipped) { for (const l of LASERS) traceBeam(l); pop('镜子翻了'); }
+  }
+  function laserPhase(l, t = S.lt) { return l.off > 0 ? t % (l.on + l.off) : 0; }
+  function laserOn(l, t = S.lt) { return l.off <= 0 || laserPhase(l, t) < l.on; }
+  // seconds until this laser next switches (on -> off or off -> on)
+  function laserLeft(l, t = S.lt) { if (l.off <= 0) return 99; const p = laserPhase(l, t); return p < l.on ? l.on - p : l.on + l.off - p; }
+
+  // ---------------- state ----------------
+  const S = {
+    mode: 'idle', theta: 0, tx: 0, ty: 0, px: 0, py: 0, vx: 0, vy: 0, grounded: true, airTime: 0, stick: 0, u: 0, uVis: 0, hist: [],
+    state: 'play', timer: 0, time: 0, lt: 0, runStart: 0, runTime: 0, step: 0, stepAt: 0, deaths: 0,
+    anim: 'idle', animT: 0, flash: 0, flashColor: '', shake: 0, slow: 0, near: {},
+    fx: [], pops: [], needleA: 0, needleV: 0, unlocked: false, doorF: 0, hint: 0, cam: [0, 0], done: false, dbg: {}, toast: null,
+  };
+  const prev = { theta: 0, tx: 0, ty: 0, px: 0, py: 0, cam: [0, 0] };
+  function snapshot() { prev.theta = S.theta; prev.tx = S.tx; prev.ty = S.ty; prev.px = S.px; prev.py = S.py; prev.cam = [S.cam[0], S.cam[1]]; if (S.crates) for (const c of S.crates) { const b = crateBox(c, c.f); c.ox = b[0]; c.oy = b[1]; } if (S.slide) for (const s of S.slide) s.of = s.f; if (S.sand) for (const g of S.sand) { g.ox = g.x; g.oy = g.y; } }
+
+  // ---------------- transforms ----------------
+  function toLevel(wx, wy) { const c = Math.cos(S.theta), s = Math.sin(S.theta), dx = wx - S.tx, dy = wy - S.ty; return [dx * c + dy * s, -dx * s + dy * c]; }
+  function toWorld(lx, ly) { const c = Math.cos(S.theta), s = Math.sin(S.theta); return [S.tx + lx * c - ly * s, S.ty + lx * s + ly * c]; }
+  function vW(x, y) { const c = Math.cos(S.theta), s = Math.sin(S.theta); return [x * c - y * s, x * s + y * c]; }
+  function vL(x, y) { const c = Math.cos(S.theta), s = Math.sin(S.theta); return [x * c + y * s, -x * s + y * c]; }
+  const lp = () => toLevel(S.px, S.py - PC[0]);
+  function doorTilt() { const u = vW(DOOR.ux, DOOR.uy); return Math.acos(clamp(-u[1], -1, 1)) / DEG; }
+
+  // ---------------- collision (level space, units) ----------------
+  function pushBox(lx, ly, r, x0, y0, x1, y1, normals, freeSide) {
+    const qx = clamp(lx, x0, x1), qy = clamp(ly, y0, y1);
+    const dx = lx - qx, dy = ly - qy, d2 = dx * dx + dy * dy;
+    if (d2 >= r * r) return null;
+    let nx, ny, pen;
+    if (d2 > 1e-9) { const d = Math.sqrt(d2); nx = dx / d; ny = dy / d; pen = r - d; }
+    else {
+      const opts = [[-1, 0, lx - x0], [1, 0, x1 - lx], [0, -1, ly - y0], [0, 1, y1 - ly]].sort((a, b) => a[2] - b[2]);
+      const o = (freeSide && opts.find(q => freeSide(q[0], q[1]))) || opts[0];
+      nx = o[0]; ny = o[1]; pen = o[2] + r;
+    }
+    if (normals) normals.push([nx, ny]);
+    return [lx + nx * pen, ly + ny * pen];
+  }
+  function resolveCircleL(lx, ly, r, normals) {
+    for (let it = 0; it < 4; it++) {
+      let hit = false;
+      const x0 = Math.floor(lx - r), x1 = Math.floor(lx + r), y0 = Math.floor(ly - r), y1 = Math.floor(ly + r);
+      for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+        if (!solidAt(cx, cy)) continue;
+        const q = pushBox(lx, ly, r, cx, cy, cx + 1, cy + 1, normals, (ox, oy) => !solidAt(cx + ox, cy + oy));
+        if (q) { lx = q[0]; ly = q[1]; hit = true; }
+      }
+      for (const b of BOXES) {
+        if (lx + r < b.x0 || lx - r > b.x1 || ly + r < b.y0 || ly - r > b.y1) continue;
+        const q = pushBox(lx, ly, r, b.x0, b.y0, b.x1, b.y1, normals, null);
+        if (q) { lx = q[0]; ly = q[1]; hit = true; }
+      }
+      if (S.crates) for (const c of S.crates) {
+        const b = crateBox(c, c.f);
+        if (lx + r < b[0] || lx - r > b[2] || ly + r < b[1] || ly - r > b[3]) continue;
+        const q = pushBox(lx, ly, r, b[0], b[1], b[2], b[3], normals, null);
+        if (q) { lx = q[0]; ly = q[1]; hit = true; }
+      }
+      if (S.slide) for (let k = 0; k < SLIDES.length; k++) {
+        const b = slideBox(SLIDES[k], S.slide[k].f);
+        if (lx + r < b[0] || lx - r > b[2] || ly + r < b[1] || ly - r > b[3]) continue;
+        const q = pushBox(lx, ly, r, b[0], b[1], b[2], b[3], normals, null);
+        if (q) { lx = q[0]; ly = q[1]; hit = true; }
+      }
+      if (L.oneway) for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+        if (!owSolid(cx, cy, lx, ly)) continue;
+        const q = pushBox(lx, ly, r, cx, cy, cx + 1, cy + 1, normals, null);
+        if (q) { lx = q[0]; ly = q[1]; hit = true; }
+      }
+      if (!hit) break;
+    }
+    return [lx, ly];
+  }
+  function touchingL(lx, ly, r, normals) {
+    const near = (x0, y0, x1, y1) => {
+      const qx = clamp(lx, x0, x1), qy = clamp(ly, y0, y1);
+      const dx = lx - qx, dy = ly - qy, d2 = dx * dx + dy * dy;
+      if (d2 >= r * r || d2 < 1e-9) return;
+      const d = Math.sqrt(d2); normals.push([dx / d, dy / d]);
+    };
+    const x0 = Math.floor(lx - r), x1 = Math.floor(lx + r), y0 = Math.floor(ly - r), y1 = Math.floor(ly + r);
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+      if (!(solidAt(cx, cy) || (L.oneway && owSolid(cx, cy, lx, ly)))) continue;
+      if (L.ice) {
+        // a corner shared with a solid neighbour is really part of a flat face: report the face normal (no seam bumps)
+        const qx = clamp(lx, cx, cx + 1), qy = clamp(ly, cy, cy + 1), dx = lx - qx, dy = ly - qy, d2 = dx * dx + dy * dy;
+        if (d2 >= r * r || d2 < 1e-9) continue;
+        if (dx && dy) {
+          if (solidAt(cx + Math.sign(dx), cy)) { normals.push([0, Math.sign(dy)]); continue; }
+          if (solidAt(cx, cy + Math.sign(dy))) { normals.push([Math.sign(dx), 0]); continue; }
+        }
+      }
+      near(cx, cy, cx + 1, cy + 1);
+    }
+    for (const b of BOXES) near(b.x0, b.y0, b.x1, b.y1);
+    if (S.crates) for (const c of S.crates) { const b = crateBox(c, c.f); near(b[0], b[1], b[2], b[3]); }
+    if (S.slide) for (let k = 0; k < SLIDES.length; k++) { const b = slideBox(SLIDES[k], S.slide[k].f); near(b[0], b[1], b[2], b[3]); }
+  }
+  // one-way grate tile: solid only seen from its exit side, and only once you are fully out of it
+  function owSolid(cx, cy, lx, ly) {
+    if (cx < 0 || cy < 0 || cx >= MW || cy >= MH) return false;
+    const k = ow[cy * MW + cx]; if (!k || S.owPass.has(cy * MW + cx)) return false;
+    const d = OW_DIR[OW_KEYS[k]];
+    return d[1] > 0 ? ly >= cy + 1 : d[1] < 0 ? ly <= cy : d[0] > 0 ? lx >= cx + 1 : lx <= cx;
+  }
+  function owPassing() {
+    S.owPass.clear();
+    for (const o of PC) {
+      const [lx, ly] = toLevel(S.px, S.py - o), r = PR - 0.02;
+      for (let cy = Math.floor(ly - r); cy <= Math.floor(ly + r); cy++) for (let cx = Math.floor(lx - r); cx <= Math.floor(lx + r); cx++) {
+        if (cx < 0 || cy < 0 || cx >= MW || cy >= MH || !ow[cy * MW + cx]) continue;
+        if (Math.hypot(lx - clamp(lx, cx, cx + 1), ly - clamp(ly, cy, cy + 1)) < r) S.owPass.add(cy * MW + cx);
+      }
+    }
+  }
+  function resolveW(wx, wy, r, normals) {
+    const [lx, ly] = toLevel(wx, wy), ns = [];
+    const [nx, ny] = resolveCircleL(lx, ly, r, ns);
+    for (const n of ns) normals.push(vW(n[0], n[1]));
+    return vW(nx - lx, ny - ly);
+  }
+  function contactsNow() {
+    const ns = [];
+    for (const o of PC) { const [lx, ly] = toLevel(S.px, S.py - o); touchingL(lx, ly, PR + SKIN, ns); }
+    return ns.map(n => vW(n[0], n[1]));
+  }
+  function project(ns) {
+    for (let pass = 0; pass < 3; pass++) for (const n of ns) {
+      const vn = S.vx * n[0] + S.vy * n[1];
+      if (vn < 0) { S.vx -= vn * n[0]; S.vy -= vn * n[1]; }
+    }
+  }
+
+  // ---------------- reset ----------------
+  function resetLevel(intro) {
+    S.theta = (L.theta0 || 0) * DEG; S.tx = 0; S.ty = 0; S.stick = 0; S.u = 0; S.hist = [];
+    S.vx = 0; S.vy = 0; S.grounded = true; S.airTime = 0; S.state = intro ? 'intro' : 'play'; S.timer = intro ? P.intro : 0;
+    S.anim = 'idle'; S.animT = 0; S.flash = 0; S.shake = 0; S.slow = 0; S.near = {}; S.fx = []; S.pops = [];
+    S.needleA = 0; S.needleV = 0; S.doorF = 0; S.hint = 0; S.lt = 0; S.toast = null; S.cross = {};
+    for (const l of LASERS) { l.lastIn = -9; l.wasOn = true; l.offAt = -9; }
+    S.pend = PENDS.map(d => ({ a: (d.a0 || 0) * DEG, w: 0, pa: (d.a0 || 0) * DEG }));
+    S.crumb = CRUMBS.map(() => ({ st: 'ok', t: 0 }));
+    S.owPass = new Set();
+    S.stuck = 0; S.stickCD = 0; L.slime = L.map.some(r => r.includes('~'));
+    S.onIce = false; S.iceFly = false; S.dth = 0; L.ice = L.map.some(r => r.includes('i'));
+    CRUMBS.forEach((c, k) => crumbSolid(k, 1));
+    S.mir = MIRRORS.map(m => m.s0); S.mirA = MIRRORS.map(m => m.s0 > 0 ? -Math.PI / 4 : Math.PI / 4);
+    if (MIRRORS.length) for (const l of LASERS) traceBeam(l);
+    S.crates = CRATES0.map(([cx, cy]) => ({ cx, cy, dx: 0, dy: 0, f: 0, v: 0, ox: cx * 2, oy: cy * 2 }));
+    S.gateOpen = false; S.gateAnim = 0; S.plateOn = false; gateSolid(1);
+    S.scr = SCREWS.map(() => ({ turn: 0, open: false })); S.screw = 0; S.screwOpen = false; screwSolid(1);
+    S.jellyT = -9;
+    S.slide = SLIDES.map(() => ({ f: 0, v: 0, of: 0 }));
+    if (S.sand) for (const g of S.sand) { solid[g.y * MW + g.x] = 0; sandAt[g.y * MW + g.x] = 0; }
+    S.sand = SAND0.map(([x, y]) => ({ x, y, ox: x, oy: y, v: 0, acc: 0 }));
+    for (const g of S.sand) { solid[g.y * MW + g.x] = 1; sandAt[g.y * MW + g.x] = 1; }
+    if (SAND0.length) sandBeams();
+    S.step = 0; S.stepAt = S.time; S.lastTgt = S.theta / DEG; S.uVis = 0;
+    const w = toWorld(START[0], START[1]); S.px = w[0]; S.py = w[1];
+    // settle onto the floor like the game's first physics steps
+    S.unlocked = doorTilt() <= 20;
+    S.cam = camTarget(); S.done = false;
+    S.runStart = S.time + (intro ? P.intro : 0); S.runTime = 0;
+    snapshot();
+  }
+  let lvlTex = null;
+  function loadLevel(i) {
+    setupLevel(i);
+    lvlTex = buildLevel();
+    S.mode = 'idle'; S.time = 0; S.deaths = 0; S.toast = null;
+    resetLevel(false);
+  }
+  function startRun(mode) {
+    S.dbg = {}; S.time = 0; S.toast = null;
+    S.mode = mode; S.deaths = 0;
+    resetLevel(P.intro > 0);
+  }
+
+  // ---------------- simulation ----------------
+  const input = { keys: 0, buttons: 0, pad: 0, auto: null };
+  function beatTarget(b) { return typeof b.t === 'function' ? b.t() : b.t; }
+  function step(dt) {
+    S.time += dt;
+    snapshot();
+    const live = S.state === 'play' && S.mode !== 'idle';
+    let u = 0;
+    if (live && S.mode === 'demo') {
+      const b = PLAN[S.step], react = b.react ?? L.react ?? P.react;
+      const tgt = S.time - S.stepAt < react && S.step > 0 ? S.lastTgt : beatTarget(b);
+      if (!(S.time - S.stepAt < react && S.step > 0)) S.lastTgt = tgt;
+      u = clamp((tgt * DEG - S.theta) * 4, -1, 1);
+    }
+    else if (live && input.auto) u = clamp(input.auto(S), -1, 1);
+    else if (live) {
+      S.stick += (input.pad - S.stick) * Math.min(1, dt * 12);
+      const st = Math.abs(S.stick) > 0.05 ? S.stick : 0;
+      u = st !== 0 ? st : clamp(input.keys + input.buttons, -1, 1);
+    }
+    S.u = u;
+    const dth = u * P.rotSpeed * DEG * dt;
+    const lc = [S.px, S.py - PC[0]];
+    S.hist.push(lc); if (S.hist.length > PIVOT_LAG) S.hist.shift();
+    if (dth !== 0) {
+      const pv = S.grounded ? lc : S.hist[0];
+      const c = Math.cos(dth), s = Math.sin(dth), rx = S.tx - pv[0], ry = S.ty - pv[1];
+      S.tx = pv[0] + rx * c - ry * s; S.ty = pv[1] + rx * s + ry * c; S.theta += dth;
+    }
+    S.dth = dth;
+    if (live) {
+      S.lt += dt;
+      stepPends(dt);
+      stepPlayer(dt);
+      stepCrumbs(dt);
+      if (CRATES0.length || PLATES.length) { stepCrates(dt); stepGates(dt); }
+      if (MIRRORS.length) stepMirrors();
+      if (SCREWS.length) stepScrews();
+      if (SLIDES.length) stepSlides(dt);
+      if (SAND0.length) stepSand(dt);
+      checkHazards();
+      advancePlan();
+      if (!S.done) S.runTime = S.time - S.runStart;
+    }
+    updateDoor(dt);
+    stepFx(dt);
+    const tgt = camTarget(), kc = 1 - Math.exp(-dt / 0.06);
+    S.cam[0] += (tgt[0] - S.cam[0]) * kc; S.cam[1] += (tgt[1] - S.cam[1]) * kc;
+    if (S.state !== 'play') {
+      S.timer -= dt;
+      if (S.timer <= 0) {
+        if (S.state === 'intro') { S.state = 'play'; S.stepAt = S.time; S.runStart = S.time; S.lastTgt = 0; }
+        else if (S.state === 'dead') resetLevel(false);
+        else if (S.state === 'clear') { S.state = 'over'; onRunOver(); }
+      }
+    }
+  }
+  // camera: the game's MazeCameraFit + FollowTarget2D -> always the maze centre, fixed size
+  function camTarget() { return toWorld(MW / 2, MH / 2); }
+
+  // the slime cell you touch, and the contact normal (level space), or null
+  function slimeTouch() {
+    for (const o of PC) {
+      const [lx, ly] = toLevel(S.px, S.py - o), r = PR + SKIN + 0.04;
+      for (let cy = Math.floor(ly - r); cy <= Math.floor(ly + r); cy++) for (let cx = Math.floor(lx - r); cx <= Math.floor(lx + r); cx++) {
+        if (cellAt(cx >> 1, cy >> 1) !== '~') continue;
+        const qx = clamp(lx, cx, cx + 1), qy = clamp(ly, cy, cy + 1), d = Math.hypot(lx - qx, ly - qy);
+        if (d < r) return { cx: cx >> 1, cy: cy >> 1, nx: d > 1e-6 ? (lx - qx) / d : 0, ny: d > 1e-6 ? (ly - qy) / d : -1 };
+      }
+    }
+    return null;
+  }
+  // the goo pulls you to the middle of its face, so you hang level with the cell (and any passage beside it)
+  function slimeSnap(t) {
+    const l = toLevel(S.px, S.py - PC[0]);
+    if (Math.abs(t.nx) > Math.abs(t.ny)) l[1] = t.cy * 2 + 1; else l[0] = t.cx * 2 + 1;
+    const w = toWorld(l[0], l[1]); S.px = w[0]; S.py = w[1] + PC[0];
+    for (const o of [PC[0], PC[1], PC[0]]) { const cr = resolveW(S.px, S.py - o, PR, []); S.px += cr[0]; S.py += cr[1]; }
+  }
+  function iceUnder() {
+    for (const o of PC) {
+      const [lx, ly] = toLevel(S.px, S.py - o), r = PR + SKIN + 0.04;
+      for (let cy = Math.floor(ly - r); cy <= Math.floor(ly + r); cy++) for (let cx = Math.floor(lx - r); cx <= Math.floor(lx + r); cx++) {
+        if (cellAt(cx >> 1, cy >> 1) !== 'i') continue;
+        const qx = clamp(lx, cx, cx + 1), qy = clamp(ly, cy, cy + 1), d = Math.hypot(lx - qx, ly - qy);
+        if (d < r && d > 1e-6 && vW((lx - qx) / d, (ly - qy) / d)[1] < -0.3) return true;
+      }
+    }
+    return false;
+  }
+  function stepPlayer(dt) {
+    if (L.ice && (S.onIce || S.iceFly)) {
+      const c = Math.cos(S.dth), s_ = Math.sin(S.dth), vx = S.vx * c - S.vy * s_, vy = S.vx * s_ + S.vy * c;
+      S.vx = vx; S.vy = vy;
+      const sp = Math.hypot(S.vx, S.vy); if (sp > ICE_MAX) { S.vx *= ICE_MAX / sp; S.vy *= ICE_MAX / sp; }
+    } else S.vx = 0;
+    if (S.stuck > 0) {
+      S.stuck -= dt; S.vy = 0;
+      for (const o of [PC[0], PC[1], PC[0]]) { const cr = resolveW(S.px, S.py - o, PR, []); S.px += cr[0]; S.py += cr[1]; }
+      if (S.stuck <= 0) { S.stuck = 0; S.stickCD = STICK_CD; S.grounded = false; S.anim = 'fallstart'; S.animT = 0; pop('松开了'); }
+      else { S.grounded = true; S.airTime = 0; }
+      return;
+    }
+    if (S.stickCD > 0) S.stickCD -= dt;
+    S.vy = Math.min(S.vy + G * dt, VMAX);
+    if (CRUMBS.length && S.vy > CRUMB_SMASH) crumbSmash(dt);
+    const vIn = S.vy;
+    if (L.oneway) owPassing();
+    project(contactsNow());
+    for (let k = 0; k < SUB; k++) {
+      S.px += S.vx * dt / SUB; S.py += S.vy * dt / SUB;
+      const ns = [];
+      for (const o of [PC[0], PC[1], PC[0]]) { const cr = resolveW(S.px, S.py - o, PR, ns); S.px += cr[0]; S.py += cr[1]; }
+      project(ns);
+    }
+    const after = contactsNow();
+    project(after);
+    let grounded = after.some(n => n[1] < -0.5);
+    if (CRUMBS.length) crumbSupport();
+    if (L.jelly && grounded && vIn > JELLY_MIN && jellyUnder()) {
+      S.vy = -vIn * JELLY_K; grounded = false; S.jellyT = S.time;
+      S.shake = Math.max(S.shake, Math.min(0.3, vIn * 0.02)); pop(vIn > 9 ? '嘣！' : '啵'); const l = lp();
+      for (let i = 0; i < 8; i++) S.fx.push({ x: l[0] + (Math.random() - 0.5) * 0.8, y: l[1] + (Math.random() - 0.5) * 0.4, vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3, life: 0.5, max: 0.5, k: 'jelly', s: 0.14 });
+    }
+    if (grounded && !S.grounded && S.airTime > 0.18) { S.anim = 'land'; S.animT = 0; if (S.airTime > 0.5) dust(lp(), 6); }
+    if (!grounded && S.grounded) { S.anim = 'fallstart'; S.animT = 0; }
+    S.airTime = grounded ? 0 : S.airTime + dt;
+    S.grounded = grounded;
+    S.onIce = L.ice && grounded && iceUnder();
+    if (S.onIce) S.iceFly = true; else if (grounded) S.iceFly = false;      // off the edge of the ice you keep flying with that speed
+    const st_ = L.slime && S.stickCD <= 0 && !S.stuck ? slimeTouch() : null;
+    if (st_) {
+      S.stuck = STICK_T; S.vy = 0; S.grounded = true; pop('粘住了！'); slimeSnap(st_);
+      const l = lp(); for (let i = 0; i < 8; i++) S.fx.push({ x: l[0] + (Math.random() - 0.5) * 0.8, y: l[1] + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, life: 0.6, max: 0.6, k: 'slime', s: 0.14 });
+    }
+    S.speed = Math.abs(S.vy);
+    const l = lp();
+    if (l[0] < -2 || l[1] < -2 || l[0] > MW + 2 || l[1] > MH + 2) die('掉出地图了');
+  }
+
+  // ---- crates, plates and gates ----
+  function crateBox(c, f) { const x = (c.cx + c.dx * f) * 2, y = (c.cy + c.dy * f) * 2; return [x, y, x + 2, y + 2]; }
+  // 'Z' unscrews with the world turning clockwise, 'z' with it turning counter-clockwise; each bolt keeps its own count
+  function screwSolid(v, only) { SCREWS.forEach((g, i) => { if (only !== undefined && only !== i) return; for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) solid[(g.cy * 2 + y) * MW + g.cx * 2 + x] = v; }); }
+  function stepScrews() {
+    SCREWS.forEach((g, i) => {
+      const st = S.scr[i], prevQ = Math.floor(st.turn / 90);
+      st.turn = clamp(st.turn + g.dir * S.dth / DEG, 0, 360);
+      const q = Math.floor(st.turn / 90), two = SCREWS.length > 1;
+      if (!st.open && q > prevQ && q < 4) { pop('拧开了 ' + q + '/4'); S.shake = Math.max(S.shake, 0.05); }
+      if (!st.open && st.turn >= SCREW_OPEN) { st.open = true; screwSolid(0, i); pop(two ? (g.dir > 0 ? '顺时针那道拧开了！' : '逆时针那道拧开了！') : '拧开了！门闩松了', true); S.shake = Math.max(S.shake, 0.15); }
+      else if (st.open && st.turn < SCREW_OPEN && !bodyHitsBox([g.cx * 2, g.cy * 2, g.cx * 2 + 2, g.cy * 2 + 2], -0.02) && !sandInCell(g.cx, g.cy)) { st.open = false; screwSolid(1, i); pop('又拧上了'); }
+    });
+    if (S.scr.length) { S.screw = S.scr[0].turn; S.screwOpen = S.scr[0].open; }
+  }
+  // ---- sand ----
+  const SAND_STEPS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].map(([dx, dy]) => ({ dx, dy, n: Math.hypot(dx, dy) }));
+  function sandFree(x, y) {
+    if (x < 0 || y < 0 || x >= MW || y >= MH || solid[y * MW + x]) return false;
+    const ch = cellAt(x >> 1, y >> 1);
+    if (DOORS[ch] || ow[y * MW + x]) return false;
+    const t = [x, y, x + 1, y + 1];
+    for (const b of BOXES) if (b.x0 < t[2] && t[0] < b.x1 && b.y0 < t[3] && t[1] < b.y1) return false;
+    if (S.crates) for (const c of S.crates) if (boxesMeet(t, crateBox(c, c.f))) return false;
+    if (S.slide) for (let k = 0; k < SLIDES.length; k++) if (boxesMeet(t, slideBox(SLIDES[k], S.slide[k].f))) return false;
+    return !bodyHitsBox(t, -0.02);
+  }
+  function sandInCell(cx, cy) { for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) if (sandAt[(cy * 2 + y) * MW + cx * 2 + x]) return true; return false; }
+  function sandBeams() { for (const l of LASERS) { l.len = castBeam(l); if (MIRRORS.length) traceBeam(l); } }
+  function stepSand(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta);
+    // the lowest grains first, so a column falls together
+    const order = S.sand.slice().sort((a, b) => (b.x * gx + b.y * gy) - (a.x * gx + a.y * gy));
+    const moves = SAND_STEPS.map(m => ({ ...m, sc: (m.dx * gx + m.dy * gy) / m.n })).filter(m => m.sc > SAND_COS).sort((a, b) => b.sc - a.sc);
+    let moved = false; S.sandN = (S.sandN || 0) + 1;
+    const best = (g) => {
+      let m = null;
+      for (const c of moves) {
+        const nx = g.x + c.dx, ny = g.y + c.dy;
+        if (!sandFree(nx, ny)) continue;
+        if (c.dx && c.dy && solid[g.y * MW + nx] && solid[ny * MW + g.x]) continue;   // no squeezing through a diagonal crack
+        if (!m) m = c;
+        else if (Math.abs(c.sc - m.sc) < 1e-6 && hash(g.x * 13 + S.sandN, g.y * 7 + 3) < 0.5) m = c;   // a fair coin between equal ways
+      }
+      return m;
+    };
+    for (const g of order) {
+      let m = best(g);
+      if (!m) { g.v = 0; g.acc = 0; continue; }                 // resting
+      g.v = Math.min(SAND_MAX, g.v + G * dt); g.acc += g.v * dt;
+      while (g.acc >= 1) {
+        solid[g.y * MW + g.x] = 0; sandAt[g.y * MW + g.x] = 0;
+        g.x += m.dx; g.y += m.dy; g.acc -= 1; moved = true;
+        solid[g.y * MW + g.x] = 1; sandAt[g.y * MW + g.x] = 1;
+        if (g.acc >= 1 && !(m = best(g))) { g.v = 0; g.acc = 0; break; }
+      }
+    }
+    if (moved) sandBeams();
+  }
+  function slideBox(g, f) { const x = (g.cx + g.dx * f) * 2, y = (g.cy + g.dy * f) * 2; return [x, y, x + 2, y + 2]; }
+  const boxesMeet = (a, b) => a[0] < b[2] - 0.02 && b[0] < a[2] - 0.02 && a[1] < b[3] - 0.02 && b[1] < a[3] - 0.02;
+  function stepSlides(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta), said = new Set();
+    SLIDES.forEach((g, k) => {
+      const s = S.slide[k], a = gx * g.dx + gy * g.dy;           // gravity along the track, toward the h end
+      if (Math.abs(a) < SLIDE_MIN) { s.v = 0; return; }         // across the track: it holds where it is
+      if ((a > 0 && s.f >= 1) || (a < 0 && s.f <= 0)) { s.v = 0; return; }
+      const v = clamp(s.v + a * CRATE_ACC * dt, -SLIDE_MAX, SLIDE_MAX), f = clamp(s.f + v * dt, 0, 1), b = slideBox(g, f);
+      if (bodyHitsBox(b, -0.03) || (S.crates && S.crates.some(c => boxesMeet(b, crateBox(c, c.f)))) || slabOnSand(b)) { s.v = 0; return; }   // never into you: wait
+      s.f = f; s.v = v;
+      if (f === 0 || f === 1) {
+        if (Math.abs(v) > 1.5) { S.shake = Math.max(S.shake, Math.min(0.14, Math.abs(v) * 0.03)); slideDust(g, f); }
+        s.v = 0;
+        if (g.open >= 0) said.add(f === g.open ? 'open' : 'shut');
+      }
+    });
+    if (said.size) pop(said.size > 1 ? '一扇滑开，一扇关上' : said.has('open') ? '滑门滑开了' : '滑门关上了');
+  }
+  function slabOnSand(b) { for (let y = Math.floor(b[1] + 0.02); y < Math.ceil(b[3] - 0.02); y++) for (let x = Math.floor(b[0] + 0.02); x < Math.ceil(b[2] - 0.02); x++) if (x >= 0 && y >= 0 && x < MW && y < MH && sandAt[y * MW + x]) return true; return false; }
+  function slideDust(g, f) { const b = slideBox(g, f), ex = g.dx > 0 ? (f ? b[2] : b[0]) : g.dx < 0 ? (f ? b[0] : b[2]) : null, ey = g.dy > 0 ? (f ? b[3] : b[1]) : g.dy < 0 ? (f ? b[1] : b[3]) : null;
+    for (let i = 0; i < 7; i++) S.fx.push({ x: ex ?? b[0] + Math.random() * 2, y: ey ?? b[1] + Math.random() * 2, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, life: 0.5, max: 0.5, k: 'dust', s: 0.18 }); }
+  function gateSolid(v) { for (const g of GATES) for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) solid[(g.cy * 2 + y) * MW + g.cx * 2 + x] = v; }
+  function bodyHitsBox(b, pad) {
+    for (const o of PC) { const [lx, ly] = toLevel(S.px, S.py - o), qx = clamp(lx, b[0], b[2]), qy = clamp(ly, b[1], b[3]); if (Math.hypot(lx - qx, ly - qy) < PR + pad) return true; }
+    return false;
+  }
+  function crateCellFree(cx, cy, self) {
+    if (cx < 0 || cy < 0 || cx >= CW || cy >= CH) return false;
+    const ch = cellAt(cx, cy);
+    if (ch === '#' || ch === 'X' || OW_DIR[ch] || ARROWS[ch] || DOORS[ch]) return false;
+    for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) if (solidAt(cx * 2 + x, cy * 2 + y)) return false;   // closed gate, unbroken bricks, jelly, ice...
+    if (S.slide) for (let k = 0; k < SLIDES.length; k++) if (boxesMeet(slideBox(SLIDES[k], S.slide[k].f), [cx * 2, cy * 2, cx * 2 + 2, cy * 2 + 2])) return false;
+    for (const o of S.crates) { if (o === self) continue; if ((o.cx === cx && o.cy === cy) || ((o.dx || o.dy) && o.cx + o.dx === cx && o.cy + o.dy === cy)) return false; }
+    return true;
+  }
+  function stepCrates(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta);
+    for (const c of S.crates) {
+      if (c.dx || c.dy) {
+        const a = (gx * c.dx + gy * c.dy) * CRATE_ACC;
+        let v = clamp(c.v + a * dt, -CRATE_MAX, CRATE_MAX), f = c.f + v * dt;
+        if (v > 0 && bodyHitsBox(crateBox(c, f), -0.03)) { v = 0; f = c.f; }           // never into you: wait
+        if (f >= 1) {
+          c.cx += c.dx; c.cy += c.dy; c.f = 0;
+          if (a > 0 && crateCellFree(c.cx + c.dx, c.cy + c.dy, c) && !bodyHitsBox([(c.cx + c.dx) * 2, (c.cy + c.dy) * 2, (c.cx + c.dx) * 2 + 2, (c.cy + c.dy) * 2 + 2], -0.03)) { c.v = v; c.f = Math.min(0.5, f - 1); }
+          else { if (v > 4.5) { S.shake = Math.max(S.shake, Math.min(0.25, v * 0.03)); crateDust(c); } c.dx = 0; c.dy = 0; c.v = 0; }
+        } else if (f <= 0 && v <= 0) { c.f = 0; c.dx = 0; c.dy = 0; c.v = 0; }
+        else { c.f = f; c.v = v; }
+      }
+      if (!c.dx && !c.dy) {
+        // the main pull first; along a floor only once the world leans far enough
+        const main = Math.abs(gx) > Math.abs(gy) ? [Math.sign(gx), 0, Math.abs(gx)] : [0, Math.sign(gy), Math.abs(gy)];
+        const side = main[0] ? [0, Math.sign(gy), Math.abs(gy)] : [Math.sign(gx), 0, Math.abs(gx)];
+        for (const [dx, dy, m] of [main, side]) {
+          if (m < (dx === main[0] && dy === main[1] ? 0.1 : CRATE_SLIDE) || (!dx && !dy)) continue;
+          if (!crateCellFree(c.cx + dx, c.cy + dy, c) || bodyHitsBox([(c.cx + dx) * 2, (c.cy + dy) * 2, (c.cx + dx) * 2 + 2, (c.cy + dy) * 2 + 2], -0.03)) continue;
+          c.dx = dx; c.dy = dy; c.f = 0; c.v = 0; break;
+        }
+      }
+    }
+  }
+  function crateDust(c) { for (let i = 0; i < 8; i++) S.fx.push({ x: c.cx * 2 + Math.random() * 2, y: c.cy * 2 + Math.random() * 2, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, life: 0.6, max: 0.6, k: 'dust', s: 0.2 }); }
+  function stepGates(dt) {
+    let on = false;
+    const fl = toLevel(S.px, S.py - PC[0]);
+    for (const p of PLATES) {
+      for (const c of S.crates) { const ccx = c.f > 0.5 ? c.cx + c.dx : c.cx, ccy = c.f > 0.5 ? c.cy + c.dy : c.cy; if (ccx === p.cx && ccy === p.cy) on = true; }
+      if (Math.floor(fl[0] / 2) === p.cx && Math.floor(fl[1] / 2) === p.cy) on = true;
+    }
+    S.plateOn = on;
+    if (on && !S.gateOpen) { S.gateOpen = true; gateSolid(0); pop('压住了，铁闸开了'); S.shake = Math.max(S.shake, 0.12); }
+    else if (!on && S.gateOpen) {
+      const blocked = GATES.some(g => bodyHitsBox([g.cx * 2, g.cy * 2, g.cx * 2 + 2, g.cy * 2 + 2], -0.02) || sandInCell(g.cx, g.cy) || S.crates.some(c => (c.cx === g.cx && c.cy === g.cy) || ((c.dx || c.dy) && c.cx + c.dx === g.cx && c.cy + c.dy === g.cy)));
+      if (!blocked) { S.gateOpen = false; gateSolid(1); pop('铁闸关了'); }
+    }
+    S.gateAnim += ((S.gateOpen ? 1 : 0) - S.gateAnim) * Math.min(1, dt * 9);
+  }
+  // spiked pendulum: a heavy ball on a rigid arm. Its "down" is the world's down, so turning the world swings it.
+  // a = arm angle from level +y toward +x; the world's gravity points along the same kind of angle = theta.
+  const ballInWall = (x, y, r) => {
+    for (let cy = Math.floor(y - r); cy <= Math.floor(y + r); cy++) for (let cx = Math.floor(x - r); cx <= Math.floor(x + r); cx++) {
+      if (!solidAt(cx, cy)) continue;
+      const qx = clamp(x, cx, cx + 1), qy = clamp(y, cy, cy + 1);
+      if (Math.hypot(x - qx, y - qy) < r - 0.02) return true;
+    }
+    return false;
+  };
+  function pendBall(i) { const d = PENDS[i], p = S.pend[i]; return [d.cx + d.len * Math.sin(p.a), d.cy + d.len * Math.cos(p.a)]; }
+  function stepPends(dt) {
+    PENDS.forEach((d, i) => {
+      const p = S.pend[i]; p.pa = p.a;
+      for (let k = 0; k < 4; k++) {
+        const h = dt / 4;
+        p.w += (-(G / d.len) * Math.sin(p.a - S.theta) - (d.damp ?? 0.25) * p.w) * h;
+        const na = p.a + p.w * h;
+        if (ballInWall(d.cx + d.len * Math.sin(na), d.cy + d.len * Math.cos(na), d.r)) {
+          if (Math.abs(p.w) > 1.2) { S.shake = Math.max(S.shake, 0.18); }
+          p.w = -p.w * 0.3;
+        } else p.a = na;
+      }
+    });
+  }
+  // ---- jelly blocks ----
+  function jellyUnder() {
+    for (const o of PC) {
+      const l = toLevel(S.px, S.py - o), r = PR + SKIN + 0.03;
+      for (let cy = Math.floor(l[1] - r); cy <= Math.floor(l[1] + r); cy++) for (let cx = Math.floor(l[0] - r); cx <= Math.floor(l[0] + r); cx++) {
+        if (cellAt(cx >> 1, cy >> 1) !== 'J') continue;
+        const qx = clamp(l[0], cx, cx + 1), qy = clamp(l[1], cy, cy + 1), d = Math.hypot(l[0] - qx, l[1] - qy);
+        if (d >= r || d < 1e-6) continue;
+        let nx = l[0] - qx, ny = l[1] - qy;
+        // a corner shared with a solid neighbour is really a flat face: use the face normal
+        if (nx && ny) { if (solidAt(cx + Math.sign(nx), cy)) nx = 0; else if (solidAt(cx, cy + Math.sign(ny))) ny = 0; }
+        const n = Math.hypot(nx, ny);
+        if (vW(nx / n, ny / n)[1] < -0.5) return true;
+      }
+    }
+    return false;
+  }
+  // ---- crumbling blocks ----
+  function crumbSolid(k, v) { const c = CRUMBS[k]; for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) solid[(c.cy * 2 + y) * MW + c.cx * 2 + x] = v; }
+  const crumbTile = (x, y) => cellAt(x >> 1, y >> 1) === '%';
+  function crumbDist(k, lx, ly) { const c = CRUMBS[k], x0 = c.cx * 2, y0 = c.cy * 2, qx = clamp(lx, x0, x0 + 2), qy = clamp(ly, y0, y0 + 2); return [Math.hypot(lx - qx, ly - qy), lx - qx, ly - qy]; }
+  function crumbBreak(k, smash) {
+    const c = CRUMBS[k], st = S.crumb[k];
+    if (st.st === 'gone') return;
+    st.st = 'gone'; crumbSolid(k, 0);
+    S.shake = Math.max(S.shake, smash ? 0.45 : 0.22);
+    for (let i = 0; i < 18; i++) S.fx.push({ x: c.cx * 2 + Math.random() * 2, y: c.cy * 2 + Math.random() * 2, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, life: 0.8, max: 0.8, k: 'brick', s: 0.16 + Math.random() * 0.2, grav: 1 });
+    dust([c.cx * 2 + 1, c.cy * 2 + 1], 6);
+    pop(smash ? '砸穿！' : '塌了', !!smash);
+  }
+  // falling fast: whatever crumbling block is right ahead of you breaks before you touch it
+  function crumbSmash(dt) {
+    const l = toLevel(S.px, S.py + S.vy * dt - PC[0]);
+    CRUMBS.forEach((c, k) => {
+      if (S.crumb[k].st === 'gone') return;
+      const [d, nx, ny] = crumbDist(k, l[0], l[1]);
+      // only a block you are about to land on (under you on screen), not one you slide past
+      if (d < PR + 0.05 && (d < 1e-6 || vW(nx / d, ny / d)[1] < -0.5)) { crumbBreak(k, true); S.vy *= 0.75; }
+    });
+  }
+  // standing on one (it is under you on screen): it starts to crack
+  function crumbSupport() {
+    for (const o of PC) {
+      const l = toLevel(S.px, S.py - o);
+      CRUMBS.forEach((c, k) => {
+        const st = S.crumb[k];
+        if (st.st !== 'ok') return;
+        const [d, nx, ny] = crumbDist(k, l[0], l[1]);
+        if (d > PR + SKIN + 0.02 || d < 1e-6) return;
+        if (vW(nx / d, ny / d)[1] < -0.5) { st.st = 'crack'; st.t = CRUMB_T; S.shake = Math.max(S.shake, 0.08); pop('咔…'); }
+      });
+    }
+  }
+  function stepCrumbs(dt) {
+    CRUMBS.forEach((c, k) => { const st = S.crumb[k]; if (st.st === 'crack') { st.t -= dt; if (st.t <= 0) crumbBreak(k, false); } });
+  }
+  function die(msg) {
+    if (S.state !== 'play') return;
+    S.state = 'dead'; S.timer = 0.9; S.flash = 0.5; S.flashColor = 'rgba(196,48,80,'; S.deaths++;
+    S.shake = Math.max(S.shake, 0.4);
+    toast(msg, 'dead');
+  }
+  function clear() {
+    if (S.state !== 'play') return;
+    S.state = 'clear'; S.timer = 2.0; S.flash = 0.45; S.flashColor = 'rgba(63,214,224,'; S.doorF = 0; S.done = true;
+    S.runTime = S.time - S.runStart;
+    toast('第 ' + L.id + ' 关 通关！' + S.runTime.toFixed(1) + ' 秒', 'clear');
+  }
+  function nearMiss(kind) {
+    if (S.time - (S.near[kind] ?? -9) < 1.4) return;
+    S.near[kind] = S.time;
+    pop('险！', true);
+    if (P.slowmo && (!window.__mazeHeadless || window.__mazeVideo)) S.slow = 0.42;
+  }
+
+  const dbgMin = (k, v) => { S.dbg[k] = Math.min(S.dbg[k] ?? 99, v); };
+  const boxDist = (x, y, b) => Math.hypot(Math.max(b.x0 - x, 0, x - b.x1), Math.max(b.y0 - y, 0, y - b.y1));
+  function beamDist(l, x, y) {
+    if (l.segs) { let m = 99; for (const [ax, ay, bx, by] of l.segs) { const qx = clamp(x, Math.min(ax, bx), Math.max(ax, bx)), qy = clamp(y, Math.min(ay, by), Math.max(ay, by)); m = Math.min(m, Math.hypot(x - qx, y - qy)); } return m; }
+    if (l.dx) { const a = Math.min(l.sx, l.sx + l.dx * l.len), b = Math.max(l.sx, l.sx + l.dx * l.len); return Math.hypot(Math.max(a - x, 0, x - b), y - l.sy); }
+    const a = Math.min(l.sy, l.sy + l.dy * l.len), b = Math.max(l.sy, l.sy + l.dy * l.len); return Math.hypot(Math.max(a - y, 0, y - b), x - l.sx);
+  }
+  function checkHazards() {
+    if (S.state !== 'play') return;
+    const cs = PC.map(o => toLevel(S.px, S.py - o));
+    const fast = S.speed > 2.5 || Math.abs(S.u) > 0.3;
+    // spikes: each tooth tile is a 1 x 1 kill box (spike fix 6)
+    for (const b of SPIKES) for (const c of cs) {
+      const d = boxDist(c[0], c[1], b);
+      dbgMin('spike', d - PR);
+      if (d < PR) return die('撞上尖刺了');
+      if (d < PR + 0.55 && fast) nearMiss('spike');
+    }
+    // pendulums: the spiked ball kills on touch; the arm is harmless
+    for (let i = 0; i < PENDS.length; i++) {
+      const b = pendBall(i), d = PENDS[i], sp = Math.abs(S.pend[i].w) * d.len;
+      for (const c of cs) {
+        const dd = Math.hypot(c[0] - b[0], c[1] - b[1]) - d.r - PR;
+        dbgMin('pend', dd);
+        if (dd < 0) return die('被摆锤砸中了');
+        if (dd < 0.6 && (sp > 2 || fast)) nearMiss('pend');
+      }
+    }
+    // lasers: a thin kill line while switched on
+    LASERS.forEach((l, i) => {
+      const on = laserOn(l);
+      let dmin = 99;
+      for (const c of cs) dmin = Math.min(dmin, beamDist(l, c[0], c[1]));
+      const inside = dmin < PR + 0.04;
+      if (inside) (S.cross[i] = S.cross[i] || []).push(+S.lt.toFixed(2));
+      if (on) {
+        dbgMin('laser' + i, dmin - PR);
+        if (inside && !P.noLaser) return die('被激光打中了');
+        if (dmin < PR + 0.5 && fast) nearMiss('laser');
+        // it just switched on right behind you
+        if (!l.wasOn && S.lt - l.lastIn < 0.45) nearMiss('laser');
+      } else {
+        if (inside) l.lastIn = S.lt;
+        if (l.wasOn) l.offAt = S.lt;
+      }
+      l.wasOn = on;
+    });
+    if (S.state !== 'play') return;
+    // door: GoalDoor's trigger is a 2 x 2 box over the whole door cell
+    const db = { x0: DOOR.cx * 2, y0: DOOR.cy * 2, x1: DOOR.cx * 2 + 2, y1: DOOR.cy * 2 + 2 };
+    if (cs.some(c => boxDist(c[0], c[1], db) < PR)) { if (S.unlocked) clear(); else if (S.hint <= 0) S.hint = 1; }
+  }
+
+  function advancePlan() {
+    while (S.step < PLAN.length - 1 && PLAN[S.step].next(PLAN[S.step])) { S.step++; S.stepAt = S.time; }
+  }
+
+  function updateDoor(dt) {
+    const tilt = doorTilt();
+    if (S.unlocked && tilt > 23) S.unlocked = false;
+    else if (!S.unlocked && tilt <= 20) S.unlocked = true;
+    if (S.hint > 0) S.hint = Math.max(0, S.hint - dt);
+    S.needleV += (-40 * Math.sin(S.needleA) - 5 * S.needleV) * dt;
+    S.needleA += S.needleV * dt;
+    if (S.state === 'clear' || S.state === 'over') S.doorF = Math.min(3, S.doorF + dt * 10);
+  }
+
+  // ---------------- effects ----------------
+  function dust(at, n) {
+    for (let i = 0; i < n; i++) S.fx.push({ x: at[0] + (Math.random() - 0.5) * 0.8, y: at[1] + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 1.6, vy: (Math.random() - 0.5) * 1.6, life: 0.9, max: 0.9, k: 'dust', s: 0.18 + Math.random() * 0.22 });
+  }
+  function pop(text, big) { S.pops.push({ text, t: 0, big: !!big }); if (S.pops.length > 3) S.pops.shift(); }
+  function stepFx(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta);
+    for (const p of S.fx) {
+      p.life -= dt;
+      const g = p.grav ? G : p.k === 'dust' ? 0.6 : 0;
+      p.vx += gx * g * dt; p.vy += gy * g * dt;
+      if (p.k === 'dust') { p.vx *= 1 - 1.5 * dt; p.vy *= 1 - 1.5 * dt; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+    S.fx = S.fx.filter(p => p.life > 0);
+    if (S.fx.length > 200) S.fx.splice(0, S.fx.length - 200);
+    for (const p of S.pops) p.t += dt;
+    S.pops = S.pops.filter(p => p.t < (p.big ? 0.9 : 0.8));
+    S.shake *= Math.exp(-6 * dt);
+    if (S.flash > 0) S.flash = Math.max(0, S.flash - dt);
+  }
+
+  // ---------------- art ----------------
+  const C = { air: [18, 18, 39], airDeep: [14, 14, 30], wall: [39, 39, 68], outer: [20, 19, 36],
+    spike: [196, 92, 122], spikeLit: [232, 142, 166], spikeBase: [37, 37, 63], spikeCore: [26, 25, 46] };
+  const rgb = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+  const MARG = 16;   // tiles of rock drawn around the maze (covers the screen at any angle); beyond that a flat fill
+  function autoIdx(x, y, s) {
+    const n = s(x, y - 1), so = s(x, y + 1), w = s(x - 1, y), e = s(x + 1, y);
+    const col = !w ? 2 : !e ? 4 : 3, row = !n ? 0 : !so ? 2 : 1;
+    if (col !== 3 || row !== 1) return row * 5 + col;
+    if (!s(x - 1, y - 1)) return 6;
+    if (!s(x + 1, y - 1)) return 5;
+    if (!s(x - 1, y + 1)) return 1;
+    if (!s(x + 1, y + 1)) return 0;
+    return 8;
+  }
+  function buildLevel() {
+    const W = (MW + 2 * MARG) * TS, H = (MH + 2 * MARG) * TS, cv = mk(W, H), g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    // air with a faint large-cell pattern
+    g.fillStyle = rgb(C.air); g.fillRect(MARG * TS, MARG * TS, MW * TS, MH * TS);
+    for (let cy = 0; cy < CH; cy++) for (let cx = 0; cx < CW; cx++) {
+      if (cellAt(cx, cy) === '#') continue;
+      const h = hash(cx * 3.1, cy * 7.3);
+      if (h > 0.55) { g.fillStyle = h > 0.8 ? 'rgb(22,22,46)' : 'rgb(20,20,43)'; g.fillRect((MARG + cx * 2) * TS, (MARG + cy * 2) * TS, 2 * TS, 2 * TS); }
+    }
+    // rock: the game's rim tileset, auto-tiled exactly like MazeSceneBuilder
+    const sol = (x, y) => solidAt(x, y) && !crumbTile(x, y) && !'JGmMZ'.includes(cellAt(x >> 1, y >> 1));
+    for (let y = -MARG; y < MH + MARG; y++) for (let x = -MARG; x < MW + MARG; x++) {
+      if (!sol(x, y)) continue;
+      const k = autoIdx(x, y, sol);
+      g.drawImage(IMG.tiles, (k % 5) * TS, Math.floor(k / 5) * TS, TS, TS, (x + MARG) * TS, (y + MARG) * TS, TS, TS);
+    }
+    // exterior shade like the game's exterior_shade_*.png: rock further than ~2 units from air fades to dark navy
+    {
+      const img = g.getImageData(0, 0, W, H), d = img.data, INF = 1e9;
+      const dist = new Float32Array(W * H);
+      for (let py = 0; py < H; py++) for (let px = 0; px < W; px++)
+        { const tx = Math.floor(px / TS) - MARG, ty = Math.floor(py / TS) - MARG; dist[py * W + px] = solidAt(tx, ty) && !crumbTile(tx, ty) && !'JGmMZ'.includes(cellAt(tx >> 1, ty >> 1)) ? INF : 0; }
+      for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) {
+        const i = py * W + px; let v = dist[i]; if (v === 0) continue;
+        if (px > 0) v = Math.min(v, dist[i - 1] + 3);
+        if (py > 0) { v = Math.min(v, dist[i - W] + 3); if (px > 0) v = Math.min(v, dist[i - W - 1] + 4); if (px < W - 1) v = Math.min(v, dist[i - W + 1] + 4); }
+        dist[i] = v;
+      }
+      for (let py = H - 1; py >= 0; py--) for (let px = W - 1; px >= 0; px--) {
+        const i = py * W + px; let v = dist[i]; if (v === 0) continue;
+        if (px < W - 1) v = Math.min(v, dist[i + 1] + 3);
+        if (py < H - 1) { v = Math.min(v, dist[i + W] + 3); if (px < W - 1) v = Math.min(v, dist[i + W + 1] + 4); if (px > 0) v = Math.min(v, dist[i + W - 1] + 4); }
+        dist[i] = v;
+      }
+      const LV = [[39, 39, 68], [31, 31, 55], [25, 24, 45], [20, 19, 36]];
+      for (let i = 0; i < W * H; i++) {
+        const dd = dist[i]; if (dd === 0) continue;
+        const v = clamp((dd / 3 - 30) / 80, 0, 1) * 3; if (v <= 0) continue;
+        const lo = Math.min(3, Math.floor(v)), hi = Math.min(3, lo + 1), f = v - Math.floor(v);
+        for (let k = 0; k < 3; k++) d[i * 4 + k] = Math.floor(LV[lo][k] + (LV[hi][k] - LV[lo][k]) * f + 0.5);
+        d[i * 4 + 3] = 255;
+      }
+      g.putImageData(img, 0, 0);
+    }
+    // spikes (fix 6): one tile each, teeth toward the open sides; the base tiles are drawn as rock
+    for (const b of SPIKES) {
+      const X = (b.x0 + MARG) * TS, Y = (b.y0 + MARG) * TS, Sz = TS;
+      const tooth = (ax, ay, bx, by, cx2, cy2, lit) => { g.fillStyle = rgb(lit ? C.spikeLit : C.spike); g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.lineTo(cx2, cy2); g.closePath(); g.fill(); };
+      g.fillStyle = rgb(C.spikeCore);
+      const diag = b.dirs.length === 2;
+      for (const dir of b.dirs) {
+        for (let k = 0; k < 2; k++) {
+          const a = k * Sz / 2, m = a + Sz / 4, e = a + Sz / 2, lit = k === 0;
+          if (dir === 'up') tooth(X + a, Y + Sz, X + e, Y + Sz, X + m, Y + (diag ? 4 : 2), lit);
+          if (dir === 'down') tooth(X + a, Y, X + e, Y, X + m, Y + Sz - (diag ? 4 : 2), lit);
+          if (dir === 'left') tooth(X + Sz, Y + a, X + Sz, Y + e, X + (diag ? 4 : 2), Y + m, lit);
+          if (dir === 'right') tooth(X, Y + a, X, Y + e, X + Sz - (diag ? 4 : 2), Y + m, lit);
+        }
+      }
+    }
+    // laser emitters: the game's 4 x 10 pixel sprite (blue base, orange arrow pointing along the beam)
+    for (const l of LASERS) {
+      g.save(); g.translate((l.ex + MARG) * TS, (l.ey + MARG) * TS); g.rotate(Math.atan2(l.dy, l.dx));
+      g.fillStyle = 'rgb(39,53,91)'; g.fillRect(-2, -5, 4, 10);
+      g.fillStyle = 'rgb(83,125,177)'; g.fillRect(-1, -4, 3, 8);
+      g.fillStyle = 'rgb(239,168,69)';
+      for (let y = 2; y <= 7; y++) for (let x = 1; x <= 3; x++) if (Math.abs(y - 4.5) <= 3.5 - x) g.fillRect(x - 2, y - 5, 1, 1);
+      g.restore();
+    }
+    return cv;
+  }
+
+  // ---------------- drawing ----------------
+  const view = document.getElementById('view'), ctx = view.getContext('2d');
+  const IMG = {};
+  function tinted(src, rgba) { const c = mk(src.width, src.height), g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = rgba; g.fillRect(0, 0, c.width, c.height); return c; }
+  const ANIMS = { idle: { img: 'idle', n: 4, f: 0.2, loop: true }, fallstart: { img: 'fallstart', n: 2, f: 0.06, next: 'float' },
+    float: { img: 'float', n: 6, f: 0.09, loop: true }, land: { img: 'land', n: 3, f: 0.07, next: 'idle' } };
+  function animFrame(dt) {
+    let a = ANIMS[S.anim];
+    if (!S.grounded && (S.anim === 'idle' || S.anim === 'land')) { S.anim = 'fallstart'; S.animT = 0; a = ANIMS.fallstart; }
+    if (S.grounded && (S.anim === 'float' || S.anim === 'fallstart')) { S.anim = 'idle'; S.animT = 0; a = ANIMS.idle; }
+    S.animT += dt;
+    let idx = Math.floor(S.animT / a.f);
+    if (idx >= a.n) { if (a.loop) idx %= a.n; else { S.anim = a.next; S.animT = 0; a = ANIMS[S.anim]; idx = 0; } }
+    return { img: a.img, idx };
+  }
+
+  let K = 40, CX = 0, CY = 0, alpha = 1, W = 0, H = 0;
+  function resize() {
+    const r = view.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    view.width = Math.max(320, Math.round(r.width * dpr)); view.height = Math.max(200, Math.round(r.height * dpr));
+  }
+  function render(dt) {
+    W = view.width; H = view.height;
+    // MazeCameraFit default: half-height R = half diagonal + 0.5, so the maze fits at any angle
+    const R = Math.hypot(MW, MH) / 2 + 0.5, aspect = W / H;
+    K = H / (2 * Math.max(R, R / aspect)); CX = W / 2; CY = H / 2;
+    const lp_ = (a, b) => a + (b - a) * alpha;
+    const th = lp_(prev.theta, S.theta), Tx = lp_(prev.tx, S.tx), Ty = lp_(prev.ty, S.ty);
+    const Px = lp_(prev.px, S.px), Py = lp_(prev.py, S.py);
+    let camx = lp_(prev.cam[0], S.cam[0]), camy = lp_(prev.cam[1], S.cam[1]);
+    if (S.shake > 0.01) { camx += (Math.random() - 0.5) * S.shake * 0.7; camy += (Math.random() - 0.5) * S.shake * 0.7; }
+    const c = Math.cos(th), s = Math.sin(th);
+    const ox = CX + K * (Tx - camx), oy = CY + K * (Ty - camy);
+    const level = () => ctx.setTransform(K * c, K * s, -K * s, K * c, ox, oy);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = rgb(C.outer); ctx.fillRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = false;
+    level();
+    ctx.drawImage(lvlTex, -MARG, -MARG, MW + 2 * MARG, MH + 2 * MARG);
+    // jelly blocks: wobbly pink gel; squashes for a moment after a bounce
+    if (L.jelly) for (let cy = 0; cy < CH; cy++) for (let cx = 0; cx < CW; cx++) {
+      if (L.map[cy][cx] !== 'J') continue;
+      const x0 = cx * 2, y0 = cy * 2, sq = Math.max(0, 1 - (S.time - S.jellyT) / 0.3), w = 0.06 * Math.sin(S.time * 6 + cx * 1.3 + cy);
+      ctx.fillStyle = '#c2447a'; ctx.fillRect(x0, y0, 2, 2);
+      ctx.fillStyle = '#ff7eb6'; ctx.fillRect(x0 + 0.12, y0 + 0.12 + sq * 0.12 + w, 1.76, 1.76 - sq * 0.12 - w);
+      ctx.fillStyle = 'rgba(255,230,245,0.75)'; ctx.fillRect(x0 + 0.3, y0 + 0.3 + sq * 0.1 + w, 0.5, 0.16); ctx.fillRect(x0 + 0.3, y0 + 0.55 + sq * 0.1 + w, 0.16, 0.3);
+    }
+    // ice: pale blue blocks with a glossy rim on the open faces
+    if (L.ice) for (let cy = 0; cy < CH; cy++) for (let cx = 0; cx < CW; cx++) {
+      if (L.map[cy][cx] !== 'i') continue;
+      const x0 = cx * 2, y0 = cy * 2, op = (dx, dy) => { const n = cellAt(cx + dx, cy + dy); return n !== '#' && n !== 'i' && n !== '~' && n !== 'X'; };
+      ctx.fillStyle = '#5f8fb8'; ctx.fillRect(x0, y0, 2, 2);
+      ctx.fillStyle = '#9fd3f2'; ctx.fillRect(x0 + 0.1, y0 + 0.1, 1.8, 1.8);
+      ctx.fillStyle = '#e4f6ff';
+      if (op(0, -1)) ctx.fillRect(x0, y0, 2, 0.18);
+      if (op(0, 1)) ctx.fillRect(x0, y0 + 1.82, 2, 0.18);
+      if (op(-1, 0)) ctx.fillRect(x0, y0, 0.18, 2);
+      if (op(1, 0)) ctx.fillRect(x0 + 1.82, y0, 0.18, 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(x0 + 0.35, y0 + 0.45, 0.6, 0.1); ctx.fillRect(x0 + 1.1, y0 + 1.2, 0.45, 0.1);
+    }
+    // slime walls: green goo on every face that looks into open space, with a few drips
+    if (L.slime) for (let cy = 0; cy < CH; cy++) for (let cx = 0; cx < CW; cx++) {
+      if (L.map[cy][cx] !== '~') continue;
+      const x0 = cx * 2, y0 = cy * 2, op = (dx, dy) => { const n = cellAt(cx + dx, cy + dy); return n !== '#' && n !== '~' && n !== 'X'; };
+      ctx.fillStyle = '#2f5f2a'; ctx.fillRect(x0, y0, 2, 2);
+      ctx.fillStyle = '#7cd957';
+      const wob = k => 0.08 * Math.sin(S.time * 3 + k * 1.7 + cx + cy);
+      if (op(0, -1)) ctx.fillRect(x0, y0, 2, 0.32 + wob(1));
+      if (op(0, 1)) ctx.fillRect(x0, y0 + 1.68 - wob(2), 2, 0.32 + wob(2));
+      if (op(-1, 0)) ctx.fillRect(x0, y0, 0.32 + wob(3), 2);
+      if (op(1, 0)) ctx.fillRect(x0 + 1.68 - wob(4), y0, 0.32 + wob(4), 2);
+      ctx.fillStyle = '#b6f08f';
+      for (let k = 0; k < 3; k++) { const hx = x0 + 0.3 + k * 0.6, hy = y0 + 0.3 + ((k * 0.7 + cx) % 1.2); ctx.fillRect(hx, hy, 0.16, 0.16); }
+    }
+    // one-way grates: dark frame, bars, amber chevrons sliding the way you can go through
+    if (L.oneway) for (let cy = 0; cy < CH; cy++) for (let cx = 0; cx < CW; cx++) {
+      const d = OW_DIR[L.map[cy][cx]]; if (!d) continue;
+      const x0 = cx * 2, y0 = cy * 2;
+      ctx.fillStyle = 'rgba(38,34,74,0.9)'; ctx.fillRect(x0, y0, 2, 2);
+      ctx.fillStyle = '#6d64b0';
+      for (let b = 0; b < 4; b++) { if (d[0]) ctx.fillRect(x0, y0 + 0.17 + b * 0.5, 2, 0.12); else ctx.fillRect(x0 + 0.17 + b * 0.5, y0, 0.12, 2); }
+      ctx.strokeStyle = '#4a4385'; ctx.lineWidth = 0.12; ctx.strokeRect(x0 + 0.06, y0 + 0.06, 1.88, 1.88);
+      ctx.save(); ctx.beginPath(); ctx.rect(x0 + 0.12, y0 + 0.12, 1.76, 1.76); ctx.clip();
+      ctx.translate(x0 + 1, y0 + 1); ctx.rotate(Math.atan2(d[1], d[0]));
+      const sh = (S.time * 1.2) % 1;
+      ctx.strokeStyle = '#ffcf5a'; ctx.lineWidth = 0.16; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (let k = -1; k < 2; k++) { const ax = (k + sh) * 0.75; ctx.globalAlpha = 0.95 - Math.abs(ax) * 0.45; ctx.beginPath(); ctx.moveTo(ax - 0.3, -0.45); ctx.lineTo(ax + 0.15, 0); ctx.lineTo(ax - 0.3, 0.45); ctx.stroke(); }
+      ctx.globalAlpha = 1; ctx.restore();
+    }
+    // crumbling blocks: loose bricks; shaking with growing cracks while they give way
+    CRUMBS.forEach((c, k) => {
+      const st = S.crumb[k]; if (!st || st.st === 'gone') return;
+      const x0 = c.cx * 2, y0 = c.cy * 2, f = st.st === 'crack' ? 1 - st.t / CRUMB_T : 0;
+      ctx.save(); ctx.translate(x0, y0);
+      if (f > 0) ctx.translate((Math.random() - 0.5) * 0.1 * (0.4 + f), (Math.random() - 0.5) * 0.1 * (0.4 + f));
+      ctx.fillStyle = '#4a3a33'; ctx.fillRect(0, 0, 2, 2);
+      for (let r = 0; r < 4; r++) for (let b = -1; b < 2; b++) {
+        const bx = b + (r % 2 ? 0.5 : 0) + 0.04, by = r * 0.5 + 0.04, bw = 0.92, bh = 0.42;
+        const x1 = Math.max(0.04, bx), x2 = Math.min(1.96, bx + bw); if (x2 - x1 < 0.1) continue;
+        const h = hash(c.cx * 5 + r, c.cy * 3 + b);
+        ctx.fillStyle = h > 0.66 ? '#9a7c64' : h > 0.33 ? '#8a6e58' : '#7c624f'; ctx.fillRect(x1, by, x2 - x1, bh);
+        ctx.fillStyle = 'rgba(255,230,200,0.18)'; ctx.fillRect(x1, by, x2 - x1, 0.07);
+      }
+      ctx.strokeStyle = '#21160f'; ctx.lineWidth = 0.07; ctx.lineJoin = 'round';
+      const h1 = hash(c.cx * 1.7, c.cy * 2.3);
+      ctx.beginPath(); ctx.moveTo(0.5 + h1 * 0.6, 0); ctx.lineTo(0.9 + h1 * 0.3, 0.55); ctx.lineTo(0.7, 1.0); ctx.stroke();
+      if (f > 0.25) { ctx.beginPath(); ctx.moveTo(0.7, 1.0); ctx.lineTo(1.2, 1.45); ctx.lineTo(1.0, 2.0); ctx.moveTo(0.9 + h1 * 0.3, 0.55); ctx.lineTo(1.6, 0.8); ctx.stroke(); }
+      if (f > 0.6) { ctx.beginPath(); ctx.moveTo(0, 1.2); ctx.lineTo(0.7, 1.0); ctx.moveTo(1.2, 1.45); ctx.lineTo(2, 1.3); ctx.stroke(); }
+      ctx.restore();
+    });
+    // swing mirrors: a dark block with a silver plank on a pivot, tipping to the downhill side
+    MIRRORS.forEach((m, k) => {
+      const x0 = m.cx * 2, y0 = m.cy * 2;
+      ctx.fillStyle = '#2a2944'; ctx.fillRect(x0, y0, 2, 2);
+      ctx.strokeStyle = '#5a5888'; ctx.lineWidth = 0.1; ctx.strokeRect(x0 + 0.05, y0 + 0.05, 1.9, 1.9);
+      ctx.save(); ctx.translate(x0 + 1, y0 + 1); ctx.rotate(S.mirA ? S.mirA[k] : 0);
+      ctx.fillStyle = '#6f7a96'; ctx.fillRect(-1.2, -0.13, 2.4, 0.26);
+      ctx.fillStyle = '#dfe8ff'; ctx.fillRect(-1.2, -0.13, 2.4, 0.1);
+      ctx.restore();
+      ctx.fillStyle = '#ffcf5a'; ctx.beginPath(); ctx.arc(x0 + 1, y0 + 1, 0.16, 0, Math.PI * 2); ctx.fill();
+    });
+    // plates: an iron socket in the middle of the cell, lit green while pressed
+    for (const p of PLATES) {
+      const x0 = p.cx * 2, y0 = p.cy * 2, on = S.plateOn;
+      ctx.fillStyle = '#2b2a44'; ctx.fillRect(x0 + 0.35, y0 + 0.35, 1.3, 1.3);
+      ctx.fillStyle = '#6e7086'; ctx.fillRect(x0 + 0.45, y0 + 0.45, 1.1, 1.1);
+      ctx.fillStyle = on ? '#7dff7a' : '#ff6b4a'; ctx.fillRect(x0 + 0.75, y0 + 0.75, 0.5, 0.5);
+      if (on) { ctx.globalAlpha = 0.25 + 0.1 * Math.sin(S.time * 8); ctx.fillStyle = '#7dff7a'; ctx.fillRect(x0 + 0.1, y0 + 0.1, 1.8, 1.8); ctx.globalAlpha = 1; }
+    }
+    // iron gates: bars across the passage that slide into the wall while open
+    for (const g of GATES) {
+      const x0 = g.cx * 2, y0 = g.cy * 2, keep = 1 - S.gateAnim;
+      ctx.fillStyle = '#3a3d52'; if (g.vert) { ctx.fillRect(x0, y0, 2, 0.14); ctx.fillRect(x0, y0 + 1.86, 2, 0.14); } else { ctx.fillRect(x0, y0, 0.14, 2); ctx.fillRect(x0 + 1.86, y0, 0.14, 2); }
+      for (let b = 0; b < 4; b++) {
+        ctx.fillStyle = b % 2 ? '#8a90a4' : '#b0b6c8';
+        if (g.vert) ctx.fillRect(x0 + 0.16 + b * 0.47, y0, 0.2, 2 * keep);
+        else ctx.fillRect(x0, y0 + 0.16 + b * 0.47, 2 * keep, 0.2);
+      }
+      ctx.fillStyle = S.gateOpen ? '#7dff7a' : '#ff6b4a'; ctx.fillRect(x0 + 0.9, y0 + 0.9, 0.2, 0.2);
+    }
+    // screw gates: bars across the passage held by a big bolt; the bars pull back as the bolt unscrews (a ring shows how far)
+    SCREWS.forEach((g, gi) => {
+      const st = S.scr[gi] || { turn: 0, open: false }, x0 = g.cx * 2, y0 = g.cy * 2, f = st.turn / 360, keep = st.open ? 0 : 1 - f * 0.35;
+      ctx.fillStyle = '#3a3d52'; if (g.vert) { ctx.fillRect(x0, y0, 2, 0.14); ctx.fillRect(x0, y0 + 1.86, 2, 0.14); } else { ctx.fillRect(x0, y0, 0.14, 2); ctx.fillRect(x0 + 1.86, y0, 0.14, 2); }
+      for (let b = 0; b < 4; b++) {
+        ctx.fillStyle = b % 2 ? '#8a7a54' : '#b8a46a';
+        if (g.vert) ctx.fillRect(x0 + 0.16 + b * 0.47, y0, 0.2, 2 * keep);
+        else ctx.fillRect(x0, y0 + 0.16 + b * 0.47, 2 * keep, 0.2);
+      }
+      if (!st.open) {
+        ctx.save(); ctx.translate(x0 + 1, y0 + 1);
+        ctx.strokeStyle = 'rgba(30,30,40,0.6)'; ctx.lineWidth = 0.12; ctx.beginPath(); ctx.arc(0, 0, 0.62, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = g.dir > 0 ? '#ffd65a' : '#7fd8ff'; ctx.beginPath(); ctx.arc(0, 0, 0.62, -Math.PI / 2, -Math.PI / 2 + g.dir * f * Math.PI * 2, g.dir < 0); ctx.stroke();
+        ctx.rotate(-g.dir * st.turn * DEG * 2);                 // the bolt spins as you turn the world
+        ctx.fillStyle = '#5c5f6e'; ctx.beginPath(); for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; ctx.lineTo(Math.cos(a) * 0.42, Math.sin(a) * 0.42); } ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#9aa0b4'; ctx.beginPath(); ctx.arc(0, 0, 0.26, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#3a3d52'; ctx.fillRect(-0.24, -0.05, 0.48, 0.1);
+        ctx.restore();
+        // a curved arrow showing which way unscrews it (yellow clockwise, blue counter-clockwise)
+        const ac = g.dir > 0 ? '255,214,90' : '127,216,255';
+        ctx.save(); ctx.translate(x0 + 1, y0 + 1); if (g.dir < 0) ctx.scale(-1, 1);
+        ctx.strokeStyle = 'rgba(' + ac + ',0.8)'; ctx.lineWidth = 0.06; ctx.beginPath(); ctx.arc(0, 0, 0.85, -Math.PI * 0.9, -Math.PI * 0.35); ctx.stroke();
+        const ea = -Math.PI * 0.35, ex = Math.cos(ea) * 0.85, ey = Math.sin(ea) * 0.85;
+        ctx.fillStyle = 'rgba(' + ac + ',0.9)'; ctx.beginPath(); ctx.moveTo(ex + 0.16, ey + 0.05); ctx.lineTo(ex - 0.1, ey - 0.12); ctx.lineTo(ex - 0.04, ey + 0.18); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+    });
+    // sand: one grain per tile, drawn as one mass (no seams), a lighter lip on the faces that look "up", a streak while it falls
+    if (S.sand && S.sand.length) {
+      const gx = Math.sin(th), gy = Math.cos(th), up = Math.abs(gx) > Math.abs(gy) ? [-Math.sign(gx), 0] : [0, -Math.sign(gy)];
+      const pos = S.sand.map(g => [g.ox + (g.x - g.ox) * alpha, g.oy + (g.y - g.oy) * alpha]);
+      ctx.fillStyle = 'rgba(217,173,102,0.35)';
+      S.sand.forEach((g, i) => { if (g.v > 3) { const [x, y] = pos[i], k = Math.min(1.2, g.v * 0.08); ctx.fillRect(x + 0.2 - gx * k, y + 0.2 - gy * k, 0.6, 0.6); } });
+      ctx.fillStyle = '#b8894a'; for (const [x, y] of pos) ctx.fillRect(x - 0.01, y - 0.01, 1.02, 1.02);
+      ctx.fillStyle = '#d4a65e'; for (const [x, y] of pos) ctx.fillRect(x + 0.05, y + 0.05, 0.9, 0.9);
+      S.sand.forEach((g, i) => {
+        const [x, y] = pos[i], h1 = hash(i * 3.7 + 1, 2.1), h2 = hash(i * 5.3 + 4, 7.7);
+        ctx.fillStyle = '#e8c387'; ctx.fillRect(x + 0.12 + h1 * 0.55, y + 0.15 + h2 * 0.5, 0.13, 0.13); ctx.fillRect(x + 0.7 - h2 * 0.5, y + 0.55 + h1 * 0.3, 0.1, 0.1);
+        ctx.fillStyle = '#9c6d34'; ctx.fillRect(x + 0.35 + h2 * 0.4, y + 0.4 - h1 * 0.25, 0.1, 0.1);
+        const ux = g.x + up[0], uy = g.y + up[1];
+        if (!(ux >= 0 && uy >= 0 && ux < MW && uy < MH && sandAt[uy * MW + ux])) {
+          ctx.fillStyle = '#f0d49a';
+          if (up[1] < 0) ctx.fillRect(x, y, 1, 0.16); else if (up[1] > 0) ctx.fillRect(x, y + 0.84, 1, 0.16); else if (up[0] < 0) ctx.fillRect(x, y, 0.16, 1); else ctx.fillRect(x + 0.84, y, 0.16, 1);
+        }
+      });
+    }
+    // sliding gates: two rails along the one-cell track (both cells) and an iron slab riding on them; the arrow shows where
+    // gravity pulls it along the track (dim while gravity is across the track and it holds)
+    SLIDES.forEach((g, k) => {
+      const s = S.slide[k], f = s.of + (s.f - s.of) * alpha, x0 = (g.cx + g.dx * f) * 2, y0 = (g.cy + g.dy * f) * 2;
+      const ax = Math.min(g.cx, g.cx + g.dx) * 2, ay = Math.min(g.cy, g.cy + g.dy) * 2;
+      ctx.fillStyle = 'rgba(20,20,30,0.55)';
+      if (g.dx) { ctx.fillRect(ax, ay + 0.12, 4, 0.16); ctx.fillRect(ax, ay + 1.72, 4, 0.16); } else { ctx.fillRect(ax + 0.12, ay, 0.16, 4); ctx.fillRect(ax + 1.72, ay, 0.16, 4); }
+      ctx.fillStyle = '#9aa0b4';
+      if (g.dx) { ctx.fillRect(ax, ay + 0.17, 4, 0.06); ctx.fillRect(ax, ay + 1.77, 4, 0.06); } else { ctx.fillRect(ax + 0.17, ay, 0.06, 4); ctx.fillRect(ax + 1.77, ay, 0.06, 4); }
+      ctx.fillStyle = '#23252f'; ctx.fillRect(x0 + 0.05, y0 + 0.05, 1.9, 1.9);
+      ctx.fillStyle = '#596075'; ctx.fillRect(x0 + 0.16, y0 + 0.16, 1.68, 1.68);
+      ctx.fillStyle = '#6f7790';
+      for (let q = 0; q < 3; q++) { if (g.dx) ctx.fillRect(x0 + 0.3 + q * 0.5, y0 + 0.24, 0.32, 1.52); else ctx.fillRect(x0 + 0.24, y0 + 0.3 + q * 0.5, 1.52, 0.32); }
+      ctx.fillStyle = '#2b2e3a'; for (const [px, py] of [[0.3, 0.3], [1.58, 0.3], [0.3, 1.58], [1.58, 1.58]]) ctx.fillRect(x0 + px, y0 + py, 0.12, 0.12);
+      const a = Math.sin(S.theta) * g.dx + Math.cos(S.theta) * g.dy, live = Math.abs(a) >= SLIDE_MIN;
+      ctx.save(); ctx.translate(x0 + 1, y0 + 1); ctx.rotate(Math.atan2(g.dy, g.dx));
+      for (const sg of [1, -1]) {
+        const hot = live && Math.sign(a) === sg;
+        ctx.fillStyle = hot ? 'rgba(255,214,90,0.95)' : 'rgba(255,214,90,0.28)';
+        ctx.beginPath(); ctx.moveTo(sg * 0.62, 0); ctx.lineTo(sg * 0.3, -0.3); ctx.lineTo(sg * 0.3, -0.12); ctx.lineTo(sg * 0.05, -0.12); ctx.lineTo(sg * 0.05, 0.12); ctx.lineTo(sg * 0.3, 0.12); ctx.lineTo(sg * 0.3, 0.3); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    });
+    // crates: a wooden box with a cross brace, drawn where it is between two cells
+    if (S.crates) for (const c of S.crates) {
+      const b = crateBox(c, c.f), x0 = c.ox + (b[0] - c.ox) * alpha, y0 = c.oy + (b[1] - c.oy) * alpha;
+      ctx.fillStyle = '#5a3a1e'; ctx.fillRect(x0 + 0.04, y0 + 0.04, 1.92, 1.92);
+      ctx.fillStyle = '#b07a42'; ctx.fillRect(x0 + 0.2, y0 + 0.2, 1.6, 1.6);
+      ctx.fillStyle = '#c99256'; for (let k = 0; k < 3; k++) ctx.fillRect(x0 + 0.2, y0 + 0.24 + k * 0.54, 1.6, 0.42);
+      ctx.strokeStyle = '#5a3a1e'; ctx.lineWidth = 0.2; ctx.beginPath(); ctx.moveTo(x0 + 0.25, y0 + 0.25); ctx.lineTo(x0 + 1.75, y0 + 1.75); ctx.moveTo(x0 + 1.75, y0 + 0.25); ctx.lineTo(x0 + 0.25, y0 + 1.75); ctx.stroke();
+      ctx.fillStyle = '#3a2412'; for (const [ax, ay] of [[0.22, 0.22], [1.62, 0.22], [0.22, 1.62], [1.62, 1.62]]) ctx.fillRect(x0 + ax, y0 + ay, 0.16, 0.16);
+    }
+    // lasers
+    const blinkT = S.lt;
+    for (const l of LASERS) {
+      if (l.segs) {
+        const on = laserOn(l), ph = laserPhase(l), warn = l.off > 0 && ph >= Math.max(0, l.on - 0.5);
+        const k = !on ? 0.25 : warn && Math.floor(ph * 16) % 2 !== 0 ? 0.3 : 1;
+        for (const [ax, ay, bx, by] of l.segs) {
+          const seg = (w, col, a) => { ctx.globalAlpha = a; ctx.fillStyle = col; if (ay === by) ctx.fillRect(Math.min(ax, bx), ay - w / 2, Math.abs(bx - ax), w); else ctx.fillRect(ax - w / 2, Math.min(ay, by), w, Math.abs(by - ay)); };
+          if (on) { seg(0.1875 * 1.6, 'rgb(166,227,107)', 0.2 * k); seg(0.1875, 'rgb(166,227,107)', 0.25 * k); }
+          seg(0.0625 * 1.4, `rgb(${166 * k | 0},${227 * k | 0},${107 * k | 0})`, on ? 1 : 0.5);
+        }
+        ctx.globalAlpha = 1;
+        continue;
+      }
+      if (!laserOn(l)) {
+        // switched off: a faint dotted guide so the line stays readable
+        ctx.globalAlpha = 0.22; ctx.fillStyle = 'rgb(166,227,107)';
+        for (let d = 0.2; d < l.len; d += 0.5) {
+          const x = l.sx + l.dx * d, y = l.sy + l.dy * d;
+          ctx.fillRect(x - 0.04, y - 0.04, 0.08, 0.08);
+        }
+        ctx.globalAlpha = 1;
+        continue;
+      }
+      const ph = laserPhase(l), warn = l.off > 0 && ph >= Math.max(0, l.on - 0.5);
+      const k = warn && Math.floor(ph * 16) % 2 !== 0 ? 0.3 : 1;
+      const x1 = l.sx + l.dx * l.len, y1 = l.sy + l.dy * l.len;
+      const line = (w, col, a) => {
+        ctx.globalAlpha = a; ctx.fillStyle = col;
+        if (l.dx) ctx.fillRect(Math.min(l.sx, x1), l.sy - w / 2, Math.abs(x1 - l.sx), w);
+        else ctx.fillRect(l.sx - w / 2, Math.min(l.sy, y1), w, Math.abs(y1 - l.sy));
+      };
+      line(0.1875 * 1.6, 'rgb(166,227,107)', 0.25 * k * 0.8);
+      line(0.1875, 'rgb(166,227,107)', 0.25 * k);
+      line(0.0625 * 1.4, `rgb(${166 * k | 0},${227 * k | 0},${107 * k | 0})`, 1);
+      ctx.globalAlpha = 1;
+    }
+    // pendulums: mount plate, chain, spiked iron ball
+    PENDS.forEach((d, i) => {
+      const p = S.pend[i], a = lp_(p.pa, p.a), bx = d.cx + d.len * Math.sin(a), by = d.cy + d.len * Math.cos(a);
+      ctx.fillStyle = '#5b5873'; ctx.fillRect(d.cx - 0.35, d.cy - 0.18, 0.7, 0.36);
+      ctx.fillStyle = '#8f8bb0'; ctx.fillRect(d.cx - 0.35, d.cy - 0.18, 0.7, 0.08);
+      const n = Math.max(3, Math.round(d.len / 0.35));
+      for (let k = 1; k < n; k++) {
+        const t = k / n, x = d.cx + (bx - d.cx) * t, y = d.cy + (by - d.cy) * t;
+        ctx.fillStyle = k % 2 ? '#77739a' : '#a19dc4'; ctx.fillRect(x - 0.07, y - 0.07, 0.14, 0.14);
+      }
+      ctx.save(); ctx.translate(bx, by); ctx.rotate(a * 2);
+      ctx.fillStyle = '#c45c7a';
+      for (let k = 0; k < 10; k++) {
+        const t = k / 10 * Math.PI * 2;
+        ctx.beginPath(); ctx.moveTo(Math.cos(t - 0.2) * d.r * 0.8, Math.sin(t - 0.2) * d.r * 0.8); ctx.lineTo(Math.cos(t) * (d.r + 0.22), Math.sin(t) * (d.r + 0.22)); ctx.lineTo(Math.cos(t + 0.2) * d.r * 0.8, Math.sin(t + 0.2) * d.r * 0.8); ctx.fill();
+      }
+      ctx.fillStyle = '#3b3852'; ctx.beginPath(); ctx.arc(0, 0, d.r * 0.86, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5d5980'; ctx.beginPath(); ctx.arc(-d.r * 0.25, -d.r * 0.25, d.r * 0.35, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    });
+    // door
+    ctx.save(); ctx.translate(DOOR.bx, DOOR.by); ctx.rotate(DOOR.rot);
+    if (S.state === 'clear' || S.state === 'over') ctx.drawImage(IMG.doorOpen, Math.floor(S.doorF) * 32, 0, 32, 32, -1, -2, 2, 2);
+    else ctx.drawImage(IMG.door, (Math.floor(S.time * 7) % 6) * 32, 0, 32, 32, -1, -2, 2, 2);
+    const lock = (S.unlocked || S.state === 'clear' || S.state === 'over') ? IMG.lockOpen : (S.hint > 0 && Math.floor(S.hint * 8) % 2 === 0) ? IMG.lockHint : IMG.lockLocked;
+    ctx.drawImage(lock, -1, -2, 2, 2);
+    ctx.translate((15.5 - 16) / 16, -2 + 10.5 / 16); ctx.rotate(-(th + DOOR.rot) + S.needleA);
+    ctx.drawImage(IMG.needle, -1 / 16, 0, 2 / 16, 8 / 16);
+    ctx.restore();
+    // particles
+    for (const p of S.fx) {
+      const a = clamp(p.life / p.max, 0, 1);
+      ctx.globalAlpha = p.k === 'dust' ? a * 0.55 : a;
+      ctx.fillStyle = p.k === 'spark' ? '#c9f08e' : p.k === 'brick' ? '#8a6e58' : p.k === 'jelly' ? '#ff9ecb' : p.k === 'slime' ? '#7cd957' : '#8c88b8';
+      const sz = p.k === 'dust' ? p.s * (1.6 - a * 0.6) : p.s;
+      ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+    }
+    ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const toS = (wx, wy) => [CX + K * (wx - camx), CY + K * (wy - camy)];
+    // player
+    const fr = animFrame(dt), sc = K * 1.54 / 92, pS = toS(Px, Py);
+    let src = IMG[fr.img];
+    if (S.state === 'dead') src = IMG[fr.img + 'Red'];
+    ctx.globalAlpha = S.state === 'clear' ? Math.max(0, 1 - (2.0 - S.timer) * 1.6) : S.state === 'over' ? 0 : 1;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(src, fr.idx * 96, 0, 96, 112, Math.round(pS[0] - 49.5 * sc), Math.round(pS[1] - 112 * sc), Math.round(96 * sc), Math.round(112 * sc));
+    ctx.globalAlpha = 1;
+    // speed lines while falling fast
+    const spd = Math.abs(S.vy);
+    if (spd > 7.5 && S.state === 'play') {
+      ctx.strokeStyle = 'rgba(214,220,255,0.28)'; ctx.lineWidth = Math.max(1, K * 0.035);
+      const n = Math.min(12, Math.floor((spd - 7) * 2));
+      for (let k = 0; k < n; k++) {
+        const h1 = hash(k * 3.1, Math.floor(S.time * 14) + k), h2 = hash(k * 7.7, Math.floor(S.time * 14) - k);
+        const off = (h1 - 0.5) * K * 5, along = (h2 - 0.2) * K * 5, len = K * (1.0 + spd * 0.1);
+        const x0 = pS[0] + off, y0 = pS[1] - K * 0.8 - along;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0, y0 - len); ctx.stroke();
+      }
+    }
+    const vg = ctx.createRadialGradient(CX, CY, H * 0.35, CX, CY, H * 0.95);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.45)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    if (S.flash > 0) { ctx.fillStyle = S.flashColor + Math.min(0.35, S.flash).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+    drawHud(pS);
+  }
+
+  function drawHud(pS) {
+    const u = Math.max(1, H / 640);
+    ctx.textBaseline = 'alphabetic';
+    for (const p of S.pops) {
+      const a = 1 - p.t / (p.big ? 0.9 : 0.8), rise = p.t * K * 1.6;
+      ctx.globalAlpha = clamp(a * 1.5, 0, 1);
+      ctx.font = `600 ${Math.round((p.big ? 34 : 20) * u)}px "Noto Serif SC", serif`;
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 4 * u; ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillStyle = p.big ? '#ff8aa6' : '#e6e2ff';
+      const x = pS[0] + (p.big ? K * 1.6 : 0), y = pS[1] - K * 2.4 - rise;
+      ctx.strokeText(p.text, x, y); ctx.fillText(p.text, x, y);
+    }
+    ctx.globalAlpha = 1;
+    if (S.toast && S.time - S.toast.t < (S.toast.kind === 'clear' ? 2.0 : 0.9)) {
+      const a = clamp((S.time - S.toast.t) / 0.15, 0, 1);
+      ctx.globalAlpha = a; ctx.textAlign = 'center';
+      ctx.font = `600 ${Math.round(34 * u)}px "Noto Serif SC", serif`;
+      ctx.lineWidth = 6 * u; ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.fillStyle = S.toast.kind === 'clear' ? '#3fd6e0' : '#ff7a8f';
+      ctx.strokeText(S.toast.text, CX, CY - H * 0.2); ctx.fillText(S.toast.text, CX, CY - H * 0.2);
+      ctx.globalAlpha = 1;
+    }
+    // level badge, top-left (only when the caption box leaves room for it)
+    const capW = Math.min(W * 0.62, 520 * u);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#9fa8ff'; ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`;
+    const idW = ctx.measureText(sceneName(L)).width;
+    ctx.font = `600 ${Math.round(16 * u)}px "Noto Serif SC", serif`;
+    const nameW = ctx.measureText(L.name).width;
+    const room = CX - capW / 2 - 14 * u;
+    if (S.mode === 'idle' || S.state === 'intro' || room > idW + nameW + 24 * u) {
+      ctx.fillStyle = '#9fa8ff'; ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`;
+      ctx.fillText(sceneName(L), 14 * u, 26 * u);
+      ctx.fillStyle = '#e6e2ff'; ctx.font = `600 ${Math.round(16 * u)}px "Noto Serif SC", serif`;
+      ctx.fillText(L.name, 14 * u + idW + 10 * u, 26 * u);
+    } else if (room > idW + 8 * u) {
+      ctx.fillStyle = '#9fa8ff'; ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`;
+      ctx.fillText(sceneName(L), 14 * u, 26 * u);
+    }
+    if (S.state === 'intro') { drawIntro(u); return; }
+    if (S.mode === 'idle') return;
+    const st = PLAN[S.step], age = S.time - S.stepAt, ap = clamp(age / 0.22, 0, 1);
+    if (S.state === 'play' || S.state === 'dead') {
+      const bw = Math.min(W * 0.62, 520 * u), bh = (st.sub ? 64 : 46) * u, bx = CX - bw / 2, by = 12 * u - (1 - ap) * 10 * u;
+      ctx.globalAlpha = 0.25 + 0.75 * ap;
+      ctx.fillStyle = 'rgba(12,12,26,0.8)'; rr(bx, by, bw, bh, 10 * u); ctx.fill();
+      ctx.strokeStyle = 'rgba(159,168,255,0.55)'; ctx.lineWidth = 1.5 * u; rr(bx, by, bw, bh, 10 * u); ctx.stroke();
+      ctx.textAlign = 'left'; ctx.fillStyle = '#9fa8ff'; ctx.font = `600 ${Math.round(13 * u)}px ui-monospace, Menlo, monospace`;
+      ctx.fillText(`第 ${S.step + 1} 拍`, bx + 14 * u, by + 28 * u);
+      ctx.textAlign = 'center'; ctx.fillStyle = '#f2f0ff'; ctx.font = `600 ${Math.round(21 * u)}px "Noto Serif SC", serif`;
+      ctx.fillText(st.cap, CX + 20 * u, by + 30 * u);
+      if (st.sub) { ctx.fillStyle = '#b9b6da'; ctx.font = `${Math.round(14 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`; ctx.fillText(st.sub, CX + 20 * u, by + 52 * u); }
+      ctx.globalAlpha = 1;
+    }
+    ctx.textAlign = 'left'; ctx.fillStyle = '#e6e2ff'; ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`;
+    ctx.fillText(S.runTime.toFixed(1) + ' s', 14 * u, H - 18 * u);
+    ctx.fillStyle = S.mode === 'demo' ? '#9fa8ff' : '#8f8cb0'; ctx.font = `${Math.round(12 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(S.mode === 'demo' ? '演示中' : '自己玩', 14 * u, H - 38 * u);
+    const n = PLAN.length, gap = 26 * u, tw = (n - 1) * gap, tx0 = CX - tw / 2, ty = H - 26 * u;
+    ctx.fillStyle = 'rgba(12,12,26,0.6)'; rr(tx0 - 16 * u, ty - 14 * u, tw + 32 * u, 28 * u, 14 * u); ctx.fill();
+    ctx.strokeStyle = 'rgba(230,226,255,0.25)'; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.moveTo(tx0, ty); ctx.lineTo(tx0 + tw, ty); ctx.stroke();
+    for (let i = 0; i < n; i++) {
+      const x = tx0 + i * gap, done = i < S.step || S.state === 'clear' || S.state === 'over', cur = i === S.step && S.state === 'play';
+      ctx.beginPath(); ctx.arc(x, ty, (cur ? 7 + Math.sin(S.time * 10) * 1.5 : 5) * u, 0, Math.PI * 2);
+      ctx.fillStyle = done ? '#9fa8ff' : cur ? '#f2f0ff' : 'rgba(16,16,32,0.9)'; ctx.fill();
+      ctx.strokeStyle = done || cur ? '#9fa8ff' : 'rgba(230,226,255,0.45)'; ctx.lineWidth = 1.5 * u; ctx.stroke();
+    }
+    const wx = W - 52 * u, wy = H - 52 * u, wr = 30 * u;
+    S.uVis += (S.u - S.uVis) * 0.25;
+    ctx.save(); ctx.translate(wx, wy);
+    ctx.fillStyle = 'rgba(12,12,26,0.7)'; ctx.beginPath(); ctx.arc(0, 0, wr + 10 * u, 0, Math.PI * 2); ctx.fill();
+    const full = Math.abs(S.u) > 0.95;
+    if (Math.abs(S.uVis) > 0.05) {
+      ctx.strokeStyle = full ? '#9fa8ff' : 'rgba(159,168,255,0.6)'; ctx.lineWidth = 4 * u; ctx.beginPath();
+      ctx.arc(0, 0, wr + 5 * u, -Math.PI / 2, -Math.PI / 2 + S.uVis * 1.4, S.uVis < 0); ctx.stroke();
+    }
+    ctx.rotate(S.uVis * 75 * DEG);
+    ctx.strokeStyle = '#e6e2ff'; ctx.lineWidth = 4 * u; ctx.beginPath(); ctx.arc(0, 0, wr, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.moveTo(-wr, 0); ctx.lineTo(wr, 0); ctx.moveTo(0, 0); ctx.lineTo(0, wr); ctx.stroke();
+    ctx.fillStyle = '#9fa8ff'; ctx.beginPath(); ctx.arc(0, -wr, 4 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#e6e2ff'; ctx.beginPath(); ctx.arc(0, 0, 6 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#8f8cb0'; ctx.textAlign = 'center'; ctx.font = `${Math.round(11 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(S.u > 0.05 ? '顺时针' : S.u < -0.05 ? '逆时针' : '手柄', wx, wy - wr - 16 * u);
+  }
+  function drawIntro(u) {
+    const t = P.intro - S.timer, a = clamp(Math.min(t / 0.18, S.timer / 0.25), 0, 1);
+    ctx.globalAlpha = a * 0.72; ctx.fillStyle = '#0c0c1a'; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = a; ctx.textAlign = 'center';
+    ctx.fillStyle = '#9fa8ff'; ctx.font = `600 ${Math.round(22 * u)}px ui-monospace, Menlo, monospace`;
+    ctx.fillText(sceneName(L), CX, CY - 40 * u);
+    ctx.fillStyle = '#f2f0ff'; ctx.font = `600 ${Math.round(52 * u)}px "Noto Serif SC", serif`;
+    ctx.fillText(L.name, CX, CY + 22 * u);
+    ctx.fillStyle = '#b9b6da'; ctx.font = `${Math.round(16 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(L.tip, CX, CY + 62 * u);
+    ctx.globalAlpha = 1;
+  }
+  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+  // ---------------- page UI ----------------
+  function toast(text, kind) { S.toast = { text, kind, t: S.time }; }
+  const $ = (id) => document.getElementById(id);
+  const pTime = $('pTime'), pDeath = $('pDeath'), overlay = $('startOverlay'), ovText = $('ovText');
+  const ovDemo = $('ovDemo'), ovPlay = $('ovPlay'), ovNext = $('ovNext');
+  let lastHud = -1;
+  function updateHud() { pTime.textContent = S.runTime.toFixed(1) + ' 秒'; pDeath.textContent = String(S.deaths); }
+  function showOverlay(kind) {
+    overlay.hidden = false;
+    const nx = LEVELS[LI + 1];
+    if (kind === 'start') {
+      ovDemo.textContent = '▶ 看演示通关'; ovPlay.textContent = '自己玩';
+      ovNext.hidden = true;
+      ovText.textContent = '第 ' + L.id + ' 关 ' + L.name + '：' + L.tip;
+    } else {
+      ovDemo.textContent = S.mode === 'demo' ? '▶ 再看一遍' : '▶ 看演示';
+      ovPlay.textContent = S.mode === 'demo' ? '自己玩这关' : '再玩一次';
+      ovNext.hidden = !nx;
+      if (nx) ovNext.textContent = '下一关 ' + nx.id + ' ' + nx.name + ' ▶';
+      ovText.textContent = '第 ' + L.id + ' 关' + (S.mode === 'demo' ? '演示通关' : '通关') + '，用时 ' + S.runTime.toFixed(1) + ' 秒' + (S.deaths ? '，死亡 ' + S.deaths + ' 次' : '') + (nx ? '。' : '。迷宫的关都过完了。');
+    }
+  }
+  function onRunOver() {
+    if (window.__mazeHeadless) return;
+    showOverlay('over');
+    if (S.mode === 'demo' && LEVELS[LI + 1] && $('chkChain') && $('chkChain').checked) {
+      overlay.hidden = true; selectLevel(LI + 1, false); begin('demo');
+    }
+  }
+  (() => { const box = document.querySelector('.levels'); if (!box) return; box.innerHTML = ''; LEVELS.forEach((lv, i) => { const b = document.createElement('button'); b.className = 'lv' + (i === 0 ? ' active' : ''); b.type = 'button'; b.dataset.level = String(i); b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false'); b.innerHTML = '<b>' + lv.id + '</b>' + lv.name + (lv.tag ? ' <i class="newtag" style="background:' + (lv.tagc || '#2f9e6b') + ';color:#fff">' + lv.tag + '</i>' : lv.mech ? ' <i class="newtag" style="background:#7c5cff;color:#fff">新机关</i>' : lv.isNew ? ' <i class="newtag">新</i>' : ''); box.appendChild(b); }); })();
+  const lvButtons = [...document.querySelectorAll('[data-level]')];
+  function selectLevel(i, show) {
+    loadLevel(i);
+    lvButtons.forEach(b => { const on = +b.dataset.level === i; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    if (show) showOverlay('start');
+  }
+  lvButtons.forEach(b => b.addEventListener('click', () => { selectLevel(+b.dataset.level, true); }));
+  function begin(mode) { overlay.hidden = true; startRun(mode); view.focus({ preventScroll: true }); }
+  ovDemo.addEventListener('click', () => begin('demo'));
+  ovPlay.addEventListener('click', () => begin('play'));
+  ovNext.addEventListener('click', () => { const m = S.mode === 'demo' ? 'demo' : 'play'; selectLevel(LI + 1, false); begin(m); });
+  $('btnDemo').addEventListener('click', () => begin('demo'));
+  $('btnPlay').addEventListener('click', () => begin('play'));
+  $('btnReset').addEventListener('click', () => { if (S.mode === 'idle') begin('play'); else { overlay.hidden = true; resetLevel(false); } view.focus({ preventScroll: true }); });
+  $('chkSlow').addEventListener('change', (e) => { P.slowmo = e.target.checked; });
+
+  const held = new Set();
+  const KEYMAP = { ArrowLeft: -1, KeyQ: -1, KeyA: -1, ArrowRight: 1, KeyE: 1, KeyD: 1 };
+  function syncKeys() { let v = 0; for (const k of held) v += KEYMAP[k]; input.keys = clamp(v, -1, 1); }
+  function takeOver() { if (S.mode === 'idle' || S.state === 'over') begin('play'); else if (S.mode === 'demo') S.mode = 'play'; }
+  window.addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+    if (KEYMAP[e.code] !== undefined) { e.preventDefault(); held.add(e.code); syncKeys(); takeOver(); }
+    else if (e.code === 'KeyR') { e.preventDefault(); if (S.mode !== 'idle') { overlay.hidden = true; resetLevel(false); } }
+  });
+  window.addEventListener('keyup', (e) => { if (held.delete(e.code)) syncKeys(); });
+  window.addEventListener('blur', () => { held.clear(); syncKeys(); input.buttons = 0; });
+  const holdBtn = (id, dir) => {
+    const b = $(id);
+    const on = (e) => { e.preventDefault(); input.buttons = dir; b.classList.add('active'); takeOver(); };
+    const off = () => { if (input.buttons === dir) input.buttons = 0; b.classList.remove('active'); };
+    b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
+  };
+  holdBtn('btnCcw', -1); holdBtn('btnCw', 1);
+  let padReset = false;
+  // some hosts (e.g. an embedded page) block the gamepad API and the call throws: then keyboard / buttons only
+  let padOK = true;
+  function pollPad() {
+    if (!padOK) return;
+    let v = 0, rs = false, pads = [];
+    try { pads = (navigator.getGamepads && navigator.getGamepads()) || []; }
+    catch (e) {
+      padOK = false; input.pad = 0;
+      const note = $('padNote');
+      if (note) note.textContent = '手柄：这个网页里浏览器不让读手柄，用本地的 html 文件打开就能用（摇杆横向或 L2 / R2，Options 重来）';
+      return;
+    }
+    for (const p of pads) {
+      if (!p) continue;
+      const ax = [p.axes[2] || 0, p.axes[0] || 0].find(a => Math.abs(a) > 0.18) || 0;
+      const trig = ((p.buttons[7] && p.buttons[7].value) || 0) - ((p.buttons[6] && p.buttons[6].value) || 0);
+      v = Math.abs(trig) > 0.05 ? trig : ax;
+      rs = !!(p.buttons[9] && p.buttons[9].pressed);
+      if (v) break;
+    }
+    input.pad = v;
+    if (v && S.mode === 'demo') S.mode = 'play';
+    if (rs && !padReset && S.mode !== 'idle') { overlay.hidden = true; resetLevel(false); }
+    padReset = rs;
+  }
+  const sliders = [['tRot', 'oRot', 'rotSpeed', v => v + '°/s']];
+  for (const [id, out, key, fmt] of sliders) {
+    const el = $(id), o = $(out);
+    if (!el) continue;
+    el.addEventListener('input', () => { P[key] = parseFloat(el.value); o.textContent = fmt(P[key]); if (S.mode !== 'idle') { overlay.hidden = true; startRun(S.mode); } });
+  }
+
+  // ---------------- boot ----------------
+  let last = 0, acc = 0;
+  let loopErr = false;
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    if (window.__mazeStop) return;
+    try {
+      const now = ts / 1000; let dt = last ? now - last : 0; last = now; dt = Math.min(dt, 0.1);
+      pollPad();
+      if (!window.__mazeHeadless) {
+        let scale = 1;
+        if (S.slow > 0) { S.slow -= dt; scale = 0.32; }
+        acc += dt * scale;
+        while (acc >= DT) { step(DT); acc -= DT; }
+        alpha = acc / DT;
+      } else alpha = 1;
+      render(dt);
+      if (S.time - lastHud > 0.1 || S.time < lastHud) { lastHud = S.time; updateHud(); }
+    } catch (e) { if (!loopErr) { loopErr = true; console.error(e); } }
+  }
+  // the text maps under the stage, straight from the level data, so they always match what is played
+  const mapList = $('mapList');
+  if (mapList) {
+    for (const lv of LEVELS) {
+      const fig = document.createElement('figure');
+      const cap = document.createElement('figcaption');
+      const ls = Object.entries(lv.lasers || {}).map(([k, v]) => `激光(${k}) 亮${v.on}s 灭${v.off}s`);
+      cap.textContent = sceneName(lv) + ' ' + lv.name + (ls.length ? ' · ' + ls.join('，') : '');
+      const pre = document.createElement('pre');
+      pre.textContent = lv.map.join('\n');
+      fig.append(cap, pre); mapList.append(fig);
+    }
+  }
+  const load = (src) => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+  Promise.all(Object.entries(A).map(([k, v]) => load(v).then(im => { IMG[k] = im; }))).then(() => {
+    for (const k of ['idle', 'float', 'fallstart', 'land']) IMG[k + 'Red'] = tinted(IMG[k], 'rgba(226,70,96,0.6)');
+    resize(); window.addEventListener('resize', resize);
+    selectLevel(0, true);
+    window.__mazeReady = true;
+    requestAnimationFrame(frame);
+  });
+  window.__maze = {
+    S, P, LEVELS, step, startRun, loadLevel, resetLevel, input, DT, lp, toLevel, toWorld, laserOn, laserLeft, laserPhase, solidAt: (x, y) => solidAt(x, y), contacts: () => contactsNow(),
+    get L() { return L; }, get LI() { return LI; }, get PLAN() { return PLAN; }, get LASERS() { return LASERS; }, get DOOR() { return DOOR; }, get SCREWS() { return SCREWS; }, get SLIDES() { return SLIDES; }, get SAND0() { return SAND0; },
+    render: () => render(0), renderAt: (a, dt) => { alpha = a; render(dt); }, doorTilt: () => doorTilt(),
+  };
+})();
+</script>
+
+</html>

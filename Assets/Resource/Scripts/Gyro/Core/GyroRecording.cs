@@ -23,9 +23,10 @@ namespace Resource.Scripts.Gyro
         public Vector3? InitialBias { get; }
         public Vector3? InitialAxis { get; }
         public bool InitialAxisCrossedDegeneracy { get; }
+        public bool UseJoyConWheelAxis { get; }
 
         public GyroRecording(IReadOnlyList<GyroSample> samples, string path = "", Vector3? initialBias = null,
-            Vector3? initialAxis = null, bool initialAxisCrossedDegeneracy = false)
+            Vector3? initialAxis = null, bool initialAxisCrossedDegeneracy = false, bool useJoyConWheelAxis = false)
         {
             if (samples == null) throw new ArgumentNullException(nameof(samples));
             if (initialBias.HasValue) ValidateInitialBias(initialBias.Value, "录制初始零点偏移");
@@ -47,10 +48,11 @@ namespace Resource.Scripts.Gyro
             InitialBias = initialBias;
             InitialAxis = initialAxis;
             InitialAxisCrossedDegeneracy = initialAxisCrossedDegeneracy;
+            UseJoyConWheelAxis = useJoyConWheelAxis;
         }
 
         private GyroRecording(GyroSample[] ownedSamples, string fullPath, double duration, Vector3? initialBias,
-            Vector3? initialAxis, bool initialAxisCrossedDegeneracy)
+            Vector3? initialAxis, bool initialAxisCrossedDegeneracy, bool useJoyConWheelAxis)
         {
             _samples = Array.AsReadOnly(ownedSamples);
             FilePath = fullPath;
@@ -58,6 +60,7 @@ namespace Resource.Scripts.Gyro
             InitialBias = initialBias;
             InitialAxis = initialAxis;
             InitialAxisCrossedDegeneracy = initialAxisCrossedDegeneracy;
+            UseJoyConWheelAxis = useJoyConWheelAxis;
         }
 
         public static GyroRecording Load(string path)
@@ -79,6 +82,7 @@ namespace Resource.Scripts.Gyro
                     Vector3? initialBias = null;
                     Vector3? initialAxis = null;
                     bool initialAxisCrossedDegeneracy = false;
+                    bool? useJoyConWheelAxis = null;
                     int lineNumber = 1;
                     string line;
                     while ((line = ReadBoundedLine(reader, ++lineNumber)) != null)
@@ -119,6 +123,16 @@ namespace Resource.Scripts.Gyro
                             initialAxisCrossedDegeneracy = crossed == "1";
                             continue;
                         }
+                        if (columns[0] == "#joyConWheelAxis")
+                        {
+                            if (samples.Count != 0 || columns.Length != 2 || useJoyConWheelAxis.HasValue)
+                                throw new InvalidDataException(location + "的 Joy-Con 转向轴标记必须仅出现一次、位于所有样本之前且恰好有 2 列。");
+                            string enabled = columns[1].Trim();
+                            if (enabled != "0" && enabled != "1")
+                                throw new InvalidDataException(location + "的 Joy-Con 转向轴标记必须为 0 或 1。");
+                            useJoyConWheelAxis = enabled == "1";
+                            continue;
+                        }
                         if (columns.Length != 10) throw new InvalidDataException(location + "必须恰好有 10 列，空行也不允许。");
                         var values = new float[10];
                         for (int column = 0; column < values.Length; ++column)
@@ -134,7 +148,8 @@ namespace Resource.Scripts.Gyro
                         samples.Add(new GyroSample(sample.DeltaTime, sample.Gyro, sample.Acceleration, sample.Gravity, duration));
                     }
                     ValidateCount(samples.Count);
-                    return new GyroRecording(samples.ToArray(), fullPath, duration, initialBias, initialAxis, initialAxisCrossedDegeneracy);
+                    return new GyroRecording(samples.ToArray(), fullPath, duration, initialBias, initialAxis,
+                        initialAxisCrossedDegeneracy, useJoyConWheelAxis ?? false);
                 }
             }
         }

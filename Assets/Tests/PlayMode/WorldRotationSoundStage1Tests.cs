@@ -18,9 +18,9 @@ namespace GravityGame.Tests.PlayMode
         {
             float previousTimeScale = Time.timeScale;
             bool previousRunInBackground = Application.runInBackground;
-            Component player = null, oxygen = null, sfx = null;
+            Component player = null, sfx = null;
             bool oldAutoMove = false, oldRumble = false, oldEnabled = false, capturedSettings = false;
-            float oldDrain = 0f, oldVolume = 0f;
+            float oldVolume = 0f;
             Application.runInBackground = true;
             try
             {
@@ -29,19 +29,16 @@ namespace GravityGame.Tests.PlayMode
                 yield return null;
                 Scene scene = SceneManager.GetActiveScene();
                 player = Find(scene, "Resource.Scripts.PlayerController");
-                oxygen = Find(scene, "Resource.Scripts.PlayerOxygen");
                 Component world = Find(scene, "Resource.Scripts.WorldRotator");
                 Component intro = Find(scene, "Resource.Scripts.LevelIntroUI");
                 sfx = (Component)FindType("Resource.Scripts.SfxManager").GetProperty("Instance").GetValue(null);
                 oldAutoMove = Field<bool>(player, "autoMoveMode");
                 oldRumble = Field<bool>(player, "rumbleEnabled");
-                oldDrain = Property<float>(oxygen, "DrainPerSecond");
                 oldEnabled = Field<bool>(sfx, "sfxEnabled");
                 oldVolume = Field<float>(sfx, "masterVolume");
                 capturedSettings = true;
                 SetField(player, "autoMoveMode", false);
                 SetField(player, "rumbleEnabled", false);
-                oxygen.GetType().GetProperty("DrainPerSecond").SetValue(oxygen, 0f);
                 SetField(sfx, "sfxEnabled", true);
                 SetField(sfx, "masterVolume", 1f);
 
@@ -193,7 +190,6 @@ namespace GravityGame.Tests.PlayMode
                         SetField(player, "autoMoveMode", oldAutoMove);
                         SetField(player, "rumbleEnabled", oldRumble);
                     }
-                    if (oxygen != null) oxygen.GetType().GetProperty("DrainPerSecond").SetValue(oxygen, oldDrain);
                     if (sfx != null)
                     {
                         SetField(sfx, "sfxEnabled", oldEnabled);

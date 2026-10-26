@@ -38,7 +38,7 @@ namespace Resource.Scripts.Editor
             foreach (string path in expected)
                 if (!File.Exists(path)) throw new FileNotFoundException("缺少生成场景：" + path);
             string[] built = EditorBuildSettings.scenes.Where(s => s.enabled && expected.Contains(s.path)).Select(s => s.path).ToArray();
-            if (!built.SequenceEqual(expected)) throw new InvalidOperationException("Build Settings 的 20 关顺序不符。");
+            if (!built.SequenceEqual(expected)) throw new InvalidOperationException("Build Settings 的 " + LevelOrder.Scenes.Length + " 关顺序不符。");
             var setup = EditorSceneManager.GetSceneManagerSetup();
             try
             {
@@ -52,11 +52,11 @@ namespace Resource.Scripts.Editor
                 var menuScene = EditorSceneManager.OpenScene("Assets/Scenes/MainMenu.unity", OpenSceneMode.Single);
                 var menu = menuScene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<MainMenuUI>(true)).Single();
                 if (menu.levels == null || menu.levels.Count != LevelOrder.Scenes.Length)
-                    throw new InvalidOperationException("选关列表不是 20 项。");
+                    throw new InvalidOperationException("选关列表不是 " + LevelOrder.Scenes.Length + " 项。");
                 for (int i = 0; i < LevelOrder.Scenes.Length; i++)
                     if (menu.levels[i].sceneName != LevelOrder.Scenes[i] || menu.levels[i].displayName != "Level " + (i + 1) || !menu.levels[i].unlocked)
                         throw new InvalidOperationException("选关列表第 " + (i + 1) + " 项不符。");
-                return "20 scenes,20 door links,20 menu entries PASS";
+                return $"{LevelOrder.Scenes.Length} scenes,{LevelOrder.Scenes.Length} door links,{LevelOrder.Scenes.Length} menu entries PASS";
             }
             finally { EditorSceneManager.RestoreSceneManagerSetup(setup); }
         }
@@ -143,11 +143,38 @@ namespace Resource.Scripts.Editor
                 mines = entry["mines"]?.Select(t => new Vector3((float)t[0], (float)t[1], (float)t[2])).ToArray() ?? Array.Empty<Vector3>(),
                 vent = entry["vent"]?.ToObject<VentSeed>(), wakes = ReadArray<WakeSeed>(entry["wakes"])
             };
+            data.weak = Rects(entry["weak"]);
+            data.soft = Rects(entry["soft"]);
+            data.gas = Rects(entry["gas"]);
+            data.drills = entry["drills"]?.Select(V2).ToArray() ?? Array.Empty<Vector2>();
+            data.gasVents = entry["vents"]?.Select(v => new GasVentSeed { x = (int)v[0], y = (int)v[1],
+                rate = (float)v[2], max = v.Count() > 3 ? (int)v[3] : int.MaxValue }).ToArray() ?? Array.Empty<GasVentSeed>();
+            data.tnts = entry["tnts"]?.Select(t => new TntSeed { x = (float)t[0], y = (float)t[1], direction = (string)t[2],
+                delay = t.Count() > 3 ? (float)t[3] : .2f, hasArm = t.Count() > 4, arm = t.Count() > 4 ? V4(t[4]) : Vector4.zero }).ToArray() ?? Array.Empty<TntSeed>();
+            if (entry["branch"] is JObject branch)
+                data.branch = new RailBranchSeed { at = (int)branch["at"], track = branch["track"].Select(V2).ToArray() };
+            data.tntG = (float?)entry["tntG"] ?? 1f;
+            data.tntGravitySpecified = entry["tntG"] != null;
+            data.tntFuse = (float?)entry["tntFuse"] ?? 0f;
+            data.tntHit = (float?)entry["tntHit"] ?? 7f;
+            data.blastKill = (float?)entry["blastKill"] ?? 2f;
+            data.ventDelay = (float?)entry["ventDelay"] ?? float.MaxValue;
+            data.gasTick = (float?)entry["gasTick"] ?? .06f;
+            data.gasTol = (float?)entry["gasTol"] ?? .25f;
+            data.crystals = entry["crystals"]?.Select(V2).ToArray() ?? Array.Empty<Vector2>();
+            data.kegs = entry["kegs"]?.Select(V2).ToArray() ?? Array.Empty<Vector2>();
+            data.freezeT = (float?)entry["freezeT"] ?? 4.5f;
+            data.kegKill = (float?)entry["kegKill"] ?? 2f;
+            data.winds = entry["winds"]?.Select(w => new WindSeed { rect = V4(w), force = new Vector2((float)w[4], (float)w[5]) }).ToArray() ?? Array.Empty<WindSeed>();
+            data.seeds = entry["seeds"]?.Select(V2).ToArray() ?? Array.Empty<Vector2>();
+            data.portals = entry["portals"]?.Select(p => new PortalSeed {
+                a = new Vector3((float)p["a"][0], (float)p["a"][1], (float)p["a"][2]),
+                b = new Vector3((float)p["b"][0], (float)p["b"][1], (float)p["b"][2]), r = (float?)p["r"] ?? .75f }).ToArray() ?? Array.Empty<PortalSeed>();
             JToken start = entry["start"];
             data.riding = !sky && ((bool?)start["riding"] ?? false);
             data.start = sky ? V2(start) : data.riding ? data.track[0] + new Vector2(0f, 1.05f) : V2(start["feet"]);
             if (entry["rocks"] != null)
-                data.rocks = entry["rocks"].Select(r => new RockSeed { x = (float)r[0], y = (float)r[1], r = (float)r[2], direction = (string)r[3] }).ToArray();
+                data.rocks = entry["rocks"].Select(r => new RockSeed { x = (float)r[0], y = (float)r[1], r = (float)r[2], direction = (string)r[3], delay = r.Count() > 4 ? (float?)r[4] ?? data.rockDelay : data.rockDelay, hasArm = r.Count() > 5, arm = r.Count() > 5 ? V4(r[5]) : Vector4.zero }).ToArray();
             if (entry["cave"] is JObject cave)
                 data.cave = new CaveSeed
                 {
@@ -162,7 +189,7 @@ namespace Resource.Scripts.Editor
                 data.lavaStart = new LavaSeed
                 {
                     n = (int)lava["n"], x = lava["x"].ToObject<float[]>(), y = lava["y"].ToObject<float[]>(),
-                    g = lava["g"].ToObject<int[]>(), frozen = Bools(lava["frozen"]), crust = Bools(lava["crust"])
+                    g = lava["g"].ToObject<int[]>(), frozen = Bools(lava["frozen"]), crust = Bools(lava["crust"]), water = Bools(lava["water"])
                 };
             return data;
         }
@@ -212,6 +239,7 @@ namespace Resource.Scripts.Editor
             var solid = new bool[data.w * data.h];
             if (!data.sky) for (int i = 0; i < solid.Length; i++) solid[i] = true;
             Fill(solid, data, data.carve, false); Fill(solid, data, data.fill, true); Fill(solid, data, data.isles, true);
+            Fill(solid, data, data.weak, false); Fill(solid, data, data.soft, false);
             for (int y = 0; y < data.h; y++) for (int x = 0; x < data.w; x++)
                 if (solid[y * data.w + x]) walls.SetTile(new Vector3Int(x, -y - 1), collisionTile);
             walls.CompressBounds();
@@ -290,6 +318,13 @@ namespace Resource.Scripts.Editor
             var runtime = (SmallLevelRuntime)level.gameObject.AddComponent(mechanismType);
             runtime.data = data; runtime.world = world; runtime.level = level; runtime.player = player; runtime.feedback = feedback;
             runtime.sprites = sprites; runtime.rubbleMap = rubbleMap; runtime.rubbleTiles = rubbleTiles;
+            if (runtime is MineMechanisms mine)
+            {
+                mine.weakRockTiles = Enumerable.Range(0, 4).Select(i => RubbleTile(sprites.Single(s => s.name == "weak_rock_" + i), art)).ToArray();
+                mine.softDirtTiles = Enumerable.Range(0, 4).Select(i => RubbleTile(sprites.Single(s => s.name == "soft_dirt_" + i), art)).ToArray();
+                mine.gasTile = RubbleTile(sprites.Single(s => s.name == "gas_cell"), art);
+                mine.gasRimTile = RubbleTile(sprites.Single(s => s.name == "gas_rim"), art);
+            }
             runtime.BuildVisuals();
             Physics2D.SyncTransforms();
             AssetDatabase.SaveAssets();
@@ -345,7 +380,7 @@ namespace Resource.Scripts.Editor
         private static Vector4 V4(JToken t) => new Vector4((float)t[0], (float)t[1], (float)t[2], (float)t[3]);
         private static Vector4[] Rects(JToken t) => t?.Select(V4).ToArray() ?? Array.Empty<Vector4>();
         private static T[] ReadArray<T>(JToken t) => t?.ToObject<T[]>() ?? Array.Empty<T>();
-        private static bool[] Bools(JToken t) => t.Select(v => v.Type == JTokenType.Boolean ? (bool)v : (int)v != 0).ToArray();
+        private static bool[] Bools(JToken t) => t?.Select(v => v.Type == JTokenType.Boolean ? (bool)v : (int)v != 0).ToArray() ?? Array.Empty<bool>();
         private static void CopyChanged(string source, string destination)
         {
             if (!File.Exists(destination) || !File.ReadAllBytes(source).SequenceEqual(File.ReadAllBytes(destination))) File.Copy(source, destination, true);

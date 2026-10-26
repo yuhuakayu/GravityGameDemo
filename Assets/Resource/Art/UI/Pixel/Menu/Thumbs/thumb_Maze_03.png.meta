@@ -134,7 +134,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      thumb_Maze_03_0: 1717050706243953873
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -1,0 +1,17 @@
+第二轮定稿 仕样书 2：矿坑「道岔」，新关 Mine_12 道岔
+
+看效果：原型/第二轮_矿坑.html 选 1-B；设计图/设计图_Mine_12_道岔.png。
+玩法：坐矿车冲，身后一路塌方追着。前面有个岔口，直走是死路；冲到岔口前把世界转回来，让往下那条更"下"，矿车就拐下去，撞车正好掉进门。
+
+1. 数据（mine_levels.json 的 Mine_12）：新字段 branch {at, track}：at ＝ 岔口是 track 的第几个点（从 0 数）；track ＝ 支线从岔口往后的点。
+   支线整条 ＝ track[0..at] 再接 branch.track。SmallLevelData 加这个字段，Parse 读进来。矿车、塌方是现有字段。
+2. 素材：素材/矿坑/level_Mine_12.png（两条铁轨、两头的断轨警示都画在图里）。
+3. 逻辑（MineMechanisms.StepCart，参照原型 switchPick 和 stepCart 里 took 那两行）
+   矿车往前开、越过岔口那一刻：看主线在岔口的方向和支线在岔口的方向，哪个和现在的重力方向点积更大（更"下"）就走哪条，
+   把当前轨道换成那条（岔口之前两条是同一段，距离 s 不用改），飘字 pop.rail_turn 或 pop.rail_straight。
+   往回滑过岔口就换回主线，下次往前过岔口再重新判断。拐弯减速（cornerKeep）只在真正拐弯的点算，直着穿过岔口不减速。
+   两条线到头都是撞车（和现在一样把人甩出去）。
+4. 表现：岔口画一段亮黄的道岔尖轨 + 箭头，指着现在会走的那条（跟着倾斜实时变），另一条画成灰色虚线；矿车过了岔口就固定指着走的那条。
+5. LevelOrder：Mine_12 插在 Mine_03 后面、Mine_02 前面。名字 level.Mine_12（总表第五节）；缩略图 thumb_Mine_12.png。
+6. 验证：Build Small Levels，ValidateGeneratedLevels 通过；Play Mine_12：一直斜着冲过岔口会直走撞进死路被埋；
+   冲到岔口前把世界转回来，黄箭头指向下面，矿车拐下去、撞车掉进门。汇报 3 到 5 行，不写报告文件。

@@ -1,0 +1,138 @@
+第二轮定稿 仕样书 0：总表（先读这份）
+
+这一套是新机关提案的第二轮定稿：设计师试玩以后删了一批、改了一批、加了几个新变体，现在定下来要做。只按本文件夹做。
+新机关提案/ 下面原来的 仕样书（机关仕样书_1～36）、数据、素材、设计图、原型 全部作废，不要再用；那里的场景编号和这里不一样。
+
+====================================
+一、先后顺序
+====================================
+
+1. 先做完 小关卡全集/仕样书_8～11（组合关卡），再做本套。
+   本套的数据文件已经包含组合关卡；迷宫的场景名按 Maps 的序号生成，Maze_15 前面必须已经有 Maze_01～14。
+2. 开始前先把 数据/ 和 素材/ 复制进去（第二节），然后按编号做，每份做完汇报一次：
+   1～5 矿坑，6～9 岩浆，10～13 天空，14～18 迷宫（迷宫这几份必须按顺序做）。
+
+====================================
+二、文件夹
+====================================
+
+  仕样书/  本文件和 1～18。
+  数据/    mine_levels.json、lava_levels.json、sky_levels.json：整个覆盖 小关卡全集/数据/ 里的同名文件。
+           已经是最终内容：老关卡和组合关卡逐字没变（除了下面各仕样书写的改动）；删掉了 Mine_04、Lava_04；新关接在最后；
+           sprites 表里加了新贴图的 pivot（岩浆原来没有 sprites 表，现在有了）。还没实现的字段 Parse 会先忽略，不影响生成。
+  素材/    目录结构和 小关卡全集/素材/ 一样，整个复制进去，同名覆盖：
+           矿坑、岩浆、天空：整关图、背景图、Sprites（Build Small Levels 自己导入，pivot 读 json 的 sprites 表）。
+           迷宫：Background、Exterior（Maze_15～22）；Foreground/fg_layout.json 是完整的一份（Maze_01～14 和项目里的逐字一样，加了 15～22）；
+                 Sprites（迷宫新机关的贴图，pivot 写在同目录 新精灵_pivot.json）。
+           Menu/Thumbs：选关缩略图。
+  设计图/  每关一张：地形、机关、演示路线、每一步怎么转。
+  原型/    第二轮_矿坑.html、第二轮_岩浆.html、第二轮_天空.html、第二轮_迷宫.html：浏览器直接打开，点关卡，再点「看演示通关」或者自己玩。
+           页面里的代码就是机关的参照实现，各仕样书写了函数名，在页面源码里搜。演示_第二轮.mp4 是改过的关和新关的演示录像。
+
+====================================
+三、最终关卡顺序（LevelOrder.Scenes，共 65 关）
+====================================
+
+  迷宫：Maze_01 ～ Maze_14，Maze_15 ～ Maze_22
+  矿坑：Mine_01，Mine_03，Mine_12，Mine_02，Mine_05 ～ Mine_10，Mine_11，Mine_13，Mine_14
+  岩浆：Lava_01，Lava_02，Lava_03，Lava_05 ～ Lava_10，Lava_11 ～ Lava_14
+  天空：Sky_01 ～ Sky_13，Sky_14 ～ Sky_17
+
+  每份仕样书做完，把它的关按这里的位置加进 LevelOrder（还没做的先不加）。门的下一关、Build Settings、选关都从 LevelOrder 取（现有逻辑），
+  选关的 "Level N" 跟着序号自动变。选关翻页照 仕样书_8 第四节（迷宫 22 关是 3 页）。
+
+====================================
+四、删掉的两关
+====================================
+
+  Mine_04 木板、Lava_04 冲门：
+  从 LevelOrder 去掉；删场景 Assets/Scenes/Mine_04.unity、Lava_04.unity（连 .meta）；
+  Build Settings 里这两项也去掉（RegisterBuildScenes 会保留不在 LevelOrder 里的老条目，所以要手动删一次，或者让它跳过已经不存在的场景文件）。
+  木板机关的代码不能删：组合关卡 Mine_05、06、07、09 还在用。缩略图和关卡名 key 留着不用也行。
+
+====================================
+五、原型编号、场景名、关卡名
+====================================
+
+  关卡名 key 是 level.<场景名>，中 / 日 / 英照下表加进 LocalizationManager。原型页里的关卡按钮用的是左边的编号。
+
+  原型    场景      关卡名（中 / 日 / 英）                          仕样书
+  1-1    Mine_01   落石（名字不变，只改机关）                          1
+  1-B    Mine_12   道岔 / 分岐レール / Rail Switch                    2
+  1-A    Mine_11   炸开 / 爆破 / Blast Open                          3
+  1-E    Mine_13   钻头 / ドリル / Drill                              4
+  1-F    Mine_14   瓦斯 / ガス噴出 / Gas Leak                         5
+  2-1 等  岩浆全部   烫死规则改了                                      6
+  2-D    Lava_11   冰晶 / 氷の結晶 / Ice Crystal                      7
+  2-D2   Lava_12   冻住浪头 / 波を凍らせろ / Freeze the Wave            7
+  2-F    Lava_13   火药桶 / 火薬樽 / Powder Keg                       8
+  2-G    Lava_14   冷水封井 / 冷水で封じろ / Water Seal                 9
+  3-3    Sky_03    散云（名字不变，刺木改了）                           10
+  3-4    Sky_04    气球平台（名字不变，刺木和门岛改了）                   10
+  3-A    Sky_14    气流电梯 / 上昇気流エレベーター / Updraft Lift        11
+  3-C    Sky_15    气球 / 風船 / Balloon                             12
+  3-E    Sky_16    传送门 / ワープゲート / Portal                      13
+  3-E2   Sky_17    弹射 / ワープ射出 / Portal Launch                   13
+  A      Maze_15   摆锤门 / 振り子の門 / Pendulum Gate                 14
+  C      Maze_16   弹弹块 / ゼリーブロック / Jelly Bounce               15
+  C2     Maze_17   弹弹屋 / ゼリーの部屋 / Jelly Room                  15
+  F      Maze_18   冰面 / アイスフロア / Ice Floor                     16
+  H      Maze_19   翻镜 / ゆれる鏡 / Swing Mirror                     17
+  H2     Maze_20   抖镜 / 鏡ゆらし / Mirror Shake                     17
+  I      Maze_21   拧门 / ネジ扉 / Screw Gate                         18
+  I2     Maze_22   双圈拧门 / 二重ネジ扉 / Twin Screw Gates             18
+
+====================================
+六、通用规则（和 仕样书_0 一样，这里只提醒）
+====================================
+
+1. 矿坑、岩浆、天空的机关在关卡坐标里自己模拟（x 向右、y 向下，1 格 = 1 单位），每个 FixedUpdate 一步，dt = 0.02；显示按上一步和这一步插值。
+   "重力方向" g = (sin θ, cos θ)，θ 是世界转角（顺时针为正）；"上" = -g。
+2. 玩家判定用两个碰撞圆，半径 0.4，圆心在脚底往上 0.4（下圆）和 1.13（上圆）。死亡一律 player.Die()，原型里的死因文字不用做。
+3. 飘字 feedback.Pop(key)，擦边 feedback.NearMiss(kind)，震屏 feedback.Shake(值)（迷宫场景也有 NearMissFeedback，Shake 一样能用）。新飘字见第七节。
+4. 原型里只给演示用的东西不做（每拍提示、自动演示、标题卡、死因）。数值以仕样书为准，没写到的看原型代码。
+5. 新贴图：Sprite、Pixels Per Unit 16、Filter Point、不压缩、不要 mipmap。
+   矿坑、岩浆、天空的由 Build Small Levels 导入，pivot 读 json 的 sprites 表。
+   迷宫的放 Assets/Resource/Art/Maze/Sprites/，pivot 照 素材/迷宫/Sprites/新精灵_pivot.json 手动设（归一化，左下为 0）。
+   迷宫背景照 仕样书_8 的路径：Background、Exterior、Foreground 放进 Assets/Resource/Mode/Cave Tileset/ 对应文件夹，.meta 照 Maze_08 的设、用新 GUID。
+6. 缩略图：素材/Menu/Thumbs/ 里的图复制到 Assets/Resource/Art/UI/Pixel/Menu/Thumbs/（thumb_Sky_03、thumb_Sky_04 覆盖原图），
+   再跑 Tools/Gravity Game/UI/Apply Menu Presentation。
+
+====================================
+七、新飘字（LocalizationManager，中 / 日 / 英）
+====================================
+
+  pop.boom             轰！ / ドカン！ / BOOM!
+  pop.tnt_fuse         滋——要炸了！ / ジジッ…爆発するぞ！ / FUSE LIT!
+  pop.rail_turn        咔嗒！拐了 / カチッ！曲がった / CLICK! TURN
+  pop.rail_straight    咔嗒！直走 / カチッ！まっすぐ / CLICK! STRAIGHT
+  pop.drill_snap       钻头撞断了 / ドリルが折れた / DRILL SNAPPED
+  pop.gas_vent         瓦斯口裂开了！ / ガスが噴き出した！ / GAS LEAK!
+  pop.cough            咳！ / ゴホッ！ / COUGH!
+  pop.freeze           冰晶碎了！岩浆冻住了 / 氷が砕けた！溶岩が凍った / ICE! THE LAVA FREEZES
+  pop.thaw             岩浆化开了！ / 氷が溶けた！ / IT'S THAWING!
+  pop.keg_lit          点着了！ / 着火！ / LIT!
+  pop.obsidian         嗤——结成黑石了！ / ジュッ…黒石になった！ / HISS... OBSIDIAN!
+  pop.vent_sealed      井口封住了！ / 噴出口が塞がった！ / VENT SEALED!
+  pop.balloon_grab     抓住气球！ / 風船をつかんだ！ / GOT A BALLOON!
+  pop.balloon_out      气球瘪了 / 風船がしぼんだ / OUT OF AIR
+  pop.warp             嗖！ / シュッ！ / WHOOSH!
+  pop.jelly_big        嘣！ / ボヨン！ / BOING!
+  pop.jelly_small      啵 / ポヨ / BOP
+  pop.mirror_flip      镜子翻了 / 鏡がひっくり返った / MIRROR FLIP
+  pop.screw_1          拧开了 1/4 / 1/4 回った / 1/4 TURNED
+  pop.screw_2          拧开了 2/4 / 2/4 回った / 2/4 TURNED
+  pop.screw_3          拧开了 3/4 / 3/4 回った / 3/4 TURNED
+  pop.screw_open       拧开了！门闩松了 / ネジが外れた！ / UNSCREWED!
+  pop.screw_open_cw    顺时针那道拧开了！ / 右回りの扉が開いた！ / CLOCKWISE GATE OPEN!
+  pop.screw_open_ccw   逆时针那道拧开了！ / 左回りの扉が開いた！ / COUNTERCLOCKWISE GATE OPEN!
+  pop.screw_close      又拧上了 / また締まった / LOCKED AGAIN
+
+====================================
+八、全部做完以后（只做这些）
+====================================
+
+1. 编译无错误；Build Maze Scenes、Build Small Levels 各跑一次；ValidateGeneratedLevels、Validate Maze Scenes 通过；
+   LevelOrder 是第三节的 65 关，门一关接一关串起来，最后一关回 MainMenu；选关 65 张。
+2. 各仕样书的"验证"已经在做的时候走过，这里不用重走。
+3. 汇报 3 到 5 行，不写报告文件。

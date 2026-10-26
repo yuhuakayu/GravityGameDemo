@@ -1,0 +1,13 @@
+仕样书 11：组合关卡第四批（天空 1 关、岩浆 1 关），接在仕样书 10 后面做
+
+两关都只用现有机关，代码不用改。设计图：设计图_天空_3-13、设计图_岩浆_2-10；原型页已包含。
+
+1. 数据：sky_levels.json 追加 Sky_13，lava_levels.json 追加 Lava_10（前面的关逐字没变）。
+   素材：素材/天空/level_Sky_13.png、backdrop_Sky_13.png，素材/岩浆/level_Lava_10.png。重新 Build Small Levels 生成。
+   Sky_13 云台接力：气球平台 + 竖着的散云 + 刺木。Lava_10 边灌边晃：晃开 + 右上角的喷口。
+2. LevelOrder：Lava_10 接在 Lava_09 后面，Sky_13 接在 Sky_12 后面，共 47 关。
+3. 关卡名：
+   level.Lava_10   边灌边晃   注ぎながら揺らせ   Pour and Shake
+   level.Sky_13    云台接力   雲と足場のリレー   Cloud Relay
+4. 缩略图：素材/Menu/Thumbs/thumb_Lava_10.png、thumb_Sky_13.png 复制过去，再跑一次 Apply Menu Presentation。
+5. 验证：重新生成，ValidateGeneratedLevels 通过；Play 走一遍这两关。汇报 3 到 5 行，不写报告文件。

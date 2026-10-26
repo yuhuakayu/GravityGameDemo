@@ -42,13 +42,13 @@ namespace Resource.Scripts.Editor
                 throw new InvalidOperationException("Exit Play and finish any existing validation first.");
             if (SceneManager.sceneCount != 1 || SceneManager.GetActiveScene().isDirty || string.IsNullOrEmpty(SceneManager.GetActiveScene().path))
                 throw new InvalidOperationException("Validation requires one saved, unmodified scene.");
-            for (int i = 1; i <= 8; i++)
+            for (int i = 1; i <= MazeSceneBuilder.Maps.Length; i++)
                 if (!File.Exists(ScenePath(i))) throw new FileNotFoundException(ScenePath(i));
 
             SessionState.SetString(Key + "OriginalScene", SceneManager.GetActiveScene().path);
             SessionState.SetBool(Key + "OriginalBackground", Application.runInBackground);
             SessionState.SetBool(Key + "RestorePending", true);
-            SessionState.SetString(Key + "Status", "Running: eight Play visits; 30-second limit per scene.");
+            SessionState.SetString(Key + "Status", "Running: all Maze Play visits; 30-second limit per scene.");
             SessionState.SetInt(Key + "Index", 1);
             SessionState.SetBool(Key + "Active", true);
             OpenNext();
@@ -81,10 +81,10 @@ namespace Resource.Scripts.Editor
             if (!IsRunning) { RestoreScene(); return; }
             if (!SessionState.GetBool(Key + "ExpectedExit", false)) { Fail("Play was interrupted."); return; }
             int next = SessionState.GetInt(Key + "Index", 1) + 1;
-            if (next > 8)
+            if (next > MazeSceneBuilder.Maps.Length)
             {
                 SessionState.SetBool(Key + "Active", false);
-                Append("PASS: eight screenshots and Maze_03 laser checks completed.");
+                Append("PASS: all Maze visits and Maze_03 laser checks completed.");
                 RestoreScene();
             }
             else

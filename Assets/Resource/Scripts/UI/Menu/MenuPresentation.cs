@@ -54,9 +54,12 @@ namespace Resource.Scripts.UI.Menu
         private RectTransform _root, _selectionLayer, _railRoot;
         private CanvasGroup _railGroup;
         private Image[] _gems;
-        private TextMeshProUGUI _left, _right, _hint, _version;
+        private TextMeshProUGUI _left, _right, _hint, _version, _pageLeft, _pageRight;
         private Sign _sign, _oldSign;
-        private int _world, _selected, _menu;
+        private int _world, _selected, _menu, _page;
+        private int WorldLevelCount => _levels.FindAll(l=>WorldOf(l.sceneName)==_world).Count;
+        private int PageCount => Mathf.Max(1,(WorldLevelCount+7)/8);
+        private int PageCardCount => Mathf.Min(8,WorldLevelCount-_page*8);
         private bool _selectScreen, _stickX, _stickY;
         private float _time, _busy, _selectAge, _railAlpha, _flip = 1f, _shake;
         private int _flipWorld;
@@ -118,6 +121,8 @@ namespace Resource.Scripts.UI.Menu
             foreach (var card in _oldCards) RefreshCard(card);
             if (_sign != null) RefreshSign(_sign);
             if (_oldSign != null) RefreshSign(_oldSign);
+            if (_left != null) _left.text = InputPrompts.UsesNintendo ? "[" + InputPrompts.WorldLeft + "] ◄" : "Q ◄";
+            if (_right != null) _right.text = InputPrompts.UsesNintendo ? "► [" + InputPrompts.WorldRight + "]" : "► E";
         }
 
         private static void SetOutline(TextMeshProUGUI text, bool enabled)
@@ -227,6 +232,9 @@ namespace Resource.Scripts.UI.Menu
         {
             int next=FirstUncleared();
             _world=WorldOf(_levels[next].sceneName);
+            int local=0;
+            for (int i=0;i<next;i++) if (WorldOf(_levels[i].sceneName)==_world) local++;
+            _page=local/8;
             _selectScreen=true;
             _busy=1.1f;
             _selectAge=0f;
@@ -262,11 +270,12 @@ namespace Resource.Scripts.UI.Menu
             ShowTitle(false);
         }
 
-        private void SwitchWorld(int direction)
+        private void SwitchWorld(int direction,bool fromCardEdge=false)
         {
             SfxManager.Instance.PlayUIMove();
             ReleaseCards(direction,false);
             _world=(_world+direction+4)%4;
+            _page=fromCardEdge && direction<0 ? PageCount-1 : 0;
             _busy=0.75f;
             _background.ToWorld(_world);
             _title.LampsTo(_world<2 ? 1 : 2);
@@ -275,8 +284,21 @@ namespace Resource.Scripts.UI.Menu
             if (_sign!=null) _sign.motion.angularVelocity+=1.4f*direction;
             BuildRails();
             MakeCards(0.28f);
-            Select(direction>0 ? 0 : Mathf.Min(3,_cards.Count-1),true);
+            Select(fromCardEdge && direction<0 ? _cards.Count-1 : 0,true);
             RefreshLocalizedTexts();
+        }
+
+        private void SwitchPage(int direction)
+        {
+            int next=_page+direction;
+            if (next<0 || next>=PageCount) return;
+            SfxManager.Instance.PlayUIMove();
+            ReleaseCards(direction,false);
+            _page=next;
+            _busy=0.75f;
+            BuildRails();
+            MakeCards(0.28f);
+            Select(direction>0 ? 0 : _cards.Count-1,true);
         }
 
         private void ReleaseCards(int direction,bool returning)
@@ -327,8 +349,8 @@ namespace Resource.Scripts.UI.Menu
             if (dx!=0)
             {
                 int next=_selected+dx;
-                if (next<0) SwitchWorld(-1);
-                else if (next>=_cards.Count) SwitchWorld(1);
+                if (next<0) { if (_page>0) SwitchPage(-1); else SwitchWorld(-1,true); }
+                else if (next>=_cards.Count) { if (_page+1<PageCount) SwitchPage(1); else SwitchWorld(1,true); }
                 else Select(next);
             }
             else if (dy!=0)
@@ -341,7 +363,7 @@ namespace Resource.Scripts.UI.Menu
         private void HandleInput()
         {
             var kb=Keyboard.current;
-            var pad=Gamepad.current;
+            var pad=InputPrompts.ActiveGamepad;
             int x=0,y=0;
             if (kb!=null)
             {
@@ -397,7 +419,9 @@ namespace Resource.Scripts.UI.Menu
             {
                 foreach (var card in _cards) if (Hit(card.image.rectTransform,point))
                 { Select(card.index); if (clicked) EnterLevel(); return; }
-                if (clicked && Hit(_left.rectTransform,point)) SwitchWorld(-1);
+                if (clicked && _pageLeft!=null && Hit(_pageLeft.rectTransform,point)) SwitchPage(-1);
+                else if (clicked && _pageRight!=null && Hit(_pageRight.rectTransform,point)) SwitchPage(1);
+                else if (clicked && Hit(_left.rectTransform,point)) SwitchWorld(-1);
                 else if (clicked && Hit(_right.rectTransform,point)) SwitchWorld(1);
                 else if (clicked && Hit(_hint.rectTransform,point)) ToTitle();
             }
@@ -409,7 +433,7 @@ namespace Resource.Scripts.UI.Menu
             _railRoot=MenuDrawing.Node(_selectionLayer,"RailsAndWorlds",0,0,0,0,false);
             _railRoot.SetAsFirstSibling();
             _railGroup=_railRoot.gameObject.AddComponent<CanvasGroup>();
-            int rows=_world==0 ? 2 : 1;
+            int rows=PageCardCount>4 ? 2 : 1;
             Color dark=_world==3 ? C(120,150,200) : C(24,22,46);
             for (int row=0;row<rows;row++)
             {
@@ -435,17 +459,26 @@ namespace Resource.Scripts.UI.Menu
             }
             Color text=_world==3 ? C(60,84,130) : C(200,196,240);
             // The supplied GB2312 fallback contains the pointer variants of these triangles.
-            _left=MenuDrawing.Label(_railRoot,"PreviousWorld","Q ◄",790,218,36,true,text,2,_world!=3);
-            _right=MenuDrawing.Label(_railRoot,"NextWorld","► E",1130,218,36,true,text,2,_world!=3);
+            _left=MenuDrawing.Label(_railRoot,"PreviousWorld",InputPrompts.UsesNintendo ? "["+InputPrompts.WorldLeft+"] ◄" : "Q ◄",790,218,36,true,text,2,_world!=3);
+            _right=MenuDrawing.Label(_railRoot,"NextWorld",InputPrompts.UsesNintendo ? "► ["+InputPrompts.WorldRight+"]" : "► E",1130,218,36,true,text,2,_world!=3);
+            var pageLabel=MenuDrawing.Label(_railRoot,"PageNumber",$"{_page+1} / {PageCount}",960,970,30,false,text,1,_world!=3);
+            pageLabel.gameObject.SetActive(PageCount>1);
+            _pageLeft=MenuDrawing.Label(_railRoot,"PreviousPage","◄",140,rows==1 ? 430 : 475,36,true,text,2,_world!=3);
+            _pageRight=MenuDrawing.Label(_railRoot,"NextPage","►",1780,rows==1 ? 430 : 475,36,true,text,2,_world!=3);
+            _pageLeft.gameObject.SetActive(_page>0);
+            _pageRight.gameObject.SetActive(_page+1<PageCount);
         }
 
         private void MakeCards(float start)
         {
+            int local=0;
             for (int global=0;global<_levels.Count;global++)
             {
                 if (WorldOf(_levels[global].sceneName)!=_world) continue;
+                int ordinal=local++;
+                if (ordinal<_page*8 || ordinal>=(_page+1)*8) continue;
                 int index=_cards.Count;
-                float anchorY=_world==0 ? 300+350*(index/4) : 430;
+                float anchorY=PageCardCount>4 ? 300+350*(index/4) : 430;
                 var card=new Card {world=_world,index=index,global=global,level=_levels[global],motion=new MenuDangle(420+360*(index%4),anchorY,40,264)};
                 card.root=MenuDrawing.Node(_selectionLayer,"Card_"+card.level.sceneName,0,0,0,0,false);
                 card.rope=MenuDrawing.Box(card.root,"Rope",Rail[_world],0,0,6,40).rectTransform;
@@ -461,7 +494,7 @@ namespace Resource.Scripts.UI.Menu
                 card.name=MenuDrawing.Label(card.body,"LevelName","",-50,75,36,false,InkText[_world],1,false,false);
                 card.check=MenuDrawing.Image(card.body,"Cleared",_art.Get(_world==3 ? "Select/check_sky" : "Select/check"),96,81,21,18,false);
                 card.diamond=MenuDrawing.Image(card.root,"SelectionDiamond",_art.Get("Select/diamond_"+(_world==0 ? "pink" : _world==3 ? "orange" : "gold")),card.motion.anchor.x,anchorY-30,20,20);
-                int rows=_world==0 ? 2 : 1;
+                int rows=PageCardCount>4 ? 2 : 1;
                 card.motion.Drop(anchorY+40+300+Random.Range(0,120),start+(rows-1-index/4)*0.2f+(index%4)*0.06f);
                 card.motion.onCatch=()=> { Shake(1.2f); _title.KickLamps(0.025f); };
                 _cards.Add(card);

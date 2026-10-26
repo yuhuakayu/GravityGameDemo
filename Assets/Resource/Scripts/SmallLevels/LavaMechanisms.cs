@@ -10,7 +10,7 @@ using UnityEditor;
 namespace Resource.Scripts.SmallLevels
 {
     [DefaultExecutionOrder(-200)]
-    public sealed class LavaMechanisms : SmallLevelRuntime
+    public sealed partial class LavaMechanisms : SmallLevelRuntime
     {
         private const int Capacity = 1500, PixelsPerUnit = 8;
         private const float Spacing = .3f, H = .62f, Pressure = 150f, NearPressure = 250f;
@@ -49,6 +49,7 @@ namespace Resource.Scripts.SmallLevels
             lavaVisual = MakeSurface("Lava", body, root, 13, 1f, false);
             glowQuarterVisual = MakeSurface("LavaGlowQuarter", quarter, root, 12, .35f, true);
             glowSixteenthVisual = MakeSurface("LavaGlowSixteenth", sixteenth, root, 11, .5f, true);
+            BuildSecondRoundVisuals(root);
         }
 
         private SpriteRenderer MakeSurface(string name, Sprite sprite, Transform root, int order, float opacity, bool additive)
@@ -119,14 +120,18 @@ namespace Resource.Scripts.SmallLevels
             {
                 positions[i] = oldPositions[i] = new Vector2(data.lavaStart.x[i], data.lavaStart.y[i]);
                 groups[i] = data.lavaStart.g[i]; frozen[i] = data.lavaStart.frozen[i]; crust[i] = data.lavaStart.crust[i];
+                water[i] = data.lavaStart.water != null && i < data.lavaStart.water.Length && data.lavaStart.water[i];
+                if (water[i]) { groups[i] = 9; frozen[i] = false; }
             }
             gridWidth = Mathf.CeilToInt(data.w / H) + 2; gridHeight = Mathf.CeilToInt(data.h / H) + 2;
             cellStarts = new int[gridWidth * gridHeight + 1]; cellFill = new int[cellStarts.Length];
             imageWidth = data.w * PixelsPerUnit; imageHeight = data.h * PixelsPerUnit;
             field = new float[imageWidth * imageHeight]; crustField = new float[field.Length]; frozenField = new float[field.Length];
             pixels = new Color32[field.Length]; previousPixels = new Color32[field.Length];
+            waterField = new float[field.Length]; glowSourcePixels = new Color32[field.Length];
             quarterPixels = new Color32[(imageWidth >> 2) * (imageHeight >> 2)]; previousQuarterPixels = new Color32[quarterPixels.Length];
             sixteenthPixels = new Color32[(imageWidth >> 4) * (imageHeight >> 4)]; previousSixteenthPixels = new Color32[sixteenthPixels.Length];
+            InitializeSecondRoundState();
             BuildNeighbourGrid();
         }
 
@@ -205,10 +210,17 @@ namespace Resource.Scripts.SmallLevels
             if (!BeginStep()) return;
             float dt = Time.fixedDeltaTime;
             CopyCurrentToPrevious();
-            LavaStep(dt);
-            if (Alive) StepVent(dt);
+            if (freezeRemaining > 0f) StepFreeze(dt);
+            else
+            {
+                LavaStep(dt);
+                StepWater();
+                if (Alive) StepVent(dt);
+                if (ventSealed) CoolVentLava(dt);
+            }
             BuildNeighbourGrid();
-            if (Alive) CheckHazards();
+            StepKegs(dt);
+            if (Alive) CheckHazards(dt);
             if (Alive) CheckWakes();
             EmitEmbers();
             BuildLavaPixels(); UploadTextures();
@@ -222,7 +234,7 @@ namespace Resource.Scripts.SmallLevels
             {
                 if (frozen[i]) { velocities[i] = Vector2.zero; continue; }
                 Vector2 velocity = (velocities[i] + gravity * dt) * damp;
-                velocities[i] = velocity / (1f + drag * velocity.magnitude * dt);
+                velocities[i] = velocity / (1f + drag * (water[i] ? .5f : 1f) * velocity.magnitude * dt);
             }
             BuildNeighbourGrid();
             for (int i = 0; i < count; i++)
@@ -238,6 +250,7 @@ namespace Resource.Scripts.SmallLevels
                     float approach = Vector2.Dot(velocities[i] - velocities[j], normal);
                     if (approach <= 0f) continue;
                     float impulse = dt * (1f - distance / H) * (Sigma * approach + Beta * approach * approach) * .5f;
+                    if (water[i] && water[j]) impulse *= .5f;
                     if (!frozen[i]) velocities[i] -= normal * impulse;
                     if (!frozen[j]) velocities[j] += normal * impulse;
                 }
@@ -273,7 +286,7 @@ namespace Resource.Scripts.SmallLevels
             {
                 if (frozen[i]) continue;
                 Vector2 point = positions[i];
-                ResolveCircle(ref point, WallRadius, null, 3, oldPositions[i], Friction);
+                ResolveCircle(ref point, WallRadius, null, 3, oldPositions[i], Friction * (water[i] ? .2f : 1f));
                 positions[i] = new Vector2(Mathf.Clamp(point.x, .2f, data.w - .2f), Mathf.Clamp(point.y, .2f, data.h - .2f));
                 velocities[i] = Vector2.ClampMagnitude((positions[i] - oldPositions[i]) / dt, VelocityCap);
             }
@@ -282,9 +295,7 @@ namespace Resource.Scripts.SmallLevels
                 isolated[i] = frozen[i] ? 0f : densities[i] < .3f ? isolated[i] + dt : 0f;
                 if (isolated[i] <= .6f) continue;
                 EmitSmoke(positions[i], 1, .26f, .7f);
-                int last = --count;
-                positions[i] = positions[last]; velocities[i] = velocities[last]; oldPositions[i] = oldPositions[last];
-                groups[i] = groups[last]; crust[i] = crust[last]; frozen[i] = frozen[last]; isolated[i] = isolated[last]; densities[i] = densities[last];
+                RemoveParticle(i);
             }
         }
 
@@ -298,7 +309,7 @@ namespace Resource.Scripts.SmallLevels
                 for (int k = cellStarts[cell]; k < cellStarts[cell + 1]; k++)
                 {
                     int i = sorted[k];
-                    if ((!onlyLive || !frozen[i]) && (positions[i] - point).sqrMagnitude < squared) total++;
+                    if (!water[i] && (!onlyLive || !frozen[i]) && (positions[i] - point).sqrMagnitude < squared) total++;
                 }
             }
             return total;
@@ -306,7 +317,8 @@ namespace Resource.Scripts.SmallLevels
 
         private void StepVent(float dt)
         {
-            if (data.vent == null || data.vent.rate <= 0f || data.vent.max <= 0) return;
+            if (data.vent == null || data.vent.rate <= 0f || data.vent.max <= 0 || ventSealed) return;
+            if (TrySealBlockedVent()) return;
             BuildNeighbourGrid();
             ventAccumulator += data.vent.rate * dt;
             while (ventAccumulator >= 1f)
@@ -314,10 +326,11 @@ namespace Resource.Scripts.SmallLevels
                 ventAccumulator -= 1f;
                 int slot = ventIndex++ % 3;
                 Vector2 point = new Vector2(data.vent.x + (slot - 1) * .24f, data.vent.y + .18f);
+                if (SolidAt(Mathf.FloorToInt(point.x), Mathf.FloorToInt(point.y))) { SealVent(); return; }
                 if (vented >= data.vent.max || count >= Capacity || CountNear(point, .2f, false) != 0) continue;
                 int i = count++;
                 positions[i] = oldPositions[i] = point; velocities[i] = new Vector2(data.vent.dx, data.vent.dy) * 2.6f;
-                crust[i] = Hash(made * .731f, 3.3f) > .7f; groups[i] = 0; frozen[i] = false; isolated[i] = densities[i] = 0f;
+                crust[i] = Hash(made * .731f, 3.3f) > .7f; groups[i] = 8; frozen[i] = water[i] = false; isolated[i] = densities[i] = cooling[i] = 0f;
                 made++; vented++;
                 BuildNeighbourGrid();
             }
@@ -331,20 +344,22 @@ namespace Resource.Scripts.SmallLevels
                 float coordinate = wake.axis == "y" ? circles[0].y : circles[0].x;
                 if (!(wake.op == "<" ? coordinate < wake.value : coordinate > wake.value)) continue;
                 woken.Add(wake.group); bool changed = false;
-                for (int i = 0; i < count; i++) if (groups[i] == wake.group && frozen[i]) { frozen[i] = false; changed = true; }
+                for (int i = 0; i < count; i++) if (!water[i] && !(ventSealed && groups[i] == 8) && groups[i] == wake.group && frozen[i]) { frozen[i] = false; changed = true; }
                 if (changed) { feedback.Pop("pop.lava_wake"); feedback.Shake(.25f); }
             }
         }
 
-        private void CheckHazards()
+        private void CheckHazards(float dt)
         {
+            CheckCrystals();
             int touch = 0, near = 0;
-            foreach (Vector2 circle in circles)
+            if (freezeRemaining <= 0f) foreach (Vector2 circle in circles)
             {
                 touch = Mathf.Max(touch, CountNear(circle, radius + .08f, true));
                 near = Mathf.Max(near, CountNear(circle, radius + .75f, true));
             }
-            if (touch >= 4) { player.Die(); return; }
+            heat = touch > 0 ? heat + dt * touch : Mathf.Max(0f, heat - dt * 3f);
+            if (touch >= 3 || heat > .09f) { player.Die(); return; }
             if (touch > 0 && clock - lastSizzle >= .15f)
             {
                 lastSizzle = clock;
@@ -356,6 +371,7 @@ namespace Resource.Scripts.SmallLevels
         private void BuildLavaPixels()
         {
             Array.Clear(field, 0, field.Length); Array.Clear(crustField, 0, crustField.Length); Array.Clear(frozenField, 0, frozenField.Length);
+            Array.Clear(waterField, 0, waterField.Length);
             const float r = .4f, squaredRadius = r * r, pixelRadius = r * PixelsPerUnit;
             for (int i = 0; i < count; i++)
             {
@@ -371,17 +387,24 @@ namespace Resource.Scripts.SmallLevels
                         if (distance >= squaredRadius) continue;
                         float q = 1f - distance / squaredRadius, weight = q * q; int index = row + x;
                         field[index] += weight; if (crust[i]) crustField[index] += weight; if (frozen[i]) frozenField[index] += weight;
+                        if (water[i]) waterField[index] += weight;
                     }
                 }
             }
             int flicker = Mathf.FloorToInt(clock * 6f);
+            bool iceNow = freezeRemaining > 0f && !(freezeRemaining < 1.2f && Mathf.FloorToInt(freezeRemaining * 7f) % 2 != 0);
             for (int k = 0; k < pixels.Length; k++)
             {
                 float f = field[k];
-                if (f < .42f) { pixels[k] = new Color32(0, 0, 0, 0); continue; }
+                if (f < .42f) { pixels[k] = glowSourcePixels[k] = new Color32(0, 0, 0, 0); continue; }
                 int x = k % imageWidth, y = imageHeight - 1 - k / imageWidth;
                 float edge = f - .42f, hard = crustField[k] / f; Color32 color;
-                if (frozenField[k] > f * .5f)
+                bool isWater = waterField[k] > f * .5f;
+                if (isWater)
+                    color = edge < .12f ? new Color32(214, 240, 255, 225) : Hash(x >> 2, (y >> 1) + flicker) > .95f ? new Color32(168, 214, 250, 225) : hard > .42f ? new Color32(58, 120, 204, 225) : new Color32(86, 160, 228, 225);
+                else if (freezeRemaining > 0f)
+                    color = edge < .14f || Hash((x >> 1) * .37f + (y >> 1) * 1.31f, (y >> 1) * .53f - (x >> 1) * .21f) > .92f ? new Color32(228, 246, 255, 255) : hard > .42f ? new Color32(104, 164, 218, 255) : new Color32(150, 206, 240, 255);
+                else if (frozenField[k] > f * .5f)
                 {
                     int hx = x >> 1, hy = y >> 1;
                     float seam = Hash(hx * .37f + hy * 1.31f, hy * .53f - hx * .21f);
@@ -391,9 +414,12 @@ namespace Resource.Scripts.SmallLevels
                 else if (hard > .42f) color = edge < .6f ? new Color32(150, 46, 22, 255) : new Color32(92, 26, 14, 255);
                 else if (edge < .45f) color = new Color32(255, 156, 48, 255);
                 else color = Hash(x >> 1, y + flicker * 3) > .93f ? new Color32(255, 128, 60, 255) : new Color32(238, 98, 30, 255);
+                if (freezeRemaining > 0f && !iceNow && !isWater)
+                    color = new Color32((byte)(color.r * .7f), (byte)(color.g * .7f), (byte)(color.b * .7f), color.a);
                 pixels[k] = color;
+                glowSourcePixels[k] = isWater ? new Color32(0, 0, 0, 0) : color;
             }
-            Downsample(pixels, imageWidth, imageHeight, quarterPixels, imageWidth >> 2, imageHeight >> 2);
+            Downsample(glowSourcePixels, imageWidth, imageHeight, quarterPixels, imageWidth >> 2, imageHeight >> 2);
             Downsample(quarterPixels, imageWidth >> 2, imageHeight >> 2, sixteenthPixels, imageWidth >> 4, imageHeight >> 4);
         }
 
@@ -444,10 +470,11 @@ namespace Resource.Scripts.SmallLevels
 
         private void EmitEmbers()
         {
+            if (freezeRemaining > 0f || count == 0) return;
             int sparks = Mathf.FloorToInt(count / 70f + UnityEngine.Random.value);
             for (int k = 0; k < sparks; k++)
             {
-                int i = UnityEngine.Random.Range(0, count); if (frozen[i]) continue;
+                int i = UnityEngine.Random.Range(0, count); if (frozen[i] || water[i]) continue;
                 var emit = new ParticleSystem.EmitParams { position = ToWorld(positions[i]), velocity = Vector3.up * UnityEngine.Random.Range(1f, 3f) + new Vector3(UnityEngine.Random.Range(-.5f, .5f), UnityEngine.Random.Range(-.5f, .5f)), startLifetime = UnityEngine.Random.Range(.5f, 1f), startSize = UnityEngine.Random.Range(.07f, .12f), startColor = Color.white };
                 embers.Emit(emit, 1);
             }
@@ -465,6 +492,7 @@ namespace Resource.Scripts.SmallLevels
             if (lavaMaterial == null) return;
             float alpha = started ? Alpha : 1f;
             lavaMaterial.SetFloat("_Interpolation", alpha); quarterMaterial.SetFloat("_Interpolation", alpha); sixteenthMaterial.SetFloat("_Interpolation", alpha);
+            UpdateSecondRoundVisuals();
         }
 
         private void OnDestroy()

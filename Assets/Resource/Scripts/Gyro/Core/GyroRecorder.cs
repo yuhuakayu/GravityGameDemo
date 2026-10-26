@@ -25,7 +25,8 @@ namespace Resource.Scripts.Gyro
             _directory = Path.GetFullPath(directory);
         }
 
-        public string Start(Vector3? initialBias = null, Vector3? initialAxis = null, bool initialAxisCrossedDegeneracy = false)
+        public string Start(Vector3? initialBias = null, Vector3? initialAxis = null, bool initialAxisCrossedDegeneracy = false,
+            bool useJoyConWheelAxis = false)
         {
             ThrowIfDisposed();
             if (IsRecording) throw new InvalidOperationException("录制已经开始，请先停止当前录制。");
@@ -65,6 +66,7 @@ namespace Resource.Scripts.Gyro
                     writer.WriteLine("#initialAxis," + Number(axis.x) + "," + Number(axis.y) + "," + Number(axis.z) +
                         "," + (initialAxisCrossedDegeneracy ? "1" : "0"));
                 }
+                if (useJoyConWheelAxis) writer.WriteLine("#joyConWheelAxis,1");
                 writer.Flush();
                 SampleCount = 0;
                 Duration = 0;

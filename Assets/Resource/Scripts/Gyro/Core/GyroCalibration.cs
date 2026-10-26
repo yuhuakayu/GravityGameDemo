@@ -8,6 +8,7 @@ namespace Resource.Scripts.Gyro
         private const float MaxStationarySpeed = 3f;
         private const float MaxAxisVariance = 0.04f;
         private const float GravityCosTolerance = 0.9998477f; // One degree.
+        private readonly bool _allowLargeInitialBias;
         private Vector3 _mean;
         private Vector3 _m2;
         private Vector3 _windowGravity;
@@ -22,11 +23,19 @@ namespace Resource.Scripts.Gyro
         public string Status => IsManualCalibration ? "请把手柄平放静止 3 秒" :
             IsCalibrated ? (_stillSeconds >= 2f ? "持续校准" : "已校准") : "等待静止 1 秒";
 
+        public GyroCalibration() : this(false) { }
+
+        public GyroCalibration(bool allowLargeInitialBias)
+        {
+            _allowLargeInitialBias = allowLargeInitialBias;
+        }
+
         public Vector3 Process(GyroSample sample)
         {
             if (!sample.IsValid) return Vector3.zero;
             Vector3 g = sample.Gravity.normalized;
-            bool lowMotion = (sample.Gyro - Bias).magnitude <= MaxStationarySpeed;
+            bool lowMotion = (_allowLargeInitialBias && !IsCalibrated) ||
+                (sample.Gyro - Bias).magnitude <= MaxStationarySpeed;
             float accelMagnitude = sample.Acceleration.magnitude;
             bool stableAccel = accelMagnitude < 0.0001f || Mathf.Abs(accelMagnitude - 1f) < 0.12f;
             bool stableGravity = _count == 0 || Vector3.Dot(g, _windowGravity) >= GravityCosTolerance;

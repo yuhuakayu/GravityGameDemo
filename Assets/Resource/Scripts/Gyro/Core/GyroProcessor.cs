@@ -16,6 +16,7 @@ namespace Resource.Scripts.Gyro
         private float _shakeHoldRemaining;
 
         public GyroSettings Settings { get; }
+        public bool UseJoyConWheelAxis { get; set; }
         public GyroCalibration Calibration { get; } = new GyroCalibration();
         public WheelAngleMapper AngleMapper { get; }
         public SteeringReading LastSteering { get; private set; }
@@ -29,8 +30,10 @@ namespace Resource.Scripts.Gyro
         public double IntegratedWheelDegrees { get; private set; }
         public long ProcessedSamples { get; private set; }
         public bool HasSample => ProcessedSamples > 0;
-        public Vector3? SteeringAxis => _extractor.HasAxis ? _extractor.LastAxis : (Vector3?)null;
-        public bool SteeringCrossedDegeneracy => _extractor.CrossedDegeneracy;
+        private bool IsJoyConSpeedMode => UseJoyConWheelAxis && Settings.mode == GyroControlMode.Speed;
+        public Vector3? SteeringAxis => IsJoyConSpeedMode && HasSample ? Vector3.up :
+            _extractor.HasAxis ? _extractor.LastAxis : (Vector3?)null;
+        public bool SteeringCrossedDegeneracy => !IsJoyConSpeedMode && _extractor.CrossedDegeneracy;
 
         public GyroProcessor(GyroSettings settings)
         {
@@ -44,6 +47,13 @@ namespace Resource.Scripts.Gyro
             LastSample = sample;
             Vector3 corrected = Calibration.Process(sample);
             LastSteering = _extractor.Extract(corrected, sample.Gravity);
+            if (IsJoyConSpeedMode)
+            {
+                // Joy-Con's button-face normal is local Y. Tilting the wrist must not
+                // rotate this measurement axis or turn a continuous wheel motion into a shake.
+                LastSteering = new SteeringReading(Vector3.up, corrected.y, LastSteering.Angle,
+                    Mathf.Max(0f, corrected.magnitude - Mathf.Abs(corrected.y)), false);
+            }
             float speed = LastSteering.AngularSpeed;
             float magnitude = corrected.magnitude;
             Purity = magnitude < 0.001f ? 1f : Mathf.Abs(speed) / magnitude;
@@ -89,7 +99,8 @@ namespace Resource.Scripts.Gyro
             return StickOutput;
         }
 
-        public bool IsFresh(double nowSeconds) => HasSample && nowSeconds - _lastSampleTime <= HoldSeconds;
+        public bool IsFresh(double nowSeconds, double maximumAgeSeconds = HoldSeconds) =>
+            HasSample && nowSeconds - _lastSampleTime <= maximumAgeSeconds;
 
         public void SetInitialSteeringAxis(Vector3 axis, bool crossedDegeneracy) =>
             _extractor.SetInitialAxis(axis, crossedDegeneracy);

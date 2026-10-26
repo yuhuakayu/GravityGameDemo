@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Resource.Scripts.SmallLevels
 {
     [DefaultExecutionOrder(-200)]
-    public sealed class MineMechanisms : SmallLevelRuntime
+    public sealed partial class MineMechanisms : SmallLevelRuntime
     {
         [SerializeField] private SpriteRenderer[] rockVisuals = Array.Empty<SpriteRenderer>();
         [SerializeField] private SpriteRenderer[] plankVisuals = Array.Empty<SpriteRenderer>();
@@ -16,9 +16,11 @@ namespace Resource.Scripts.SmallLevels
         private sealed class Rock
         {
             public Vector2 position, previous, velocity;
-            public float radius, timer, rotation, previousRotation;
+            public float radius, timer, rotation, previousRotation, delay, fuse = -1f;
             public int state;
             public string direction;
+            public bool hasArm, armed, tnt;
+            public Vector4 arm;
         }
         private sealed class Plank
         {
@@ -55,11 +57,13 @@ namespace Resource.Scripts.SmallLevels
             if (old != null) DestroyImmediate(old.gameObject);
             var root = new GameObject("MineVisuals").transform;
             root.SetParent(level, false);
-            rockVisuals = new SpriteRenderer[data.rocks.Length];
-            for (int i = 0; i < data.rocks.Length; i++)
+            rockVisuals = new SpriteRenderer[data.rocks.Length + data.tnts.Length];
+            for (int i = 0; i < rockVisuals.Length; i++)
             {
-                var seed = data.rocks[i];
-                rockVisuals[i] = MakeSprite("Rock_" + i, SpriteNamed(seed.r > .43f ? "rock_r45" : "rock_r42"), new Vector2(seed.x, seed.y), 12);
+                bool tnt = i >= data.rocks.Length;
+                Vector2 position = tnt ? new Vector2(data.tnts[i - data.rocks.Length].x, data.tnts[i - data.rocks.Length].y) : new Vector2(data.rocks[i].x, data.rocks[i].y);
+                string sprite = tnt ? "tnt_barrel" : data.rocks[i].r > .43f ? "rock_r45" : "rock_r42";
+                rockVisuals[i] = MakeSprite((tnt ? "TNT_" : "Rock_") + i, SpriteNamed(sprite), position, 12);
                 rockVisuals[i].transform.SetParent(root, false);
             }
             plankVisuals = new SpriteRenderer[data.planks.Length];
@@ -69,6 +73,7 @@ namespace Resource.Scripts.SmallLevels
                 plankVisuals[i] = MakeSprite("Plank_" + i, SpriteNamed("plank_held"), new Vector2((seed.x0 + seed.x1) * .5f, seed.top), 12);
                 plankVisuals[i].transform.SetParent(root, false);
             }
+            BuildSecondRoundVisuals(root);
             if (!HasCart) return;
             Vector2 initial = data.track[0];
             trolley = MakeSprite("CartTrolley", SpriteNamed("cart_trolley"), initial, 20);
@@ -91,12 +96,16 @@ namespace Resource.Scripts.SmallLevels
         protected override void Awake()
         {
             base.Awake();
-            if (rockVisuals.Length != data.rocks.Length || plankVisuals.Length != data.planks.Length || (HasCart && railPivot == null)) BuildVisuals();
-            rocks = new Rock[data.rocks.Length];
+            if (rockVisuals.Length != data.rocks.Length + data.tnts.Length || plankVisuals.Length != data.planks.Length || (HasCart && railPivot == null)) BuildVisuals();
+            rocks = new Rock[data.rocks.Length + data.tnts.Length];
             for (int i = 0; i < rocks.Length; i++)
             {
-                RockSeed seed = data.rocks[i];
-                rocks[i] = new Rock { position = new Vector2(seed.x, seed.y), previous = new Vector2(seed.x, seed.y), radius = seed.r, direction = seed.direction };
+                bool tnt = i >= data.rocks.Length;
+                RockSeed seed = tnt ? null : data.rocks[i];
+                TntSeed barrel = tnt ? data.tnts[i - data.rocks.Length] : null;
+                Vector2 position = tnt ? new Vector2(barrel.x, barrel.y) : new Vector2(seed.x, seed.y);
+                rocks[i] = new Rock { position = position, previous = position, radius = tnt ? .45f : seed.r, direction = tnt ? barrel.direction : seed.direction,
+                    delay = tnt ? barrel.delay : seed.delay, hasArm = tnt ? barrel.hasArm : seed.hasArm, arm = tnt ? barrel.arm : seed.arm, tnt = tnt };
             }
             planks = new Plank[data.planks.Length];
             for (int i = 0; i < planks.Length; i++) planks[i] = new Plank { y = data.planks[i].top, previous = data.planks[i].top };
@@ -105,10 +114,13 @@ namespace Resource.Scripts.SmallLevels
             if (HasCave) BuildRoute();
             if (HasCart)
             {
-                trackDistances = new float[data.track.Length];
-                for (int i = 1; i < trackDistances.Length; i++) trackDistances[i] = trackDistances[i - 1] + Vector2.Distance(data.track[i - 1], data.track[i]);
+                SetTrack(data.track);
                 if (data.riding) world.pivot = railPivot;
             }
+            InitializeSecondRound();
+            if (rubbleMap != null) rubbleMap.color = DangerVisual.Red();
+            if (gasMap != null) gasMap.color = DangerVisual.Red(.45f);
+            foreach (var rim in gasRimMaps) if (rim != null) rim.color = DangerVisual.Red(.65f);
         }
 
         private void FixedUpdate()
@@ -130,6 +142,7 @@ namespace Resource.Scripts.SmallLevels
             }
             StepRocks(dt);
             StepPlanks(dt);
+            StepSecondRound(dt);
             if (!Alive) return;
             if (HasCave) StepCave(dt);
             CheckHazards();
@@ -160,10 +173,21 @@ namespace Resource.Scripts.SmallLevels
             foreach (Rock rock in rocks)
             {
                 if (rock.state == 3) continue;
+                if (rock.fuse >= 0f)
+                {
+                    rock.fuse -= dt;
+                    if (rock.fuse <= 0f) { Explode(rock); continue; }
+                }
                 if (rock.state == 0)
                 {
-                    bool loosen = rock.direction == "left" ? gravity.x < -release : rock.direction == "right" ? gravity.x > release : gravity.y < Mathf.Cos(25f * Mathf.Deg2Rad);
-                    if (loosen) { rock.state = 1; rock.timer = data.rockDelay; }
+                    if (rock.hasArm && !rock.armed)
+                    {
+                        Vector2 lower = circles[0];
+                        if (Alive && lower.x >= rock.arm.x && lower.x <= rock.arm.z && lower.y >= rock.arm.y && lower.y <= rock.arm.w) rock.armed = true;
+                        else continue;
+                    }
+                    bool loosen = rock.direction == "left" ? gravity.x < -release : rock.direction == "right" ? gravity.x > release : rock.direction == "down" ? gravity.y > Mathf.Cos(25f * Mathf.Deg2Rad) : gravity.y < Mathf.Cos(25f * Mathf.Deg2Rad);
+                    if (loosen) { rock.state = 1; rock.timer = rock.delay; }
                     continue;
                 }
                 if (rock.state == 1)
@@ -172,7 +196,12 @@ namespace Resource.Scripts.SmallLevels
                     if (rock.timer <= 0f) rock.state = 2;
                     continue;
                 }
-                rock.velocity = Vector2.ClampMagnitude(rock.velocity + gravity * (9.81f * dt), 15f);
+                if (rock.state == 4)
+                {
+                    if (UnityEngine.Random.value < .6f) Burst(rock.position - gravity * (rock.radius + .2f), 1, new Color32(255, 211, 122, 255), 2f, .3f, .08f);
+                    continue;
+                }
+                rock.velocity = Vector2.ClampMagnitude(rock.velocity + gravity * (9.81f * (rock.tnt ? data.tntG : 1f) * dt), rock.tnt && data.tntGravitySpecified ? 20f : 15f);
                 for (int step = 0; step < 2; step++)
                 {
                     rock.position += rock.velocity * (dt * .5f);
@@ -182,7 +211,17 @@ namespace Resource.Scripts.SmallLevels
                     {
                         float vn = Vector2.Dot(rock.velocity, normal);
                         if (vn >= 0f) continue;
-                        if (vn < -3.5f)
+                        if (rock.tnt && vn < -data.tntHit)
+                        {
+                            if (data.tntFuse > 0f)
+                            {
+                                rock.state = 4; rock.fuse = data.tntFuse; rock.velocity = Vector2.zero;
+                                feedback.Shake(.3f); feedback.Pop("pop.tnt_fuse");
+                            }
+                            else Explode(rock);
+                            break;
+                        }
+                        if (!rock.tnt && vn < -3.5f)
                         {
                             rock.state = 3;
                             feedback.Shake(.35f);
@@ -192,7 +231,7 @@ namespace Resource.Scripts.SmallLevels
                         }
                         rock.velocity = (rock.velocity - normal * (1.2f * vn)) * .995f;
                     }
-                    if (rock.state == 3) break;
+                    if (rock.state == 3 || rock.state == 4) break;
                 }
                 rock.rotation += (rock.velocity.x * gravity.y - rock.velocity.y * gravity.x) * dt / rock.radius;
             }
@@ -304,8 +343,8 @@ namespace Resource.Scripts.SmallLevels
         {
             distance = Mathf.Clamp(distance, 0f, trackDistances[trackDistances.Length - 1]);
             int segment = 0;
-            while (segment < data.track.Length - 2 && distance > trackDistances[segment + 1]) segment++;
-            Vector2 a = data.track[segment], b = data.track[segment + 1];
+            while (segment < activeTrack.Length - 2 && distance > trackDistances[segment + 1]) segment++;
+            Vector2 a = activeTrack[segment], b = activeTrack[segment + 1];
             float length = trackDistances[segment + 1] - trackDistances[segment];
             return new TrackPoint { position = Vector2.Lerp(a, b, (distance - trackDistances[segment]) / length), tangent = (b - a) / length, segment = segment };
         }
@@ -332,7 +371,9 @@ namespace Resource.Scripts.SmallLevels
             {
                 cartVelocity = Mathf.Clamp(cartVelocity + (acceleration - .12f * cartVelocity) * dt, -11f, 11f);
                 cartDistance += cartVelocity * dt;
-                if (TrackAt(cartDistance).segment != before.segment)
+                StepRailSwitch(previousCartDistance, cartDistance);
+                TrackPoint after = TrackAt(cartDistance);
+                if (after.segment != before.segment && Vector2.Dot(after.tangent, before.tangent) < .95f)
                 {
                     cartVelocity *= data.cornerKeep;
                     feedback.Shake(.25f);
@@ -427,6 +468,9 @@ namespace Resource.Scripts.SmallLevels
             {
                 Rock rock = rocks[i];
                 rockVisuals[i].enabled = rock.state != 3;
+                bool lethal = rock.state == 2 && (rock.velocity - PlayerVelocity).magnitude > 2.5f;
+                rockVisuals[i].color = lethal || (rock.tnt && rock.fuse >= 0f) ? DangerVisual.Red() : Color.white;
+                if (rock.tnt) rockVisuals[i].sprite = SpriteNamed((rock.velocity.magnitude > 5.6f || rock.fuse >= 0f) && Mathf.FloorToInt(clock / .07f) % 2 == 0 ? "tnt_barrel_hot" : "tnt_barrel");
                 Vector2 shake = rock.state == 1 && Time.timeScale > 0f ? new Vector2(UnityEngine.Random.Range(-.04f, .04f), UnityEngine.Random.Range(-.04f, .04f)) : Vector2.zero;
                 PlaceVisual(rockVisuals[i], rock.previous + shake, rock.position + shake, Mathf.Lerp(rock.previousRotation, rock.rotation, Alpha));
             }
@@ -434,10 +478,12 @@ namespace Resource.Scripts.SmallLevels
             {
                 Plank plank = planks[i]; PlankSeed seed = data.planks[i];
                 plankVisuals[i].sprite = SpriteNamed(plank.state < 2 ? "plank_held" : "plank_free");
+                plankVisuals[i].color = plank.state == 2 && plank.velocity > 2f ? DangerVisual.Red() : Color.white;
                 Vector2 shake = plank.state == 1 && Time.timeScale > 0f ? new Vector2(UnityEngine.Random.Range(-.04f, .04f), UnityEngine.Random.Range(-.04f, .04f)) : Vector2.zero;
                 float x = (seed.x0 + seed.x1) * .5f;
                 PlaceVisual(plankVisuals[i], new Vector2(x, plank.previous) + shake, new Vector2(x, plank.y) + shake);
             }
+            UpdateSecondRound();
             if (!HasCart) return;
             TrackPoint track = TrackAt(Mathf.Lerp(previousCartDistance, cartDistance, Alpha));
             float angle = Mathf.Atan2(track.tangent.y, track.tangent.x) + (crashed ? .35f : 0f);

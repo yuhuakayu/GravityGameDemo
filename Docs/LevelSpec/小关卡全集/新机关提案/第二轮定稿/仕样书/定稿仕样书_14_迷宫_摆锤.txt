@@ -1,0 +1,32 @@
+第二轮定稿 仕样书 14：迷宫「摆锤」，新关 Maze_15 摆锤门（迷宫 14～18 按顺序做，这是第一份）
+
+看效果：原型/第二轮_迷宫.html 选 A；设计图/设计图_Maze_15_摆锤门.png。
+玩法：天花板上挂着一个带刺的铁球，世界往哪边转它就往哪边荡。往右冲时铁球被甩到右上方，从它下面钻过去；到洞口马上转回来，抢在它荡回来之前掉下去。
+
+0. 迷宫素材先一次放好（14～18 都用）：
+   素材/迷宫/Background、Exterior 里 Maze_15～22 的图 → Assets/Resource/Mode/Cave Tileset/ 的同名文件夹（.meta 照 Maze_08 的设，新 GUID）；
+   素材/迷宫/Foreground/fg_layout.json 整个覆盖 Cave Tileset/Foreground/fg_layout.json（Maze_01～14 逐字没变，加了 15～22）；
+   素材/迷宫/Sprites/ → Assets/Resource/Art/Maze/Sprites/（总表第六节的导入设置）。
+   MazeCameraSettings 补 Maze_15～22（0 ＝ 默认镜头）；maxFallSpeed 照现有规则。
+1. 地图：MazeSceneBuilder.Maps 末尾加一张（门是 D，地上；没有激光）：
+
+Maze_15 摆锤门
+##########
+#........#
+#P.......#
+#####.####
+#####.####
+#.....####
+#D....####
+##########
+
+2. 摆锤（这关一个，参照原型 stepPends、pendBall）
+   挂点：地图左上角往右 9、往下 2（单位 tile，1 个地图格 ＝ 2 tile），就是第 1 行顶上的天花板、第 4 和第 5 列的交界。链长 3，铁球半径 0.85。
+   运动：单摆，重力方向和玩家一样（世界一转它就往新的"下"荡），重力 9.81，阻尼每秒 0.25。
+   球碰到墙就弹回来，角速度 ×(-0.3)，角速度大于 1.2 时小震屏 0.18。这关里球最多荡到约 ±73°，再大就顶到天花板。
+   铁球碰到玩家就死；离得很近（< 0.6）而且摆得快时触发 NearMiss("pend")。链子不伤人，没有碰撞。
+   PivotPendulum 是给会推人的板子用的，这里新写一个简单的 SpikeBallPendulum：只算角度、画链子和球，球用圆形 trigger + HazardKill。
+   样子照原型：灰色铁球带一圈刺、黄色挂点、链子是一串小环。
+3. LevelOrder：Maze_15 放在 Maze_14 后面。名字 level.Maze_15；缩略图 thumb_Maze_15.png。
+4. 验证：Build Maze Scenes，Validate Maze Scenes 通过；Play Maze_15：顺时针 90° 往右冲，球被甩到右上方，从它下面冲过去；
+   到洞口转回来，抢在球荡回来之前掉下去；再逆时针 90° 往左冲、顺时针转回来掉进门。汇报 3 到 5 行，不写报告文件。

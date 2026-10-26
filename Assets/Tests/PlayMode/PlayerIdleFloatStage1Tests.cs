@@ -28,9 +28,8 @@ namespace GravityGame.Tests.PlayMode
             Application.runInBackground = true;
             Gamepad previousGamepad = Gamepad.current;
             DualSenseGamepadHID pad = null;
-            Component player = null, oxygen = null;
+            Component player = null;
             bool oldAutoMove = false, oldRumble = false;
-            float oldDrain = 0f;
             try
             {
                 yield return SceneManager.LoadSceneAsync("Stage1", LoadSceneMode.Single);
@@ -41,9 +40,7 @@ namespace GravityGame.Tests.PlayMode
                 Component animation = player.GetComponent(FindType("Resource.Scripts.PlayerMovementAnimation"));
                 Component world = Find(scene, "Resource.Scripts.WorldRotator");
                 Component intro = Find(scene, "Resource.Scripts.LevelIntroUI");
-                oxygen = player.GetComponent(FindType("Resource.Scripts.PlayerOxygen"));
                 Assert.That(animation, Is.Not.Null);
-                Assert.That(oxygen, Is.Not.Null);
 #if UNITY_EDITOR
                 int missing = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<Transform>(true))
                     .Sum(t => GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(t.gameObject));
@@ -51,10 +48,8 @@ namespace GravityGame.Tests.PlayMode
 #endif
                 oldAutoMove = Field<bool>(player, "autoMoveMode");
                 oldRumble = Field<bool>(player, "rumbleEnabled");
-                oldDrain = Property<float>(oxygen, "DrainPerSecond");
                 SetField(player, "autoMoveMode", false);
                 SetField(player, "rumbleEnabled", false);
-                oxygen.GetType().GetProperty("DrainPerSecond").SetValue(oxygen, 0f);
                 var body = player.GetComponent<Rigidbody2D>();
                 var animator = player.GetComponentInChildren<Animator>();
                 var renderer = animator.GetComponent<SpriteRenderer>();
@@ -86,7 +81,6 @@ namespace GravityGame.Tests.PlayMode
                 // Send a real button edge through InputSystem while the player is resting on the floor.
                 Vector2 velocityBefore = body.linearVelocity;
                 Vector2 positionBefore = body.position;
-                float oxygenBefore = Property<float>(oxygen, "CurrentOxygen");
                 float fixedTimeBefore = Time.fixedTime;
                 QueueTouchpad(pad, true);
                 float touchpadUntil = Time.time + .2f;
@@ -108,7 +102,6 @@ namespace GravityGame.Tests.PlayMode
                 float gravityAllowance = Mathf.Abs(velocityBefore.y) + Mathf.Abs(Physics2D.gravity.y) *
                     Property<float>(player, "SimulatedGravityScale") * (Time.fixedTime - fixedTimeBefore);
                 Assert.That(sawTouchpad, Is.True, "The virtual touchpad press must reach InputSystem.");
-                Assert.That(Property<float>(oxygen, "CurrentOxygen"), Is.EqualTo(oxygenBefore));
                 Assert.That(maxHorizontalDelta, Is.LessThan(.05f), "Touchpad must not inject horizontal dash velocity.");
                 Assert.That(maxVerticalDelta, Is.LessThanOrEqualTo(gravityAllowance + .05f),
                     "Touchpad must not inject vertical velocity beyond gravity during the sampled interval.");
@@ -149,7 +142,6 @@ namespace GravityGame.Tests.PlayMode
                     ", actual world rotation=" + maxAngleChange.ToString("F2") +
                     " deg, touchpad max horizontal/vertical velocity delta=" + maxHorizontalDelta.ToString("F4") +
                     "/" + maxVerticalDelta.ToString("F4") + " (gravity allowance=" + gravityAllowance.ToString("F4") + ")" +
-                    ", oxygen delta=" + (Property<float>(oxygen, "CurrentOxygen") - oxygenBefore).ToString("F4") +
                     ", landing=Idle frame 00, missing scripts=0.");
             }
             finally
@@ -161,7 +153,6 @@ namespace GravityGame.Tests.PlayMode
                     SetField(player, "autoMoveMode", oldAutoMove);
                     SetField(player, "rumbleEnabled", oldRumble);
                 }
-                if (oxygen != null) oxygen.GetType().GetProperty("DrainPerSecond").SetValue(oxygen, oldDrain);
                 Time.timeScale = previousTimeScale;
                 Application.runInBackground = previousRunInBackground;
             }

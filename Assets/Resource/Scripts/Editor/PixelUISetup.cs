@@ -45,7 +45,7 @@ namespace Resource.Scripts.Editor
             theme.levelTitle = LoadSprite("Level/ui_title_select_level");
 
             // Prewarm the text used by the UI; dynamic atlases also support later language switches.
-            string[] sources = { "LocalizationManager.cs", "MainMenuUI.cs", "GameHUD.cs", "LevelIntroUI.cs", "Oxygen/OxygenHUD.cs" };
+            string[] sources = { "LocalizationManager.cs", "MainMenuUI.cs", "GameHUD.cs", "LevelIntroUI.cs" };
             string characters = new string(string.Concat(sources.Select(path => File.ReadAllText("Assets/Resource/Scripts/" + path)))
                 .Where(c => !char.IsControl(c)).Distinct().ToArray());
             theme.regularFont = CreateUIFont("NotoSerifSC-Regular-GB2312", CreateFont("NotoSerifSC-Regular-GB2312", characters));

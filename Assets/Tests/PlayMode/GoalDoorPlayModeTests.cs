@@ -22,9 +22,8 @@ namespace GravityGame.Tests.PlayMode
         {
             float previousTimeScale = Time.timeScale;
             bool previousRunInBackground = Application.runInBackground;
-            Component player = null, oxygen = null;
+            Component player = null;
             bool previousAutoMove = false;
-            float previousDrain = 0f;
             Application.runInBackground = true;
             try
             {
@@ -33,13 +32,10 @@ namespace GravityGame.Tests.PlayMode
                 yield return null;
                 Scene scene = SceneManager.GetActiveScene();
                 player = Find(scene, "Resource.Scripts.PlayerController");
-                oxygen = Find(scene, "Resource.Scripts.PlayerOxygen");
                 Component door = Find(scene, "Resource.Scripts.GoalDoor");
                 Component intro = Find(scene, "Resource.Scripts.LevelIntroUI");
                 previousAutoMove = Field<bool>(player, "autoMoveMode");
-                previousDrain = (float)oxygen.GetType().GetProperty("DrainPerSecond").GetValue(oxygen);
                 SetField(player, "autoMoveMode", false);
-                oxygen.GetType().GetProperty("DrainPerSecond").SetValue(oxygen, 0f);
 
                 Assert.That(Field<string>(door, "nextSceneName"), Is.EqualTo("MainMenu"));
                 var animator = Field<Animator>(door, "doorAnimator");
@@ -115,7 +111,6 @@ namespace GravityGame.Tests.PlayMode
             finally
             {
                 if (player != null) SetField(player, "autoMoveMode", previousAutoMove);
-                if (oxygen != null) oxygen.GetType().GetProperty("DrainPerSecond").SetValue(oxygen, previousDrain);
                 Time.timeScale = previousTimeScale;
                 Application.runInBackground = previousRunInBackground;
             }

@@ -35,12 +35,16 @@ namespace Resource.Scripts.Gyro
         private int _evaluatedFrame = -1;
         private WorldRotationCommand _lastCommand;
         private bool _keepReplayAnchor;
+        private float _wheelAnchor;
+        private bool _wheelAnchorInitialized;
+        private int _wheelRevision = -1;
 
         public bool IsSolarPulseActive { get; private set; }
         public int ContinuityRevision { get; private set; }
         public bool IsBlocked { get; private set; } = true;
         public bool IsFallback { get; private set; }
         public bool ModeBActive { get; private set; }
+        public bool DirectAngleActive { get; private set; }
         public float Output { get; private set; }
         public string SourceLabel { get; private set; } = "等待输入初始化";
 
@@ -53,6 +57,7 @@ namespace Resource.Scripts.Gyro
         public void ResetContinuity()
         {
             _initialized = false;
+            DirectAngleActive = false;
             _evaluatedFrame = -1;
             _keepReplayAnchor = false;
             if (_world != null) _world.DiscardPendingRotation();
@@ -82,9 +87,12 @@ namespace Resource.Scripts.Gyro
             GyroInputSource source = runtime.EffectiveInputSource;
             var processor = runtime.Processor;
             float current = world.ClockwiseAngleReadout;
+            DirectAngleActive = false;
+            if (settings.mode == GyroControlMode.Wheel && !runtime.IsPlaybackActive)
+                return _lastCommand = EvaluateWheel(world, runtime, current);
             float theta = processor.LastSteering.Angle;
             bool fresh = runtime.HasFreshGyro;
-            IsFallback = source == GyroInputSource.Gyro && !fresh;
+            IsFallback = source == GyroInputSource.Gyro && !fresh && !processor.UseJoyConWheelAxis;
             ModeBActive = settings.mode == GyroControlMode.Angle && source != GyroInputSource.RightStick && fresh;
             SourceLabel = runtime.IsPlaybackActive ? "CSV 回放" : IsFallback ? "已回退到右摇杆" : source == GyroInputSource.Gyro ? "陀螺仪" :
                 source == GyroInputSource.RightStick ? "右摇杆" : fresh ? "陀螺仪 + 右摇杆" : "两者叠加（当前仅右摇杆）";
@@ -120,7 +128,7 @@ namespace Resource.Scripts.Gyro
             }
 
             float keyboard = ReadKeyboardClockwise();
-            bool useStick = source != GyroInputSource.Gyro || !fresh;
+            bool useStick = source != GyroInputSource.Gyro || IsFallback;
             float filteredStick = useStick ? FilterStick(runtime.PhysicalRightStickX, world) : 0f;
             float manual = Mathf.Abs(filteredStick) > 0f ? filteredStick : keyboard;
             if (ModeBActive)
@@ -151,12 +159,45 @@ namespace Resource.Scripts.Gyro
             return _lastCommand = new WorldRotationCommand(false, false, current, delta, Output);
         }
 
+        private WorldRotationCommand EvaluateWheel(WorldRotator world, GyroRuntime runtime, float current)
+        {
+            var wheel = runtime.Wheel;
+            var settings = runtime.Settings;
+            bool available = wheel != null && wheel.HasInput && !wheel.IsCalibrating;
+            IsBlocked = IsGameplayBlocked(world) || !available;
+            DirectAngleActive = !IsBlocked;
+            IsFallback = false;
+            ModeBActive = false;
+            SourceLabel = available ? "实体方向盘" : "方向盘未连接或未校准";
+            float angle = available ? wheel.Angle : 0f;
+            int revision = wheel != null ? wheel.Revision : -1;
+            bool entering = !_wheelAnchorInitialized || _lastMode != GyroControlMode.Wheel;
+            if (!_initialized || entering || _wasBlocked != IsBlocked ||
+                _wheelRevision != revision || _lastInvert != settings.invertDirection ||
+                _recenterRevision != runtime.RecenterRevision)
+            {
+                ++ContinuityRevision;
+                // A physical wheel keeps its absolute mapping across pauses and reconnection.
+                if (entering) { _wheelAnchor = current; _wheelAnchorInitialized = true; }
+                else if (_recenterRevision != runtime.RecenterRevision) _wheelAnchor = current - angle;
+            }
+            _initialized = true;
+            _lastMode = GyroControlMode.Wheel;
+            _wasBlocked = IsBlocked;
+            _wheelRevision = revision;
+            _lastInvert = settings.invertDirection;
+            _recenterRevision = runtime.RecenterRevision;
+            Output = IsBlocked ? 0f : angle / 180f;
+            return new WorldRotationCommand(IsBlocked, !IsBlocked,
+                IsBlocked ? current : _wheelAnchor + angle, 0f, Output);
+        }
+
         public void SetSolarPulseActive(bool active)
         {
             if (IsSolarPulseActive == active) return;
             IsSolarPulseActive = active;
             _evaluatedFrame = -1;
-            if (active) { Output = 0f; IsBlocked = true; }
+            if (active) { Output = 0f; IsBlocked = true; DirectAngleActive = false; }
             Recenter();
         }
 

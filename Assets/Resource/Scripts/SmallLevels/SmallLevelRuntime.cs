@@ -5,13 +5,14 @@ using UnityEngine.Tilemaps;
 
 namespace Resource.Scripts.SmallLevels
 {
-    [Serializable] public class SmallLevelData
+    [Serializable] public partial class SmallLevelData
     {
         public string scene;
         public int w, h;
         public bool sky, riding;
         public Vector2 start;
         public Vector4[] carve = Array.Empty<Vector4>(), fill = Array.Empty<Vector4>(), isles = Array.Empty<Vector4>(), spikes = Array.Empty<Vector4>();
+        public Vector4[] weak = Array.Empty<Vector4>();
         public DoorSeed door = new DoorSeed();
         public RockSeed[] rocks = Array.Empty<RockSeed>();
         public float rockDelay = 1.5f, cornerKeep = .7f, dragMul = 1f;
@@ -27,13 +28,13 @@ namespace Resource.Scripts.SmallLevels
         public WakeSeed[] wakes = Array.Empty<WakeSeed>();
     }
     [Serializable] public class DoorSeed { public float bx, by, dir; }
-    [Serializable] public class RockSeed { public float x, y, r; public string direction; }
+    [Serializable] public class RockSeed { public float x, y, r, delay; public string direction; public bool hasArm; public Vector4 arm; }
     [Serializable] public class CaveSeed { public RouteSeed[] route; public float delay, lag, speed, lagEnd, nearRide; }
     [Serializable] public class RouteSeed { public Vector4 rect; public string direction; }
     [Serializable] public class PlankSeed { public float x0, x1, top, bottom, wire, delay, h = .36f; }
     [Serializable] public class SeeSeed { public float px, py, hl, ht, a0; }
     [Serializable] public class PlatformSeed { public float cx, cy, hx, hy; }
-    [Serializable] public class LavaSeed { public int n; public float[] x, y; public int[] g; public bool[] frozen, crust; }
+    [Serializable] public class LavaSeed { public int n; public float[] x, y; public int[] g; public bool[] frozen, crust, water; }
     [Serializable] public class VentSeed { public float x, y, dx, dy, rate; public int max; }
     [Serializable] public class WakeSeed { public int group; public string axis, op; public float value; }
 
@@ -144,7 +145,7 @@ namespace Resource.Scripts.SmallLevels
             for (int x = Mathf.FloorToInt(rect.x); x < rect.z; x++)
                 if (x >= 0 && y >= 0 && x < data.w && y < data.h) solid[y * data.w + x] = value;
         }
-        protected bool SolidAt(int x, int y) => x < 0 || y < 0 || x >= data.w || y >= data.h ? !data.sky : solid[y * data.w + x] || rubble[y * data.w + x];
+        protected virtual bool SolidAt(int x, int y) => x < 0 || y < 0 || x >= data.w || y >= data.h ? !data.sky : solid[y * data.w + x] || rubble[y * data.w + x];
         public static float RectDistance(Vector2 p, Vector4 r) => Vector2.Distance(p, new Vector2(Mathf.Clamp(p.x, r.x, r.z), Mathf.Clamp(p.y, r.y, r.w)));
         protected void ResolveCircle(ref Vector2 p, float r, List<Vector2> normals, int iterations = 4, Vector2? oldPosition = null, float friction = 0f)
         {

@@ -14,8 +14,6 @@ namespace Resource.Scripts
         public static readonly Color PanelColor = new Color32(0x3A, 0x39, 0x5A, 255);
         public static readonly Color DividerColor = new Color32(0x6E, 0x6C, 0x97, 255);
         public static readonly Color Accent = new Color32(0xF4, 0xA8, 0xB8, 255);
-        public static readonly Color OxygenNormal = new Color32(0x3F, 0xD6, 0xE0, 255);
-        public static readonly Color OxygenLow = Accent;
 
         public static void ConfigureCanvas(Canvas canvas)
         {

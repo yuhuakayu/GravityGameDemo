@@ -34,7 +34,7 @@ namespace Resource.Scripts.Gyro
                 for (uint index = 0; SetupDiEnumDeviceInfo(devices, index, ref info); index++)
                 {
                     string id = GetDeviceId(info.DevInst);
-                    if (!MatchesSonyController(id, controllerType)) continue;
+                    if (!MatchesController(id, controllerType)) continue;
                     if (CM_Get_DevNode_Status(out uint status, out uint problem, info.DevInst, 0) != 0
                         || (status & 0x8) == 0 || (status & 0x400) != 0) continue; // DN_STARTED, DN_HAS_PROBLEM
                     uint node = info.DevInst;
@@ -63,12 +63,33 @@ namespace Resource.Scripts.Gyro
             finally { SetupDiDestroyDeviceInfoList(devices); }
         }
 
-        private static bool MatchesSonyController(string id, int type)
+        private static bool MatchesController(string id, int type)
         {
+            string vendor;
+            string[] products;
+            switch (type)
+            {
+                case JslNative.DualSense:
+                    vendor = "054C";
+                    products = new[] { "0CE6", "0DF2" };
+                    break;
+                case JslNative.DualShock4:
+                    vendor = "054C";
+                    products = new[] { "05C4", "09CC", "0BA0" };
+                    break;
+                case JslNative.JoyConLeft:
+                    vendor = "057E";
+                    products = new[] { "2006" };
+                    break;
+                case JslNative.JoyConRight:
+                    vendor = "057E";
+                    products = new[] { "2007" };
+                    break;
+                default:
+                    return false;
+            }
             string upper = id.ToUpperInvariant();
-            if (!upper.Contains("VID_054C") && !upper.Contains("VID&0002054C")) return false;
-            string[] products = type == JslNative.DualSense
-                ? new[] { "0CE6", "0DF2" } : new[] { "05C4", "09CC", "0BA0" };
+            if (!upper.Contains("VID_" + vendor) && !upper.Contains("VID&0002" + vendor)) return false;
             foreach (string product in products)
                 if (upper.Contains("PID_" + product) || upper.Contains("PID&" + product)) return true;
             return false;

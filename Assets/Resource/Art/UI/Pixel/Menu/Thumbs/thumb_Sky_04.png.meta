@@ -134,7 +134,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      thumb_Sky_04_0: 6953895970512647856
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

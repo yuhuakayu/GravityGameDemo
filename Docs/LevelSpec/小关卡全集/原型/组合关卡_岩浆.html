@@ -1,0 +1,1274 @@
+<title>岩浆鱼缸</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600&display=swap">
+<style>
+/* Level picker, one game stage, a control row, then the notes. Single dark theme on purpose: it is the level's volcanic palette. */
+:root {
+  --bg: #130b09;
+  --panel: #1f1411;
+  --line: #43281f;
+  --line-hi: #6a3d2a;
+  --ink: #eadfd2;
+  --muted: #a8968a;
+  --amber: #ff9a4a;
+  --cyan: #3fd6e0;
+  --red: #e0607e;
+  --stage: #0b0605;
+  --scrim: rgba(12, 6, 4, 0.62);
+  --primary-bg: #3d1a0e;
+  --primary-fg: #ffe0c4;
+  --active-bg: #2e1a12;
+  --kbd-bg: #180d0a;
+  --font-display: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --font-ui: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-num: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 28px; display: flex; flex-direction: column; gap: 12px; }
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.45rem; letter-spacing: 0.04em; text-wrap: balance; }
+.sub { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.newtag { font-style: normal; font-size: 11px; padding: 1px 5px; border-radius: 6px; background: #e8a04a; color: #241a10; margin-left: 4px; }
+.levels { display: flex; flex-wrap: wrap; gap: 8px; }
+.lv { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font: inherit; font-size: 0.92rem; padding: 8px 14px; border-radius: 999px; cursor: pointer; display: inline-flex; gap: 8px; align-items: baseline; }
+.lv b { font-family: var(--font-num); font-weight: 600; color: var(--amber); }
+.lv:hover { border-color: var(--line-hi); color: var(--ink); }
+.lv.active { background: var(--active-bg); border-color: var(--amber); color: var(--ink); }
+.lv:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.stage { position: relative; width: min(100%, calc(72vh * 1.6)); max-width: 100%; aspect-ratio: 16 / 10; margin: 0 auto; background: var(--stage); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.stage canvas { display: block; width: 100%; height: 100%; outline: none; }
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: var(--scrim); text-align: center; padding: 16px; }
+.overlay[hidden] { display: none; }
+.overlay p { margin: 0; color: var(--ink); font-size: 0.92rem; max-width: 34em; line-height: 1.6; }
+.overlay .row2 { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 0.95rem; padding: 9px 14px; border-radius: 6px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+.btn:hover { border-color: var(--line-hi); }
+.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.btn.primary { background: var(--primary-bg); border-color: var(--amber); color: var(--primary-fg); }
+.btn.big { font-size: 1.05rem; padding: 12px 22px; }
+.btn.hold { min-width: 88px; }
+.btn.active { background: var(--active-bg); border-color: var(--amber); }
+.btn[hidden] { display: none; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; color: var(--muted); cursor: pointer; margin-left: 4px; }
+.chk input { accent-color: var(--amber); width: 16px; height: 16px; margin: 0; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.pill { font-size: 0.8rem; padding: 4px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pill b { color: var(--ink); font-weight: 600; font-family: var(--font-num); }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; }
+summary { cursor: pointer; font-size: 0.92rem; color: var(--ink); }
+.tune { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 22px; margin-top: 10px; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; font-size: 0.85rem; min-width: 0; }
+.row input { grid-column: 1 / -1; width: 100%; accent-color: var(--amber); }
+.row output { font-family: var(--font-num); color: var(--amber); font-variant-numeric: tabular-nums; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 22px; font-size: 0.88rem; line-height: 1.7; }
+.notes > div { min-width: 0; }
+.notes h2 { margin: 0 0 4px; font-size: 0.95rem; font-family: var(--font-display); font-weight: 600; color: var(--amber); }
+.notes ol, .notes ul { margin: 0; padding-left: 1.2em; }
+.notes li { margin: 2px 0; }
+.notes .muted { color: var(--muted); }
+kbd { font-family: var(--font-num); font-size: 0.8em; padding: 1px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: var(--kbd-bg); }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>岩浆 · 4 个小关</h1>
+    <p class="sub">动作向关卡原型 · 一关一个岩浆机关，每关 3 到 5 拍、几秒钟</p>
+  </div>
+
+  <div class="levels" role="group" aria-label="选关">
+    <button class="lv active" type="button" data-level="0" aria-pressed="true"><b>2-1</b>封口</button>
+    <button class="lv" type="button" data-level="1" aria-pressed="false"><b>2-2</b>追击</button>
+    <button class="lv" type="button" data-level="2" aria-pressed="false"><b>2-3</b>晃开</button>
+    <button class="lv" type="button" data-level="3" aria-pressed="false"><b>2-4</b>冲门</button>
+  </div>
+
+  <div class="stage">
+    <canvas id="view" tabindex="0" aria-label="关卡画面，左右方向键旋转世界"></canvas>
+    <div class="overlay" id="startOverlay">
+      <div class="row2">
+        <button class="btn primary big" id="ovDemo" type="button">▶ 看演示通关</button>
+        <button class="btn big" id="ovPlay" type="button">自己玩</button>
+        <button class="btn big" id="ovNext" type="button" hidden>下一关 ▶</button>
+      </div>
+      <p id="ovText">演示会自动打完这一关：画面上方写着每一拍该怎么转，右下角的方向盘是手柄输入、左边是当前角度，岩浆擦身而过时会慢动作。</p>
+    </div>
+  </div>
+
+  <div class="bar">
+    <button class="btn primary" id="btnDemo" type="button">▶ 看演示</button>
+    <button class="btn" id="btnPlay" type="button">自己玩</button>
+    <button class="btn" id="btnReset" type="button">重来</button>
+    <button class="btn hold" id="btnCcw" type="button" aria-label="逆时针旋转（按住）">↺ 逆时针</button>
+    <button class="btn hold" id="btnCw" type="button" aria-label="顺时针旋转（按住）">顺时针 ↻</button>
+    <label class="chk"><input type="checkbox" id="chkSlow" checked>险情慢动作</label>
+    <label class="chk"><input type="checkbox" id="chkChain" checked>演示连播下一关</label>
+    <div class="pills">
+      <span class="pill">用时 <b id="pTime">0.0 秒</b></span>
+      <span class="pill">死亡 <b id="pDeath">0</b></span>
+    </div>
+  </div>
+
+  <details>
+    <summary>调参（改了会从这一关开头重来）</summary>
+    <div class="tune">
+      <label class="row" for="tRot">旋转速度 <output id="oRot">180°/s</output><input id="tRot" type="range" min="90" max="300" step="5" value="180"></label>
+      <label class="row" for="tDrag">岩浆阻力（越大流得越慢） <output id="oDrag">0.25</output><input id="tDrag" type="range" min="0.05" max="0.8" step="0.05" value="0.25"></label>
+    </div>
+  </details>
+
+  <div class="notes">
+    <div>
+      <h2>四关各自的爽点</h2>
+      <ol>
+        <li>2-1 封口：一转，池底的岩浆就顺着墙爬向出口，要抢在它封口前钻出去。</li>
+        <li>2-2 追击：你一走，冷却的岩浆就活了，跟着你一路往下流；它比你慢，但你一停它就追上来。</li>
+        <li>2-3 晃开：出口那边会被岩浆封住，先斜 45° 把岩浆晃到另一头，再猛打方向冲过去。</li>
+        <li>2-4 冲门：岩浆从头顶灌下来，落到底马上转，门一转正就冲进去。</li>
+      </ol>
+    </div>
+    <div>
+      <h2>操作</h2>
+      <ul>
+        <li><kbd>←</kbd> <kbd>Q</kbd> 逆时针，<kbd>→</kbd> <kbd>E</kbd> 顺时针，<kbd>R</kbd> 这一关重来</li>
+        <li id="padNote">手柄：摇杆横向或 L2 / R2，Options 重来</li>
+        <li class="muted">可以试试 2-3 不晃、直接往左冲：岩浆会先一步封住出口。</li>
+      </ul>
+    </div>
+    <div>
+      <h2>和游戏一致的规则</h2>
+      <ul>
+        <li>玩家照 PlayerController：横向速度每步清零，只往屏幕下方掉；45° 的地面会"粘住"玩家；门转正（20° 以内）才开。</li>
+        <li>镜头大致对着整关，稍微跟着玩家；演示用 180°/s（游戏里现在是 135°/s，可以在调参里改）。</li>
+        <li class="muted">岩浆是粒子流体，永远往屏幕下方流，比玩家下落慢；暗红色的是冷却的岩浆，你一动它才"活"过来。岩浆是这个原型新加的，游戏里还没有。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+window.__ASSETS={"tiles": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAAAwCAYAAACG5f33AAACuUlEQVR42u1bO5LCMAy1MzkJBZncIEO9zdLsVXYoOESqnIaKeocbMNlir8JWZoxGsuQPsQ1xFceRYz9LTx+C7rqPm8rY5vmsv48ndA3TuH8Yg32JjHQs5J3TuNc6N4CfXwc1Xy/oWNcPD2OwL5GRjoW8s+sHVTSApbeuH1Sj1hbVigbw7/eH7VPPmDH7GR95ql8VgLHAb7Y7tdnuRECEtrZ0ECQaAe9ttjvynkQe65uDiAbQnsg+aanKU2GDcSSYPNQiqg/lXXNJ5sPmMmNdP6hp3Os2lpdizcMGjwMnxIQprpMqC7WO+XpR38fTrfXROumJpeIdah6uj5lriAkbDnXto4nRvBTP+oBpALWvsXEXSJwsNu5qXoE0dxrSZ7BUzsWBIfPGHpZrHTYHOgGUTMRpHbdxKhNZCqwQ5+mdiUC1xiaD4yHkz5nt0mBJ9tGkOAnJ2Ks272KCDVLXD3eXHmp60IRLM11u/2sx4ZmpnHEAVHhAlaHs5329J5TNqZXYWqI50LWZZ240hxNJVkyQJNdcDro6kcyBdGlOxATSjS8XUHFhaBGAKibkigGl6zDFhOYZvBCzYVhRzqWV0nUEc6BPP9b75fTCXDSQvaD60nGgNFRJDVopHl1CIcVlIrU4keBcOHWrPYwp9ssESN45CqpcKrcWExK0agBc0rR93tWWDFRuPnT9LnwHcJ7POisHqsNtNeHEBJ47lKHej61hdSJLZyLvwIc+RYzsGjiNe21+nILVDyoHX8qEIaj2uu6BdG4AYT3QFUhj11gFRwIOJctdw0C6rYVrOHPGPiTCsgtO1pcqiudAV7WbKqe5Pm/z+T5QAmjxHBj6XZ8LuFCtr44DUxcDYuesigMhCBiZcyaMHYhE3tV/i0A6lQlLWrEmXENb64GvWEyAJ+zqS2Ri5TkZXQJQNf/d9R+/Ie1yH4RvbQAAAABJRU5ErkJggg==", "idle": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAYAAAABwCAYAAAAXIqcSAAAWC0lEQVR42u2df3CUdX7H37umCUyMvbghEZJdSI0aAmqDkhgwueIPUEwKSs4fw40ImbnSAezpeSmptjnuuELpUadKqscYx5zHQG0YcUA4UIuGMhJ0krsTAkeSAskCR2BNW4vcbnG2fyzfh+/z7PPsPslukufZ5/2eyWR/PNkkr+/z+by/v78ARVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVEURVFm5LLjH/1qwcNh7Wur/HtcLE7ypyjKvNLsmHQq7rsfnpIC9QWbEGYSIn8aMEX+KdQCELCrVy4BAAS6/Krko31euPpJBgL5O86Ad21qoQmQf2oZwKsFD4eNEo8s5b05t0UKY9HfMBjInwZMkb+dDeDk+m1hUxfOuQ2hdzuQ/uiMyPP9v2ONiPxpwBT5x5Hb0s475zaovnTAi9fl5CM7NkX+dpXM0Cj5AIBnxf0I/dcl1c/p9VNT5G+bFoBS+9TWLvV0NeloxeYw+du69rn972NyDnT54Vlxv+E15E/+tjQAuekVT7GaZuyGIH8aMEX+xrJkF5CZ5LNrU4thQqLI3+4GLCeX9G9lRpKMzleg6SNzn0ORvx0MQAst0OXHp63vRyWWqOYZRf40YBow+du/BSDLs+J+VDQ9jxNdv7n2ohiQnHMb5u9cl1BBUuRPA6acyt9tNfjVK5co7hro8iP0bgfKH3oA3+/drVx3xd+H8oceQPlDD0S5746OLWwGkz8NmAZM/nYzgFX+PS65aeUpKUDlz+vR3nEKGenpynTEtAIfivOy0d5xKuoz6prfjOvqFPnTgCnyt2AX0Cr/HpeciP42swwAUP9Hf6q6bvn1FQCA9l99OKymHUX+NGDK6fwtOwZQvXIJAl1+VNx3PzDQE9XnVtH0PDDQg09X/JOquRZo+kjVXyc3wxgI5E8Dpsjf4gYgYIn55c11ywyvrWh6Xnnc07gNgwMXlOaYtmAZCORPA6bI3+IGsMq/x1W4+knXrk0t8JQU4NsFc9HTuC3quiv+PmUertG0LL2CZSCQv9MMmCZA/npy2aEgiqffobz2iX+f8njJmh8hrfsyAl1+zN+5LtJPd1XvzvuBaoXqrk0tihtzhSr524V/9col6Pm4EwBQtObJKAP+7/e64SkpwK5NLUo5ZedOgJzAZHMWg5zkT/6WNgAZ/uL2N5TkEgyF0PL2Hhxc/Reo29kGAOjvO4PFj8+J+gxtEgK4PJ78acA0APK3dBeQcErRjCrOy1Zez0hPx43+Z1GzMkN5zevLRzAUAgC0rpmM1jWTUebL0Z2jyyYw+dvJgIun34HF7W9gWecvsKzzF9h8pg+z1/8cAJA24z7giUfwdV21KvkAwKN7Nxr2RTP5k7+lWwBiI6ZAlx/fzGrFhubIVquH+y6i7dAJ5bqqe25Vkg4A5TpZyz3zUfRnparXWAMifzuUQaDLj8GBC/jJqe04OXiNreCdO+8D5bXyGVOQkZ6uKosDPWfR/tdNZE/+9jEAOfkAwLpjkf6z+rpM1DaeRtuhExjY+yBy532Agb0PGiYeIbkQtDtXMhjInwZMOZm/24rgxeyTR/duVN7b0HwJrWsmK0lnYO+D2NB8SRf6ha8u48JXl5UuCyExWCM3y9glQf5WNmDBt74uU7lGlIHobjMqBwBY3P6G8lh8ZvXKJTi5fluY7MnfZTX4YrAk0OXHo3s3IhgKISM9HWW+HCxdMA4Tcq6LctsDPWejkg0QGbDcXdOgJB/ZgeUkxBoR+VvNgKtXLkHVy8+hzJejvC8noVgtL2G+E7LGR2qtz72sYi/3R5O9s/lbchBYJIgyX46SfABg2cb/VK453HcRh/suAgAqiyahsmgSynw5SnNMJCQxEGk0IKMtEIr8x5q9PAB/oOeswvnCxW90k8+BnrPKdYf7LuLk4CWcHIz0Qb877wdR7HdtalG+2ApzNn9LGcAL23+qPJ6/cx0ufHVZ5cCVRZNQ09CN2sbTKPPlqN7TKhgKKbVXbRNMFMTc79byjid/GjAN2LH8LWUA2z/7wiU3h+SRd9EEa91xMOZnbGi+pBTYznW3oDA7U9WXLSv9W5m8+cmfBkw5lr8lTwQTSUHMLZcl5pwvXTAu7mflzvsAt/uuBwAlCekt0d61qYXNYPK3hAHLz2nA5O8oA9AeRl5ZNEn1fk1DNwCgveOUMhgZT0XeNARDIRRmZxpeU71yCQOB/C0jGjD5O84A5OSjB0kegS+fMSXu54mm111P/zIqkRnJyVPjyJ8GzAqQ8/hbdiuIWElD7yCGWKqvy8SErPGs2pio9YjkP5L8ZYOJOmvVobNSTq7fFhazT0bagI34n1y/LexUE3ZqBcht1QQUC6rsxkYSzTevLz/qPSag6Jtffm50zmmi/GOdnyqawk6cmqj9X7+uq9ZNGoL/UAzY68tXDPjrumryT6AClCh/K+YftxUDQGw/ILtvTUO3ahm2dtGRmWSl/VwGwDX24n/Xu/mTxV/+XL0gkHdLdEqXhB7/2oWzo67T8jdrwLLkzyX/oVWAksHfihUgtxUDIFnq7zujJCPtKj4GgL7i3aSJ8j/R9Zuo67RbRjtZerV/7b1r1oAFf9mAyX94FaBk8bda/rHcGEC8WnoshzV6X3ZuBoBa2mXoZvsrh8t/u+vXpprCTuWvV/tPVO0dp5QkVrDxRfIfpQqQHn+r5R+31QLASK07DiqOasaBoxLS1LdQX5fJBBSjDDb8369HnD8ADA5ciLrpxXOxQCbZrUE78L9zy8uGBqzlPxQDlvXPL3yH/IdRAUoWf6vlH7eVCuHjifoQahq6lcFEUQhb3tmv2zQzIwaAfhkYrWxMNv/F7W9E3fDy832/bHXcBmWr/HtceqeqCWn5J2LAGQ1LyX+IFaBk8rdS/rFMF9BPLh3WfV1OMl5fvlIQerN7ZGkLyOvLR23jadTXZeL1wG4GgEa52Z7waPGvLJqkHJ6t1/x14hYFbZ8cD8cyYC3/tkMnhmTAcnnVLpxN/hrdueVljBZ/K1WA3HYoHDmZiL2446nMlxN1Tu2Wd/arWgEMgLHjL++TrhcETpuGaNT3r00yZvlnpKdH8Re10MqiSchoWEr+Y8jfKvnHMgYQa/BRHkTUc2YjyQlHq9cDuxkAY8i/smiS4YAb96iJ3Zoya8Cx+NcunG04+Ej+I8/fKhUgSxiAUffDSKimoRs3ZUeWcRvNOHJaAIwVf2E64sYXCUn0fzrJhEfCgOP9vvJ/WEH+Y8jfChWgMTcAb97EsBF8sQDJSK07Dg65H651x0E8/dg4Xed1YgCMNX95C15ZTlqQN1oG7PXlRxmw0ewT8h8d/mOdf8bcAOTpUvV1mcOeWQJcO4pN+ziWRC3IqQEw1vzFcZIydycNwI+mAYufkQ1Y2wp22uy3seY/1hUgy4wB1Ndl4suCV1DT0B0F1WjzpVgzUSZkjVcNwvT3ncHxo8eU1+69I0O36ee0ALAC/+cPv+7YxXhmDNgs/1gGrOUvG/C6Yy2qaYhOqgRZgf9YVoAsNQvo3OmeqNcGBgOugcGAq7Awy1U+YwpqGrpN7cYngxdzdzOzbtAdmPGUFMBTUqCC74TDynOzParaz7nTPWjdcRDBqW/hQM9Z1DR0x+WvZxhycOnx/7LgFcyamaZcpz14Q5uAnMC/vi4TR795FsGpb+GvfvZvCfOfkDUetQtnG/IXP1NZNEk52tAoATmhRSb4a3kON/+ICpBR/rFKBchtpQQ0Z34N2jtOIXfeBzjQcxblyw+5Ku6uDMuFIb4XFma5CguzXPESkOzU4rs2ATn5xpc1Z36Naq7zwGAgLn/tTS+rOC8bix+fA68vHxnHnlHVmOSmdZkvB1UvP4fC1U+6nMac/Jl/Wp5Zi12bWhT+Ymvq0SgPy64DELABoOLuyrAoCPl1QD1FyygAACDj2DMAItPfMrNuUAXAC9t/qqwCdOJe6PV1mahtPJ0wf71akAiC3HkfqPhrN+gzWjpfuPpJF/mTP/NPChuACICqe25F1T23Ku6cm+0J9/Z2Rbm2XCCx9uSQA0A03USBxQsAJ9z4cu0nGAolnb8cIOUzpqj4a7vitGMxq/x7Ur42Sv7WMmAn5p80KwWAOGjhSse/o3XHQXjHqQdSrvj7wgBwy6IFLrVT3xKOFwDis0UBb3lnP3DVlcXfsv2zgGO6fbRT31re3oPiaVOTzl8chaflD0RWRgLfUf1N2hoW+ZM/808KGoBeAGh1xd+HtALftT/26uPP/+X1MAD8cd7ESJ/aBeMtXLVncbYdOqEMyjg9AOJpKPzvvSMD//HbYNRnHD8/aMh/8eNz0LpmMjY0X1KChWVA/sw/DusCAiIj5P19Z9BcU4WWxh9FCuXqd608d5XDc1c50gp8SqGIUXW9AGiuqVJt5SoGYxY/PkfVDBMB4KTaz9IF41DT0I3MrBsAYFj8b5zQgHtnTcbSBeN0r2+uqdJ9fc3fbVQ9N9qMi/zJn/knxQxAGwAyGDP61/oXrjln6WsxAwAAftu8PvJzzyxUCsOpASDfZBNyrhvWZ8j80wp8yJn+Em6b+pIyl1oEhGgCv9+4SuEvBsaKps+IGvwczr4r5E/+zD82MoBkBIBWOdNfwrQHNxsGwCNrXgUAPPHWDgaARi1v74HXl6+qpQxHaQU+5Ja+hhsnNGDWzDRlybvMf/f501HT4+RaUJkvxzGtMPK3rwGnSv5xWy0A5jZtxdymrQCgfNfT/wa+1C/c0teQW/paVAAILXm41PEBIC8+krsfBHPB/U/+8odD5i8S0c5NQTzx4jbVbJMlD5dGLfra3Pye7t+XymVA/tY1YKflH7fVAkBWz5EOVVNLq+a6ZYbvyQEwt2krmmuqGADQH/zSa/p6ffmYOLlo2PxlCf56Mip7J9Q+yd96Buy0/OO2egAkS21XvmIAJFmxakhRtawLv8c/fj9H6eeUD+CobTwdVVsyezg9+ZM/84/Nu4Bi6c4frotdszFw4es9N6qenxy8xADQ/F8bmi/hRv+zOH70mKpJCkT2UCqeNjUm/30rnjLNv+3QCWWflcqiSchIT0fVPbfC68tH26ETqH52c9SS+kUzbw+nWktsqPdVLP6xaqEyf68vX7XQKCM9Xelr9vrysbn5vagt0vWSpROV6vnHbfUASIYYANck7z4omsBiAdJISyyGASJ9nXKZGNWEUsmI5fuJ7Edfi2bertp878uCVxT+2mmaolIUS/tWPGUq99QunK2stzjcdxEZ6elKeVz66n/QumYyfj/4jWGcpowBDDcAYvW1GTWDn9jwMwaACa1f+2rUDTsS/PVkdsZDqtZEzbAfKf5OY5+I+ZodazHib+Xc47ZDAGibUwBQ1/xmQr/biclHu/vhhuZLKJo+w7DmAgDF06Ya8l97pDPmqkXtUnpAvX2xHAheXz5qG08ndCBNKrLPzLohafe/U9knknseri5zGfGf27Q1bgxYPfe47RAAs37cFNOFjd7TNtEYAGqZ/X+N+J9s7wzH4q/3ulhyr/e7jQ7RTsVZWUO515J1/zuVfSK5BwBWf/KRK1H+Vs09bjsEgGgFXPH34Yq/T7cZbKaZ5vTkk8gik+Hy37fiKVXtqnjaVASnvnV1HxTnKNEFPsPlT/aJ5Z62T46H4/Ffe6TTFS//WDX3uO0SALN+3BTz/blNW5UCEoVU1/wmA0CqBclLzZcuGDckDsPlH0utOw6a/v12Ho9JlP1I8HcK+2TkHtEKiGUQa490umLxt2rucdslAEw1cXU2bzJaAOOkANCTWAI/lP1P4jV9jTbPMh2o0va4RvcR2Sfn/ncK+2TkHpHkjfiL983yt1LucdspAOTd9/RqOHObtqreN1MLdUryGRgMuIwOvR5x/gM9Mfe52b97J/bv3omj3zwLwHhnRSezT4S/k9kn03zj8V97pNM1nPwzlrnHbacAMDsdS1sIDICIypcfUp1hWrtwtnJSlPjSCw7xXI+/dqZP/x/GR/GPJfmAEiAyWKY9r/mm7OtsP0CfKHuz9/9Q+DuBfbJyTzz+ohVQWF7qMsvfCrknbTQDIDfbE9657hYlALRq7zilGwCxEvi+FU+p5kL3/2F8VFLyjruM8hlTVPNxRQDIW7LWNHRj57pbVAdr3JR9HZ5+bBwONKRObbS2MT1cmJ0JvcMnCguzDH/2pemlYb2g0E6FE7ODZNUunI32jlNKopO1+qVVyt+ire3IgWv3g0oSYW/Ef9+Kp+LyF/e/npzAfqRyjzb/tH1yPFz17eJoTgM9KH/oAVXXj1VyT5rdAwAAtND1EtD38n2OTj6qWuL5c67+86P7O7+X70NhYZZphoK92Ks9VfiPBXvB3+yc9VRkn2juidmS0kv6OtIajxVyT5pTAqCu+U2sLS91OTn5jKWu8jcVqDUNCAOR2RtkP3r8U539WOUeAGj/1YcoNJF/Rjv3uO1UgGZrMMNZun0tALpR09CN2sbTGBgMuJiARo+/XA4DgwFX//lzZD/K/Ml+bPiPVe5JY7FGFwQpUBTlhNzjthskrbtuPtNnepqU0RgClVz+a490ul5Y+TT5jxH/Y+Ov8P4f4/vfLvxtVdvNzfaEtav6+s+fc+Vme8Kyey6aeXt46uU01Rzcqj+fj2AoxBr+KPAXNzv5k7/T+C+aeXt4+2dfuOzC33ZdQBUPLED/744iIyNDFEDUNds/+8JVcXdluO4q+JuLpqHAW4Te3i7oBQuVXP4A8NG460H+5O80/ts/+8JlJ/62uxG8eRPDAHBz0TQAQFdXJwD9/jNv3sRwgbdIKaxgMIje3i7Wgsif/Cnyh83GACrurgwL8L09RwEAJSWlSvNMC7///DnXp58fUGD39nbxDiZ/8qfI324G4M2bGM7IyFDAa6V11f7z51zevInh5ate5MAX+ZM/Rf46ssUYQG62JxwMhQzh610vHr//TmQgRjg3m7/kT/4U+duoBSAWRQRDIQRDIdxcNE0BGkviOnECj2iuUeRP/hT523AdAAAUzyhXHgeDQcPruro6lUEaivzJnyJ/GxuA3HwSzTExwq7n2OJ5Mk4Eosif/Mk/1fjbsgUg+tWGUmBCqXa4OPmTP/mTv2MM4LHvLgeAqD64eGDNDuBQ5E/+lFP428oAcrM94fffeVMZVBGKN7jyyOPLeOeSP/lT5G9XA8jN9oRvvrnEFPBYKikpZTOY/MmfIn/YaB3AwGDANfD5AWUpNgB8fPBDlzdvYljryPLPiQGYAm+R8joHxcif/Cnyt/heQLnZnrBw22AwqBpx7+rqjLuoQv55oWAwCHl5NkX+5E85lb/lDSAjPV014NLbcxTitCLRlBoYDERtiSs/9+ZNVO3hYbSFLkX+5E85ib/lu4C0o+0F3iIEQ6Gwdq6tFmZJSSlKEDnfVCzGkAuPIn/yp5zO39IGMDAYcKGrUzVgYuawau0gixi80bo2b2/yJ3/KyfxT8ibQ63sTMtN3R5E/+VNO4O9K5UIwdHWK/MmfIn/8P6Z51s2t39OiAAAAAElFTkSuQmCC", "float": "data:image/png;base64,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", "fallstart": "data:image/png;base64,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", "land": "data:image/png;base64,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", "door": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAAAgCAYAAABEmHeFAAACeElEQVR42u3cv2uTQRzH8c8TAqKCWDso0haaoQUV2qdDBqeK4iIuLmYRuvQfENRFFMVFhCyCf0NcXMRFEJ0csjzt2A4OaSkKBqPo0KHqIJGzyZO7J32eO0PeXyglcH1e94Pv3T1faKQh49TJuV/mjzzH/+A/6/zAH/H1j7Ki5ufj169JkjrPX/zT7uOnzaioQZufTz9+JEnauXM3iD//9rUkaePC5SD+vY1EkvRwPh7L8eex/lEWNK7WnB6aNBu5TQY+fpF+yXbErKzWFVdrWlmtS5IWFqrW3932cbWmYY8ofHwffpSGu2abayTNhvNugI/vy4+y4ubx0i9sf2ubBHx8n37kipvw1PSiJKndbmm2sqRvXz9Lkra31qwdGTQJ+Pi+/cgV76Jm7O+AGdtba5kmAR8/hF9yuTv1w20xNb1oPa5c7274+EX5pYPgh64ua+fsscImweZP3L8Z1J951VDnxnIw/1byRntPb4/t+PNY/54E6JaTkmZDZ85dOnAGHz5y4m8nPmy+t7bHx/fp9yTA+npTRUVl7ry1DT6+Tz/1BCgisuwA+Pg+fE4A/LH2y/0y0OxEu91KfwlWxdpmfwbaJiGLP+HQpkj/aGBfYz7+PNa/bMvAycmZ1Ad+d2hjdm6YHWDQs38G9oU/8uvPOwA+7wDcQfGpArED4XMCsAPhUwWiCkQViCoQVSCqMFSBuIPi8w7AHRSfKhA7ED4nADsQPlUgqkBUgagCUQWiCkMViDso/sj71hNgUOy+fPfnv/ID3QG/PKgH9VtXakH9J/FFzVaWgt3BQ48/j/Uvp2VhEZnoOjh8fF9+JPV+666v6H43Cz5+KP83B7AOK07ebiAAAAAASUVORK5CYII=", "doorOpen": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAADAUlEQVR42u2bMWvbQBTHn0wWe3QGe0gK8aDSUnDkQdCu7dS1BDxmyRxKsIYOHTp0KWQp9BsUPHTIB3DWDk5cJaC4NEMHJ0MCFbSFbpavS1UkWad7J51OxLwHD2P7rN/z3bt39z/LADmt3TLZh59/WLtlsnbLZKDZiK+Gb8hCo89ff3MBAODNfSvW7ub20ijrSxNfLd+QgVp2H3VRdzxU1hnEL5dfywK3Wybb3TsEy+7D7t4hAAB0u7bwMWxv2X3IW6KIr4dv8ODYbMOaOx6iZwPx9fENWXi0vKSZ6LOiTiC+Xr6BhUfBG5vbAADg+zPY6vTg968fAABwfXUmDCSrE7D8eqMJA/c49v6nFwOYeiMt/HDzlbToZuyu8A0sPBz0qCUTIGrXV2dSnSDD9/0ZvJyMYm2OdpxYHKr59UZzicmzox0Hpt5IKf/V1y9SJf/tgx6KX8OsHWmDL7KNzW1hucKuXWn8OWMx18FPMnmumu9MJ2h26M50guLXigz+wD2G4L1TWhJk8QPGYq6Dn2TyXCX/4OIUzU36wcWpkL+UAKGccMdDePjoWeEMrjea/4P4fvlZ2B7LF1WAMvgyFUAFf987kZ75Sd/3TjL5a8kXzs/HpR1fdswnwjZYftagl8XPwyzCL8rD8LkVoAyTmQEiwywBqvmyS0BRft7Sz4uHKgBVAHECdLt2LAjfnwkvjGkTZqCoE7D8gMnHUZQfSIxHWiyy/EDxb4xpfGEFWF+/J7xwVptoR+SZgWnX9v1Z6uzgtVXB5zFFfVKET3sAwRKAUQEq+XlUQBF+UQWQjGel9gBBBXuAQPMeIKAKQBWAKgBvMBYVqICFZhWwIBWQoQJYBSoAPyBqVIDaBCAVQCpglU4C467nJBDn6k4C1TidBNJJIKkAUgF0DkDnAKukAuYVqIC5ZhUwJxVAKoD2ABnlmO4HqPh+gHfWU9jq9EgF3GEVsMbLwjIqAXZwUfyPXvz54+fl85NMnnFikeZjeQKz//2tLI1vACz/61SXhfemE786/l8ES8S8pRcSqgAAAABJRU5ErkJggg==", "lockLocked": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAsElEQVR42mNkIBNIiKv9R+a/eHmLkRxzmBhGwSgYYMA40LmAhVyLlVRt0KX+k+MQFnJcraRqw3Dz2l4UMXUtZ4Z7t4/QthyQEFf7D7Ocj18SRe7mtb0MSqo2GFFDs4Lo08fnVEmEA14SDi0HvHh5i/He7SMM6lrOGHKwREiXXABzRExYEAMDAwPDklXryMoBg6IgoggoKlr8V1S0+D+aC0YdMOqAUQeMOmDUAaNgSAMAYdo6NsNoe9UAAAAASUVORK5CYII=", "lockOpen": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAqklEQVR42mNgGAWjYKQDRnI1Soir/Ufmv3h5iyyzWMi1WH3/LlQJR7f/5DiEhRxXq+/fxXDFxh5FTOfIQYabjm4km8VEqu9hlvPxS6LIXbGxZ1DfvwsjaqjqAGTw6eNzqiRCpoHOBUxDLt9KiKv9t7/24L+wkDwKtr/24D+p8U92Lrjp6Magc+QgQ7iUKAMDAwPDymevycoBg6IgGgWjYBSMglEwCkbBKAAAjds10AcEzB0AAAAASUVORK5CYII=", "lockHint": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAsklEQVR42mNkIBNIiKv9R+a/eHmLkRxzmBhGwSgYYMA40LmAkVyL17iGoIiH7F5DlkNYyHH1GtcQBv9tS1HENnpFwx1Bs3JAQlztP8xyPn5JFDn/bUsZ1riGYEQNzQqiTx+fUyURDnhJOPSKYglxtf9HYqr+CwvJo+AjMVX/SY1/irPhJTMrBgYGBga9U8fIzoYDXhBRBBQVLf4rKlr8H80Fow4YdcCoA0YdMOqAUTCkAQBJbT6K1790SwAAAABJRU5ErkJggg==", "needle": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAAICAYAAADTLS5CAAAAH0lEQVR42mNgIAwYz595/J+BgYGBCSbConrnKgOKCACSNAVdvXwtkwAAAABJRU5ErkJggg=="};
+
+</script>
+<script>
+(() => {
+  'use strict';
+  const A = window.__ASSETS;
+  const DEG = Math.PI / 180;
+  // Player rules ported from the game's PlayerController / WorldRotator (fixed step 0.02, no own horizontal speed)
+  const G = 9.81, PR = 0.4, PC = [0.4, 1.13];
+  const DT = 0.02, SUB = 4, SKIN = 0.02, PIVOT_LAG = 8, VMAX = 16;
+  const P = { rotSpeed: 180, lavaDrag: 0.25, sloshHold: 0.3, slowmo: true, react: 0.12, intro: 1.2 };
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+
+  // ---------------- the four small levels (tiles, y down) ----------------
+  // One lava trick each. The door opens only while it stands upright on screen (within 20°).
+  const LEVELS = [
+    {
+      id: '2-1', name: '封口', w: 21, h: 16,
+      tip: '一转，池底的岩浆就顺着墙爬向出口。抢在它封口前钻出去。',
+      carve: [[2, 2, 11, 12], [11, 2, 20, 5], [18, 5, 20, 15], [4, 13, 18, 15]],
+      fill: [[4, 4, 7, 5]],
+      start: { feet: [5.5, 4.0] },
+      door: { bx: 4, by: 14, dir: -90 },
+      pools: [[2, 9.3, 11, 12, 0, false]],
+      vent: { x: 2.9, y: 2, dx: 0, dy: 1, rate: 22, max: 150 },
+      plan: [
+        { t: 90, cap: '顺时针转 90°：往右冲', sub: '岩浆顺着墙爬向出口，抢在它封口前钻出去', next: () => lp()[0] > LV.carve[1][2] - 1 && S.grounded },
+        { t: 0, cap: '落地马上逆时针转回来', sub: '往下掉；岩浆灌进管子追过来了', react: 0.4, next: () => lp()[1] > 14 && S.grounded },
+        { t: -90, cap: '继续逆时针：冲进门', sub: '岩浆从头顶浇下来', react: 0.4, next: () => false },
+      ],
+    },
+    {
+      id: '2-2', name: '追击', w: 20, h: 20,
+      tip: '你一走，身后那一池冷却的岩浆就活了，像浪一样追着你。落地别停。',
+      carve: [[1, 1, 7, 5], [7, 3, 19, 5], [17, 5, 19, 14], [6, 12, 17, 14], [6, 14, 8, 19]],
+      fill: [],
+      start: { feet: [6.5, 5.0] },
+      door: { bx: 7, by: 19, dir: 0 },
+      pools: [[1, 1.3, 5.2, 5, 0, true]],
+      wakes: [{ g: 0, test: (l) => l[0] > 8 }],
+      dragMul: 0.9,
+      plan: [
+        { t: 90, cap: '顺时针转 90°：往右冲', sub: '身后的岩浆活了，像浪一样追过来', next: () => lp()[0] > 18 && S.grounded },
+        { t: 0, cap: '逆时针：往下', sub: '浪拐弯倒下来了', react: 0.38, next: () => lp()[1] > 13 && S.grounded },
+        { t: -90, cap: '落地马上继续逆时针：往左', sub: '浪从头顶浇下来', react: 0.42, next: () => lp()[0] < 7 && S.grounded },
+        { t: 0, cap: '顺时针转正，掉进门', sub: '浪追进来了', react: 0.42, next: () => false },
+      ],
+    },
+    {
+      id: '2-3', name: '晃开', w: 25, h: 13,
+      tip: '出口那边会被岩浆封住。先斜 45° 把岩浆晃到另一头，再猛打方向冲过去。',
+      carve: [[8, 1, 24, 11], [1, 1, 8, 4], [1, 4, 4, 12]],
+      fill: [[16, 3, 19, 4]],
+      start: { feet: [17.5, 3.0] },
+      door: { bx: 2, by: 12, dir: 0 },
+      pools: [[8, 8.0, 24, 11, 0, false]],
+      plan: [
+        { t: 45, cap: '顺时针 45°：把岩浆晃到右下角', sub: '台子会粘住你，岩浆流开，左边的出口露出来', hold: true, next: () => S.tiltT > P.sloshHold },
+        { t: -90, cap: '逆时针猛打到 −90°：冲向左边出口', sub: '岩浆马上倒流回来，抢在它前面', next: () => lp()[0] < 2 && S.grounded },
+        { t: 0, cap: '顺时针转回来：掉进门', sub: '岩浆追进管子了', react: 0.3, next: () => false },
+      ],
+    },
+    {
+      id: '2-4', name: '冲门', w: 19, h: 19,
+      tip: '你一动，旁边那池冷却的岩浆就活了，跟着你灌进竖井。落到底马上转，门一转正就冲进去。',
+      carve: [[2, 2, 14, 5], [2, 5, 5, 14], [2, 14, 17, 18]],
+      fill: [],
+      start: { feet: [5.6, 5.0] },
+      door: { bx: 17, by: 17, dir: 90 },
+      pools: [[10.4, 2.15, 14, 5, 0, true]],
+      wakes: [{ g: 0, test: (l) => l[0] < 4.2 }],
+      plan: [
+        { t: -90, cap: '逆时针转 90°：往左', sub: '旁边那池冷却的岩浆裂开了', next: () => lp()[0] < 3 && S.grounded },
+        { t: 0, cap: '顺时针转回来：往下掉', sub: '岩浆跟着灌进竖井', react: 0.4, next: () => lp()[1] > 17 && S.grounded },
+        { t: 90, cap: '落地马上顺时针：冲进门', sub: '门一转正就冲进去', react: 0.45, next: () => false },
+      ],
+    },
+    // ======== new combo levels ========
+    {
+      id: '2-5', name: '晃开再追', isNew: true, w: 25, h: 29,
+      tip: '先斜 45° 把大池子晃到右下角，再猛打方向冲出去；掉进第二口竖井时，头顶那一池冷却的岩浆也活了。',
+      carve: [[8, 1, 24, 11], [1, 1, 8, 4], [1, 4, 4, 17], [1, 17, 22, 20], [18, 13, 22, 17], [19, 20, 22, 25], [9, 25, 22, 28]],
+      fill: [[16, 3, 19, 4]],
+      start: { feet: [17.5, 3.0] },
+      door: { bx: 9, by: 27, dir: -90 },
+      pools: [[8, 8.0, 24, 11, 0, false], [18, 13.3, 22, 17, 1, true]],
+      wakes: [{ g: 1, axis: 'y', op: '>', value: 22.5 }],
+      plan: [
+        { t: 45, cap: '顺时针 45°：把岩浆晃到右下角', sub: '左边的出口露出来', hold: true, next: () => S.tiltT > P.sloshHold },
+        { t: -90, cap: '逆时针猛打到 −90°：冲向左边出口', sub: '岩浆马上倒流回来', next: () => lp()[0] < 2.6 && S.grounded },
+        { t: 0, cap: '顺时针转回来：掉下竖井', sub: '岩浆跟着灌下来', react: 0.25, next: () => lp()[1] > 18 && S.grounded },
+        { t: 90, cap: '落地马上顺时针：往右冲', sub: '', react: 0.25, next: () => lp()[0] > 20.4 && S.grounded },
+        { t: 0, cap: '逆时针：掉进第二口竖井', sub: '头顶那池岩浆活了', next: () => lp()[1] > 26 && S.grounded },
+        { t: -90, cap: '落地马上逆时针：冲进门', sub: '', react: 0.25, next: () => false },
+      ],
+    },
+    {
+      id: '2-6', name: '倒灌', isNew: true, w: 19, h: 23,
+      tip: '把世界整个翻过来，往上掉进竖井；身后那一池冷却的岩浆也跟着活了，倒着灌上来。',
+      carve: [[2, 17, 16, 22], [13, 3, 16, 17], [3, 3, 13, 6], [3, 1, 5, 3]],
+      start: { feet: [14.5, 22.0] },
+      door: { bx: 4, by: 1, dir: 180 },
+      pools: [[2, 18.4, 12.6, 22, 0, true]],
+      wakes: [{ g: 0, axis: 'y', op: '<', value: 21 }],
+      dragMul: 0.7,
+      plan: [
+        { t: 180, cap: '顺时针翻 180°：往上掉', sub: '掉进右边的竖井；身后的岩浆活了', next: () => lp()[1] < 6.5 && S.grounded },
+        { t: 270, cap: '继续顺时针：往左', sub: '岩浆倒着灌上来了', react: 0.2, next: () => lp()[0] < 4.6 && S.grounded },
+        { t: 180, cap: '逆时针转回来：往上掉进门', sub: '门在天花板上', react: 0.2, next: () => false },
+      ],
+    },
+    {
+      id: '2-7', name: '封口追击', isNew: true, w: 21, h: 22,
+      tip: '一转，池子里的岩浆就顺着墙爬向出口；掉到最底下那条通道时，右边那池冷却的岩浆也活了。',
+      carve: [[2, 2, 11, 12], [11, 2, 20, 5], [18, 5, 20, 15], [4, 13, 18, 15], [4, 15, 6, 19], [1, 19, 14, 21]],
+      fill: [[4, 4, 7, 5]],
+      start: { feet: [5.5, 4.0] },
+      door: { bx: 1, by: 20, dir: -90 },
+      pools: [[2, 9.3, 11, 12, 0, false], [8.5, 19.2, 14, 21, 1, true]],
+      vent: { x: 2.9, y: 2, dx: 0, dy: 1, rate: 22, max: 150 },
+      wakes: [{ g: 1, axis: 'y', op: '>', value: 19.3 }],
+      plan: [
+        { t: 90, cap: '顺时针转 90°：往右冲', sub: '岩浆顺着墙爬向出口，抢在它封口前钻出去', next: () => lp()[0] > 18.4 && S.grounded },
+        { t: 0, cap: '落地马上逆时针转回来', sub: '往下掉', react: 0.25, next: () => lp()[1] > 14 && S.grounded },
+        { t: -90, cap: '继续逆时针：往左', sub: '岩浆从头顶浇下来', react: 0.25, next: () => lp()[0] < 5 && S.grounded },
+        { t: 0, cap: '顺时针：掉进最底下的通道', sub: '右边那池岩浆活了', react: 0.2, next: () => lp()[1] > 20 && S.grounded },
+        { t: -90, cap: '落地马上逆时针：冲进门', sub: '', react: 0.2, next: () => false },
+      ],
+    },
+    {
+      id: '2-8', name: '两间熔炉', isNew: true, w: 25, h: 30,
+      tip: '上面那间：斜着把岩浆晃开再冲出去；掉进下面那间，落地马上往右冲，抢在岩浆爬上来封口之前。',
+      carve: [[8, 1, 24, 11], [4, 1, 8, 4], [4, 4, 7, 15], [2, 15, 11, 25], [11, 15, 20, 18], [18, 18, 20, 28], [4, 26, 18, 28]],
+      fill: [[16, 3, 19, 4], [4, 17, 7, 18]],
+      start: { feet: [17.5, 3.0] },
+      door: { bx: 4, by: 27, dir: -90 },
+      pools: [[8, 8.6, 24, 11, 0, false], [2, 23.0, 11, 25, 1, false]],
+      plan: [
+        { t: 45, cap: '顺时针 45°：把岩浆晃到右下角', sub: '左上的出口露出来', hold: true, next: () => S.tiltT > P.sloshHold },
+        { t: -90, cap: '逆时针猛打到 −90°：冲向左上的出口', sub: '', next: () => lp()[0] < 5 && S.grounded },
+        { t: 0, cap: '顺时针转回来：掉下去', sub: '落到下面那间的台子上', react: 0.15, next: () => lp()[1] > 16 && S.grounded },
+        { t: 90, cap: '落地马上顺时针：往右冲', sub: '下面那池岩浆顺着墙往上爬，抢在它前面', react: 0.12, next: () => lp()[0] > 19.4 && S.grounded },
+        { t: 0, cap: '逆时针：往下掉', sub: '', react: 0.2, next: () => lp()[1] > 26.5 && S.grounded },
+        { t: -90, cap: '落地马上逆时针：冲进门', sub: '', react: 0.2, next: () => false },
+      ],
+    },
+    {
+      id: '2-9', name: '熔岩大逃亡', isNew: true, w: 30, h: 30,
+      tip: '晃开、封口、追击全来：上面那间先斜着晃开；下面那间喷口一直往池子里灌，抢在它爬上出口前冲过去；掉到最底下，旁边那池冷却的岩浆也活了。',
+      carve: [[8, 1, 24, 11], [4, 1, 8, 4], [4, 4, 7, 15], [2, 15, 11, 25], [11, 15, 20, 18], [18, 18, 20, 26], [4, 26, 29, 29]],
+      fill: [[16, 3, 19, 4], [4, 17, 7, 18]],
+      start: { feet: [17.5, 3.0] },
+      door: { bx: 4, by: 28, dir: -90 },
+      pools: [[8, 8.6, 24, 11, 0, false], [2, 24.0, 11, 25, 1, false], [23.5, 27, 29, 29, 2, true]],
+      vent: { x: 2.9, y: 15, dx: 0, dy: 1, rate: 22, max: 100 },
+      wakes: [{ g: 2, axis: 'y', op: '>', value: 28 }],
+      plan: [
+        { t: 45, cap: '顺时针 45°：把岩浆晃到右下角', sub: '左上的出口露出来', hold: true, next: () => S.tiltT > P.sloshHold },
+        { t: -90, cap: '逆时针猛打到 −90°：冲向左上的出口', sub: '', next: () => lp()[0] < 5 && S.grounded },
+        { t: 0, cap: '顺时针转回来：掉下去', sub: '落到下面那间的台子上，喷口在一直灌', react: 0.15, next: () => lp()[1] > 16 && S.grounded },
+        { t: 90, cap: '落地马上顺时针：往右冲', sub: '池子顺着墙往上爬，抢在它封口前', react: 0.12, next: () => lp()[0] > 19.4 && S.grounded },
+        { t: 0, cap: '逆时针：往下掉', sub: '一落地，右边那池冷却的岩浆就活了', react: 0.2, next: () => lp()[1] > 27.5 && S.grounded },
+        { t: -90, cap: '落地马上逆时针：冲进门', sub: '岩浆追着你', react: 0.2, next: () => false },
+      ],
+    },
+    {
+      id: '2-10', name: '边灌边晃', isNew: true, w: 25, h: 16,
+      tip: '右上角的喷口一直往池子里灌，越拖池子越满。趁早斜 45° 把岩浆晃到右下角，再猛打方向冲向左边出口；喷口的岩浆会跟着倒过来。',
+      carve: [[8, 1, 24, 11], [1, 1, 8, 4], [1, 4, 4, 15]],
+      fill: [[16, 3, 19, 4]],
+      start: { feet: [17.5, 3.0] },
+      door: { bx: 2, by: 15, dir: 0 },
+      pools: [[8, 8.0, 24, 11, 0, false]],
+      vent: { x: 22.9, y: 1, dx: 0, dy: 1, rate: 22, max: 150 },
+      plan: [
+        { t: 45, cap: '顺时针 45°：把岩浆晃到右下角', sub: '喷口还在灌，别拖', hold: true, next: () => S.tiltT > P.sloshHold },
+        { t: -90, cap: '逆时针猛打到 −90°：冲向左边出口', sub: '喷口的岩浆也跟着倒过来了', next: () => lp()[0] < 2.6 && S.grounded },
+        { t: 0, cap: '顺时针转回来：掉进门', sub: '岩浆追进管子了', react: 0.3, next: () => false },
+      ],
+    },
+
+  ];
+
+  // ---------------- current level (rebuilt by setupLevel) ----------------
+  let LI = 0, LV = LEVELS[0], MW = 1, MH = 1, PLAN = LV.plan;
+  let rock = new Uint8Array(1), DOOR = null, VENT = null, COOL = [], POOLS = [], WAKES = [];
+  const TS = 16;
+  const solidAt = (cx, cy) => cx < 0 || cy < 0 || cx >= MW || cy >= MH || rock[cy * MW + cx] === 1;
+  const inCool = (x, y) => { for (const r of COOL) if (x >= r[0] && x < r[2] && y >= r[1] && y < r[3]) return true; return false; };
+
+  // ---------------- lava: particle fluid in level space (double density relaxation) ----------------
+  const LQ = { SP: 0.3, H: 0.62, K: 150, KN: 250, COH: 0.3, DAMP: 0.3, SIG: 0.3, BETA: 0.05, FRIC: 0.1, RP: 0.12, VCAP: 13 };
+  const MAXP = 1500;
+  const L = { n: 0, made: 0, vk: 0, ventAcc: 0, vented: 0, x: new Float32Array(MAXP), y: new Float32Array(MAXP), vx: new Float32Array(MAXP), vy: new Float32Array(MAXP), c: new Uint8Array(MAXP), g: new Uint8Array(MAXP), fz: new Uint8Array(MAXP) };
+  const LOX = new Float32Array(MAXP), LOY = new Float32Array(MAXP), LRHO = new Float32Array(MAXP), LISO = new Float32Array(MAXP);
+  const LH = LQ.H;
+  let GW = 1, GH = 1, GN = 1, cst = new Int32Array(2), cfl = new Int32Array(2);
+  const cof = new Int32Array(MAXP), srt = new Int32Array(MAXP);
+  const gcx = (x) => clamp(Math.floor(x / LH) + 1, 0, GW - 1), gcy = (y) => clamp(Math.floor(y / LH) + 1, 0, GH - 1);
+  function lavaGrid() {
+    cst.fill(0);
+    for (let i = 0; i < L.n; i++) { const c = gcy(L.y[i]) * GW + gcx(L.x[i]); cof[i] = c; cst[c + 1]++; }
+    for (let c = 0; c < GN; c++) cst[c + 1] += cst[c];
+    cfl.set(cst);
+    for (let i = 0; i < L.n; i++) srt[cfl[cof[i]]++] = i;
+  }
+  const RHO0 = (() => {
+    let r = 0;
+    for (let j = -4; j <= 4; j++) for (let i = -4; i <= 4; i++) {
+      const x = i * LQ.SP + (j % 2 ? LQ.SP / 2 : 0), y = j * LQ.SP * 0.866, d = Math.hypot(x, y);
+      if (d === 0 || d >= LH) continue; const q = 1 - d / LH; r += q * q;
+    }
+    return r;
+  })();
+  function addLava(x, y, vx, vy, g = 0) {
+    if (L.n >= MAXP) return false;
+    const i = L.n++;
+    L.x[i] = x; L.y[i] = y; L.vx[i] = vx; L.vy[i] = vy; L.c[i] = hash(L.made * 0.731, 3.3) > 0.7 ? 1 : 0; L.g[i] = g; L.fz[i] = 0; L.made++;
+    return true;
+  }
+  function fillLava(x0, y0, x1, y1, g = 0) {
+    let row = 0;
+    for (let y = y1 - LQ.SP / 2; y > y0; y -= LQ.SP * 0.866, row++)
+      for (let x = x0 + LQ.SP / 2 + (row % 2) * LQ.SP / 2; x < x1; x += LQ.SP)
+        if (!solidAt(Math.floor(x), Math.floor(y))) addLava(x, y, 0, 0, g);
+  }
+  function lavaCollide(i) {
+    const r = LQ.RP;
+    let x = L.x[i], y = L.y[i];
+    for (let it = 0; it < 3; it++) {
+      let hit = false;
+      const x0 = Math.floor(x - r), x1 = Math.floor(x + r), y0 = Math.floor(y - r), y1 = Math.floor(y + r);
+      for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+        if (!solidAt(cx, cy)) continue;
+        const qx = clamp(x, cx, cx + 1), qy = clamp(y, cy, cy + 1), dx = x - qx, dy = y - qy, d2 = dx * dx + dy * dy;
+        if (d2 >= r * r) continue;
+        let nx, ny, pen;
+        if (d2 > 1e-10) { const d = Math.sqrt(d2); nx = dx / d; ny = dy / d; pen = r - d; }
+        else {
+          const opts = [[-1, 0, x - cx], [1, 0, cx + 1 - x], [0, -1, y - cy], [0, 1, cy + 1 - y]].sort((a, b) => a[2] - b[2]);
+          const o = opts.find(q => !solidAt(cx + q[0], cy + q[1])) || opts[0];
+          nx = o[0]; ny = o[1]; pen = o[2] + r;
+        }
+        x += nx * pen; y += ny * pen; hit = true;
+        const mx = x - LOX[i], my = y - LOY[i], mn = mx * nx + my * ny;   // wall friction: viscous lava drags along walls
+        x -= (mx - mn * nx) * LQ.FRIC; y -= (my - mn * ny) * LQ.FRIC;
+      }
+      if (!hit) break;
+    }
+    if (x < 0.2) x = 0.2; if (y < 0.2) y = 0.2; if (x > MW - 0.2) x = MW - 0.2; if (y > MH - 0.2) y = MH - 0.2;
+    L.x[i] = x; L.y[i] = y;
+  }
+  function lavaStep(dt, gx, gy) {
+    const n = L.n, X = L.x, Y = L.y, VX = L.vx, VY = L.vy, FZ = L.fz, H = LH, H2 = H * H;
+    const damp = 1 / (1 + LQ.DAMP * dt), c2 = P.lavaDrag * (LV.dragMul || 1);
+    for (let i = 0; i < n; i++) {
+      if (FZ[i]) { VX[i] = 0; VY[i] = 0; continue; }
+      let vx = (VX[i] + gx * dt) * damp, vy = (VY[i] + gy * dt) * damp;
+      const f = 1 / (1 + c2 * Math.hypot(vx, vy) * dt);
+      VX[i] = vx * f; VY[i] = vy * f;
+    }
+    lavaGrid();
+    for (let i = 0; i < n; i++) {       // viscosity: approaching neighbours share momentum
+      const xi = X[i], yi = Y[i], cx = cof[i] % GW, cy = (cof[i] / GW) | 0;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        const c = (cy + oy) * GW + cx + ox; if (c < 0 || c >= GN) continue;
+        for (let k = cst[c], ke = cst[c + 1]; k < ke; k++) {
+          const j = srt[k]; if (j <= i || (FZ[i] && FZ[j])) continue;
+          const dx = X[j] - xi, dy = Y[j] - yi, r2 = dx * dx + dy * dy; if (r2 >= H2 || r2 < 1e-12) continue;
+          const r = Math.sqrt(r2), q = r / H, ux = dx / r, uy = dy / r, u = (VX[i] - VX[j]) * ux + (VY[i] - VY[j]) * uy;
+          if (u > 0) {
+            const I = dt * (1 - q) * (LQ.SIG * u + LQ.BETA * u * u) * 0.5;
+            if (!FZ[i]) { VX[i] -= I * ux; VY[i] -= I * uy; }
+            if (!FZ[j]) { VX[j] += I * ux; VY[j] += I * uy; }
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n; i++) { LOX[i] = X[i]; LOY[i] = Y[i]; if (!FZ[i]) { X[i] += VX[i] * dt; Y[i] += VY[i] * dt; } }
+    lavaGrid();
+    const dt2 = dt * dt;
+    for (let i = 0; i < n; i++) {       // double density relaxation
+      if (FZ[i]) { LRHO[i] = RHO0; continue; }
+      const cx = cof[i] % GW, cy = (cof[i] / GW) | 0;
+      let rho = 0, rhon = 0;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        const c = (cy + oy) * GW + cx + ox; if (c < 0 || c >= GN) continue;
+        for (let k = cst[c], ke = cst[c + 1]; k < ke; k++) {
+          const j = srt[k]; if (j === i) continue;
+          const dx = X[j] - X[i], dy = Y[j] - Y[i], r2 = dx * dx + dy * dy; if (r2 >= H2) continue;
+          const q = 1 - Math.sqrt(r2) / H; rho += q * q; rhon += q * q * q;
+        }
+      }
+      LRHO[i] = rho;
+      let Pp = LQ.K * (rho - RHO0); if (Pp < 0) Pp *= LQ.COH;
+      const Pn = LQ.KN * rhon;
+      let ddx = 0, ddy = 0;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        const c = (cy + oy) * GW + cx + ox; if (c < 0 || c >= GN) continue;
+        for (let k = cst[c], ke = cst[c + 1]; k < ke; k++) {
+          const j = srt[k]; if (j === i) continue;
+          const dx = X[j] - X[i], dy = Y[j] - Y[i], r2 = dx * dx + dy * dy; if (r2 >= H2 || r2 < 1e-12) continue;
+          const r = Math.sqrt(r2), q = 1 - r / H, D = dt2 * (Pp * q + Pn * q * q) * 0.5, ux = dx / r, uy = dy / r;
+          if (FZ[j]) { ddx -= 2 * D * ux; ddy -= 2 * D * uy; }
+          else { X[j] += D * ux; Y[j] += D * uy; ddx -= D * ux; ddy -= D * uy; }
+        }
+      }
+      X[i] += ddx; Y[i] += ddy;
+    }
+    for (let i = 0; i < n; i++) {
+      if (FZ[i]) continue;
+      lavaCollide(i);
+      let vx = (X[i] - LOX[i]) / dt, vy = (Y[i] - LOY[i]) / dt;
+      const sp = Math.hypot(vx, vy); if (sp > LQ.VCAP) { vx *= LQ.VCAP / sp; vy *= LQ.VCAP / sp; }
+      VX[i] = vx; VY[i] = vy;
+    }
+    // lone droplets cool into nothing (keeps stray splashes from lingering on ledges)
+    for (let i = L.n - 1; i >= 0; i--) {
+      LISO[i] = FZ[i] ? 0 : inCool(X[i], Y[i]) ? LISO[i] + dt * 4 : LRHO[i] < 0.3 ? LISO[i] + dt : 0;
+      if (LISO[i] > 0.6) {
+        if (L.onCool) L.onCool(X[i], Y[i]);
+        const j = --L.n;
+        X[i] = X[j]; Y[i] = Y[j]; VX[i] = VX[j]; VY[i] = VY[j]; L.c[i] = L.c[j]; L.g[i] = L.g[j]; FZ[i] = FZ[j]; LISO[i] = LISO[j]; LRHO[i] = LRHO[j]; LOX[i] = LOX[j]; LOY[i] = LOY[j];
+      }
+    }
+    L.ver = (L.ver || 0) + 1;
+  }
+  // how many lava particles are within r of a point (uses the grid from the last step)
+  function lavaCount(x, y, r, live) {
+    const r2 = r * r, x0 = gcx(x - r), x1 = gcx(x + r), y0 = gcy(y - r), y1 = gcy(y + r);
+    let n = 0;
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+      const c = cy * GW + cx;
+      for (let k = cst[c], ke = cst[c + 1]; k < ke; k++) { const j = srt[k]; if (live && L.fz[j]) continue; const dx = L.x[j] - x, dy = L.y[j] - y; if (dx * dx + dy * dy < r2) n++; }
+    }
+    return n;
+  }
+  function lavaMinDist(x, y, r) {
+    const x0 = gcx(x - r), x1 = gcx(x + r), y0 = gcy(y - r), y1 = gcy(y + r);
+    let best = r * r;
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+      const c = cy * GW + cx;
+      for (let k = cst[c], ke = cst[c + 1]; k < ke; k++) { const j = srt[k]; if (L.fz[j]) continue; const dx = L.x[j] - x, dy = L.y[j] - y, d2 = dx * dx + dy * dy; if (d2 < best) best = d2; }
+    }
+    return Math.sqrt(best);
+  }
+  function lavaIn(x0, y0, x1, y1) { let n = 0; for (let i = 0; i < L.n; i++) if (L.x[i] >= x0 && L.x[i] < x1 && L.y[i] >= y0 && L.y[i] < y1) n++; return n; }
+  function stepVent(dt) {
+    if (!VENT || VENT.rate <= 0) return;
+    L.ventAcc += VENT.rate * dt;
+    while (L.ventAcc >= 1) {
+      L.ventAcc -= 1;
+      const k = L.vk++ % 3, x = VENT.x + (k - 1) * 0.24, y = VENT.y + 0.18;
+      if (L.vented < VENT.max && lavaCount(x, y, 0.2) === 0 && addLava(x, y, VENT.dx * 2.6, VENT.dy * 2.6)) L.vented++;
+    }
+  }
+  function lavaSave() { return { n: L.n, made: L.made, vk: L.vk, ventAcc: L.ventAcc, vented: L.vented, x: L.x.slice(0, L.n), y: L.y.slice(0, L.n), vx: L.vx.slice(0, L.n), vy: L.vy.slice(0, L.n), c: L.c.slice(0, L.n), g: L.g.slice(0, L.n), fz: L.fz.slice(0, L.n), iso: LISO.slice(0, L.n) }; }
+  function lavaLoad(s) {
+    L.n = s.n; L.made = s.made; L.vk = s.vk; L.ventAcc = s.ventAcc; L.vented = s.vented;
+    L.x.set(s.x); L.y.set(s.y); L.vx.set(s.vx); L.vy.set(s.vy); L.c.set(s.c); L.g.set(s.g); L.fz.set(s.fz); LISO.set(s.iso);
+    lavaGrid(); L.ver = (L.ver || 0) + 1;
+  }
+  let LAVA0 = null;
+  function wakeGroup(g) {
+    let k = 0;
+    for (let i = 0; i < L.n; i++) if (L.g[i] === g && L.fz[i]) { L.fz[i] = 0; k++; }
+    return k;
+  }
+  function lavaInit() {
+    L.n = 0; L.made = 0; L.vk = 0; L.ventAcc = 0; L.vented = 0;
+    for (const p of POOLS) fillLava(p[0], p[1], p[2], p[3], p[4]);
+    // asleep pools are cooled crust from the start: they keep their shape until something wakes them
+    for (let i = 0; i < L.n; i++) L.fz[i] = POOLS.some(p => p[5] && p[4] === L.g[i]) ? 1 : 0;
+    for (let k = 0; k < 90; k++) lavaStep(DT, 0, G);     // let the live pools settle before the run starts
+    for (let i = 0; i < L.n; i++) { L.vx[i] = 0; L.vy[i] = 0; LISO[i] = 0; }
+    LAVA0 = lavaSave();
+  }
+
+  function setupLevel(i) {
+    LI = i; LV = LEVELS[i]; MW = LV.w; MH = LV.h; PLAN = LV.plan;
+    rock = new Uint8Array(MW * MH).fill(1);
+    for (const [x0, y0, x1, y1] of LV.carve) for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) rock[y * MW + x] = 0;
+    for (const [x0, y0, x1, y1] of LV.fill || []) for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) rock[y * MW + x] = 1;
+    GW = Math.ceil(MW / LH) + 2; GH = Math.ceil(MH / LH) + 2; GN = GW * GH;
+    cst = new Int32Array(GN + 1); cfl = new Int32Array(GN + 1);
+    const rot = -LV.door.dir * DEG;
+    DOOR = { bx: LV.door.bx, by: LV.door.by, rot, ux: Math.sin(rot), uy: -Math.cos(rot), rx: Math.cos(rot), ry: Math.sin(rot) };
+    VENT = LV.vent ? { ...LV.vent } : null;
+    COOL = LV.cool || [];
+    POOLS = LV.pools || [];
+    WAKES = LV.wakes || [];
+    lavaInit();
+  }
+
+  // ---------------- state ----------------
+  const S = {
+    mode: 'idle', theta: 0, tx: 0, ty: 0, px: 0, py: 0, vx: 0, vy: 0, grounded: true, airTime: 0, stick: 0, u: 0, uVis: 0, hist: [],
+    state: 'play', timer: 0, time: 0, runStart: 0, runTime: 0, step: 0, stepAt: 0, deaths: 0, woke: 0, tiltT: 0,
+    anim: 'idle', animT: 0, flash: 0, flashColor: '', shake: 0, slow: 0, near: {}, sizzle: 0,
+    fx: [], pops: [], needleA: 0, needleV: 0, unlocked: false, doorF: 0, hint: 0, cam: [0, 0], done: false, dbg: {},
+  };
+  const prev = { theta: 0, tx: 0, ty: 0, px: 0, py: 0, cam: [0, 0] };
+  function snapshot() { prev.theta = S.theta; prev.tx = S.tx; prev.ty = S.ty; prev.px = S.px; prev.py = S.py; prev.cam = [S.cam[0], S.cam[1]]; }
+
+  // ---------------- transforms ----------------
+  function toLevel(wx, wy) { const c = Math.cos(S.theta), s = Math.sin(S.theta), dx = wx - S.tx, dy = wy - S.ty; return [dx * c + dy * s, -dx * s + dy * c]; }
+  function toWorld(lx, ly) { const c = Math.cos(S.theta), s = Math.sin(S.theta); return [S.tx + lx * c - ly * s, S.ty + lx * s + ly * c]; }
+  function vW(x, y) { const c = Math.cos(S.theta), s = Math.sin(S.theta); return [x * c - y * s, x * s + y * c]; }
+  const lp = () => toLevel(S.px, S.py - PC[0]);
+  function doorTilt() { const u = vW(DOOR.ux, DOOR.uy); return Math.acos(clamp(-u[1], -1, 1)) / DEG; }
+
+  // ---------------- collision (level space, tiles) ----------------
+  function resolveCircleL(lx, ly, r, normals) {
+    for (let it = 0; it < 4; it++) {
+      let hit = false;
+      const x0 = Math.floor(lx - r), x1 = Math.floor(lx + r), y0 = Math.floor(ly - r), y1 = Math.floor(ly + r);
+      for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+        if (!solidAt(cx, cy)) continue;
+        const qx = clamp(lx, cx, cx + 1), qy = clamp(ly, cy, cy + 1);
+        const dx = lx - qx, dy = ly - qy, d2 = dx * dx + dy * dy;
+        if (d2 >= r * r) continue;
+        let nx, ny, pen;
+        if (d2 > 1e-9) { const d = Math.sqrt(d2); nx = dx / d; ny = dy / d; pen = r - d; }
+        else {
+          const opts = [[-1, 0, lx - cx], [1, 0, cx + 1 - lx], [0, -1, ly - cy], [0, 1, cy + 1 - ly]].sort((a, b) => a[2] - b[2]);
+          const o = opts.find(q => !solidAt(cx + q[0], cy + q[1])) || opts[0];
+          nx = o[0]; ny = o[1]; pen = o[2] + r;
+        }
+        lx += nx * pen; ly += ny * pen; hit = true;
+        if (normals) normals.push([nx, ny]);
+      }
+      if (!hit) break;
+    }
+    return [lx, ly];
+  }
+  function touchingL(lx, ly, r, normals) {
+    const x0 = Math.floor(lx - r), x1 = Math.floor(lx + r), y0 = Math.floor(ly - r), y1 = Math.floor(ly + r);
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+      if (!solidAt(cx, cy)) continue;
+      const qx = clamp(lx, cx, cx + 1), qy = clamp(ly, cy, cy + 1);
+      const dx = lx - qx, dy = ly - qy, d2 = dx * dx + dy * dy;
+      if (d2 >= r * r || d2 < 1e-9) continue;
+      const d = Math.sqrt(d2); normals.push([dx / d, dy / d]);
+    }
+  }
+  function resolveW(wx, wy, r, normals) {
+    const [lx, ly] = toLevel(wx, wy), ns = [];
+    const [nx, ny] = resolveCircleL(lx, ly, r, ns);
+    for (const n of ns) normals.push(vW(n[0], n[1]));
+    return vW(nx - lx, ny - ly);
+  }
+  function contactsNow() {
+    const ns = [];
+    for (const o of PC) { const [lx, ly] = toLevel(S.px, S.py - o); touchingL(lx, ly, PR + SKIN, ns); }
+    return ns.map(n => vW(n[0], n[1]));
+  }
+  function project(ns) {
+    for (let pass = 0; pass < 3; pass++) for (const n of ns) {
+      const vn = S.vx * n[0] + S.vy * n[1];
+      if (vn < 0) { S.vx -= vn * n[0]; S.vy -= vn * n[1]; }
+    }
+  }
+
+  // ---------------- reset ----------------
+  let lvlCv = null;
+  function resetLevel(intro) {
+    S.theta = 0; S.tx = 0; S.ty = 0; S.vx = 0; S.vy = 0; S.grounded = true;
+    S.stick = 0; S.u = 0; S.hist = []; S.airTime = 0; S.state = intro ? 'intro' : 'play'; S.timer = intro ? P.intro : 0;
+    S.anim = 'idle'; S.animT = 0; S.flash = 0; S.shake = 0; S.slow = 0; S.near = {}; S.fx = []; S.pops = []; S.sizzle = 0; S.toast = null;
+    S.needleA = 0; S.needleV = 0; S.doorF = 0; S.hint = 0; S.tiltT = 0;
+    S.step = 0; S.stepAt = S.time; S.woke = 0; S.done = false;
+    const w = toWorld(LV.start.feet[0], LV.start.feet[1]); S.px = w[0]; S.py = w[1];
+    lavaLoad(LAVA0);
+    S.unlocked = doorTilt() <= 20;
+    S.cam = camTarget();
+    S.runStart = S.time + (intro ? P.intro : 0); S.runTime = 0;
+    snapshot();
+  }
+  function loadLevel(i) {
+    setupLevel(i);
+    if (IMG.door) buildArt();
+    S.mode = 'idle'; S.time = 0; S.deaths = 0;
+    resetLevel(false);
+  }
+  function startRun(mode) {
+    S.dbg = {}; S.time = 0;
+    S.mode = mode; S.deaths = 0;
+    resetLevel(P.intro > 0);
+  }
+  // camera: mostly the level's centre, pulled part of the way toward the player, so the whole small level stays in view
+  function camTarget() {
+    const c = toWorld(MW / 2, MH / 2), f = 0.4;
+    return [c[0] + (S.px - c[0]) * f, c[1] + (S.py - 0.8 - c[1]) * f];
+  }
+
+  // ---------------- simulation ----------------
+  const input = { keys: 0, buttons: 0, pad: 0, auto: null };
+  function step(dt) {
+    S.time += dt;
+    snapshot();
+    const live = S.state === 'play' && S.mode !== 'idle';
+    let u = 0;
+    if (live && S.mode === 'demo') {
+      const react = PLAN[S.step].react ?? LV.react ?? P.react;
+      const tgt = S.time - S.stepAt < react && S.step > 0 ? PLAN[S.step - 1].t : PLAN[S.step].t;
+      u = clamp((tgt * DEG - S.theta) * 4, -1, 1);
+    }
+    else if (live && input.auto) u = clamp(input.auto(S), -1, 1);
+    else if (live) {
+      S.stick += (input.pad - S.stick) * Math.min(1, dt * 12);
+      const st = Math.abs(S.stick) > 0.05 ? S.stick : 0;
+      u = st !== 0 ? st : clamp(input.keys + input.buttons, -1, 1);
+    }
+    S.u = u;
+    const dth = u * P.rotSpeed * DEG * dt;
+    const lc = [S.px, S.py - PC[0]];
+    S.hist.push(lc); if (S.hist.length > PIVOT_LAG) S.hist.shift();
+    if (dth !== 0) {
+      const pv = S.grounded ? lc : S.hist[0];
+      const c = Math.cos(dth), s = Math.sin(dth), rx = S.tx - pv[0], ry = S.ty - pv[1];
+      S.tx = pv[0] + rx * c - ry * s; S.ty = pv[1] + rx * s + ry * c; S.theta += dth;
+    }
+    if (S.mode !== 'idle' && S.state !== 'intro') {
+      lavaStep(dt, G * Math.sin(S.theta), G * Math.cos(S.theta));
+      if (S.state === 'play') stepVent(dt);
+    }
+    if (live) {
+      stepPlayer(dt);
+      checkHazards();
+      checkWakes();
+      const b = PLAN[S.step];
+      if (b.hold) { const a = S.theta / DEG; S.tiltT = Math.abs(a - b.t) < 15 ? S.tiltT + dt : S.tiltT; } else S.tiltT = 0;
+      advancePlan();
+      if (!S.done) S.runTime = S.time - S.runStart;
+    }
+    updateDoor(dt);
+    stepFx(dt);
+    const tgt = camTarget(), kc = 1 - Math.exp(-7 * dt);
+    S.cam[0] += (tgt[0] - S.cam[0]) * kc; S.cam[1] += (tgt[1] - S.cam[1]) * kc;
+    if (S.state !== 'play') {
+      S.timer -= dt;
+      if (S.timer <= 0) {
+        if (S.state === 'intro') { S.state = 'play'; S.stepAt = S.time; S.runStart = S.time; }
+        else if (S.state === 'dead') resetLevel(false);
+        else if (S.state === 'clear') { S.state = 'over'; onRunOver(); }
+      }
+    }
+  }
+
+  function stepPlayer(dt) {
+    S.vx = 0;
+    S.vy = Math.min(S.vy + G * dt, VMAX);
+    project(contactsNow());
+    for (let k = 0; k < SUB; k++) {
+      S.px += S.vx * dt / SUB; S.py += S.vy * dt / SUB;
+      const ns = [];
+      for (const o of [PC[0], PC[1], PC[0]]) { const cr = resolveW(S.px, S.py - o, PR, ns); S.px += cr[0]; S.py += cr[1]; }
+      project(ns);
+    }
+    const after = contactsNow();
+    project(after);
+    const grounded = after.some(n => n[1] < -0.5);
+    if (grounded && !S.grounded && S.airTime > 0.18) { S.anim = 'land'; S.animT = 0; if (S.airTime > 0.5) dust(lp(), 6); }
+    if (!grounded && S.grounded) { S.anim = 'fallstart'; S.animT = 0; }
+    S.airTime = grounded ? 0 : S.airTime + dt;
+    S.grounded = grounded;
+    const l = lp();
+    if (l[0] < -2 || l[1] < -2 || l[0] > MW + 2 || l[1] > MH + 2) die('掉出地图了');
+  }
+
+  function die(msg) {
+    if (S.state !== 'play') return;
+    S.state = 'dead'; S.timer = 0.9; S.flash = 0.5; S.flashColor = 'rgba(255,96,40,'; S.deaths++;
+    S.shake = Math.max(S.shake, 0.4);
+    const l = lp();
+    for (let i = 0; i < 18; i++) S.fx.push({ x: l[0] + (Math.random() - 0.5) * 0.8, y: l[1] + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3, life: 1.1, max: 1.1, k: 'smoke', s: 0.3 + Math.random() * 0.3, up: 1.4 });
+    toast(msg, 'dead');
+  }
+  function clear() {
+    if (S.state !== 'play') return;
+    S.state = 'clear'; S.timer = 2.0; S.flash = 0.45; S.flashColor = 'rgba(63,214,224,'; S.doorF = 0; S.done = true;
+    S.runTime = S.time - S.runStart;
+    toast(LV.id + ' 通关！' + S.runTime.toFixed(1) + ' 秒', 'clear');
+  }
+  function nearMiss(kind) {
+    if (S.time - (S.near[kind] ?? -9) < 1.6) return;
+    S.near[kind] = S.time;
+    pop('险！', true);
+    if (P.slowmo && (!window.__lavaHeadless || window.__lavaVideo)) S.slow = 0.42;
+  }
+
+  const dbgMin = (k, v) => { S.dbg[k] = Math.min(S.dbg[k] ?? 99, v); };
+  function checkHazards() {
+    if (S.state !== 'play') return;
+    const cs = PC.map(o => toLevel(S.px, S.py - o));
+    let touch = 0, near = 0;
+    for (const c of cs) {
+      const md = lavaMinDist(c[0], c[1], 3);
+      dbgMin('lava' + S.step, md - PR);
+      touch = Math.max(touch, lavaCount(c[0], c[1], PR + 0.08, true));
+      if (md < PR + 0.75) near = Math.max(near, lavaCount(c[0], c[1], PR + 0.75, true));
+    }
+    if (touch >= 4) return die('被岩浆吞没了');
+    if (touch > 0 && S.time - S.sizzle > 0.15) {          // a lone droplet only sizzles
+      S.sizzle = S.time; const l = lp();
+      for (let i = 0; i < 4; i++) S.fx.push({ x: l[0] + (Math.random() - 0.5) * 0.6, y: l[1] + (Math.random() - 0.5) * 0.6, vx: 0, vy: 0, life: 0.6, max: 0.6, k: 'smoke', s: 0.18, up: 1.6 });
+    }
+    if (near >= 2) nearMiss('lava');
+    // door
+    const c = cs[0], dx = c[0] - DOOR.bx, dy = c[1] - DOOR.by;
+    const u = dx * DOOR.rx + dy * DOOR.ry, v = dx * DOOR.ux + dy * DOOR.uy;
+    if (Math.abs(u) < 0.95 && v > -0.2 && v < 2.0) { if (S.unlocked) clear(); else S.hint = 1; }
+  }
+
+  // asleep pools wake up when you make your move
+  function checkWakes() {
+    const l = lp();
+    for (const w of WAKES) {
+      const hit = w.axis ? (w.op === '>' ? l[w.axis === 'x' ? 0 : 1] > w.value : l[w.axis === 'x' ? 0 : 1] < w.value) : w.test(l);
+      if (S.woke & (1 << w.g) || !hit) continue;
+      S.woke |= 1 << w.g;
+      if (wakeGroup(w.g) > 0) { pop('岩浆活了！'); S.shake = Math.max(S.shake, 0.25); }
+    }
+  }
+  function advancePlan() {
+    while (S.step < PLAN.length - 1 && PLAN[S.step].next()) { S.step++; S.stepAt = S.time; }
+  }
+
+  function updateDoor(dt) {
+    const tilt = doorTilt();
+    if (S.unlocked && tilt > 23) S.unlocked = false;
+    else if (!S.unlocked && tilt <= 20) S.unlocked = true;
+    if (S.hint > 0) S.hint = Math.max(0, S.hint - dt);
+    S.needleV += (-40 * Math.sin(S.needleA) - 5 * S.needleV) * dt;
+    S.needleA += S.needleV * dt;
+    if (S.state === 'clear' || S.state === 'over') S.doorF = Math.min(3, S.doorF + dt * 10);
+  }
+
+  // ---------------- effects ----------------
+  function dust(at, n) {
+    for (let i = 0; i < n; i++) S.fx.push({ x: at[0] + (Math.random() - 0.5) * 0.8, y: at[1] + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 1.6, vy: (Math.random() - 0.5) * 1.6, life: 0.9, max: 0.9, k: 'dust', s: 0.18 + Math.random() * 0.22 });
+  }
+  function pop(text, big) { S.pops.push({ text, t: 0, big: !!big }); if (S.pops.length > 3) S.pops.shift(); }
+  function stepFx(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta);
+    // embers popping off the lava
+    if (L.n > 0 && S.mode !== 'idle') {
+      const k = Math.floor(L.n / 70 + Math.random());
+      for (let e = 0; e < k; e++) {
+        const i = (Math.random() * L.n) | 0;
+        if (L.fz[i]) continue;
+        S.fx.push({ x: L.x[i], y: L.y[i], vx: -gx * (1 + Math.random() * 2) + (Math.random() - 0.5), vy: -gy * (1 + Math.random() * 2) + (Math.random() - 0.5), life: 0.5 + Math.random() * 0.5, max: 1, k: 'ember', s: 0.07 + Math.random() * 0.05, grav: 0.25 });
+      }
+    }
+    for (const p of S.fx) {
+      p.life -= dt;
+      const g = p.grav ? G * p.grav : p.k === 'dust' ? 0.6 : 0;
+      p.vx += gx * g * dt; p.vy += gy * g * dt;
+      if (p.up) { p.vx -= gx * p.up * dt; p.vy -= gy * p.up * dt; }
+      if (p.k === 'dust' || p.k === 'smoke' || p.k === 'steam') { p.vx *= 1 - 1.5 * dt; p.vy *= 1 - 1.5 * dt; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+    S.fx = S.fx.filter(p => p.life > 0);
+    if (S.fx.length > 320) S.fx.splice(0, S.fx.length - 320);
+    for (const p of S.pops) p.t += dt;
+    S.pops = S.pops.filter(p => p.t < (p.big ? 0.9 : 0.8));
+    S.shake *= Math.exp(-6 * dt);
+    if (S.flash > 0) S.flash = Math.max(0, S.flash - dt);
+  }
+
+  // ---------------- art ----------------
+  const COL = { airDark: [20, 11, 10], air: [38, 20, 17], rimHi: [206, 104, 58], rim: [132, 58, 38], mid: [70, 33, 26], deep: [38, 18, 15] };
+  const put = (d, i, c) => { d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255; };
+  const shade = (c, k) => [clamp(c[0] + k, 0, 255), clamp(c[1] + k * 0.8, 0, 255), clamp(c[2] + k * 0.7, 0, 255)];
+  const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  function buildLevel() {
+    const W = MW * TS, H = MH * TS, cv = mk(W, H), g = cv.getContext('2d');
+    const img = g.createImageData(W, H), d = img.data;
+    const open = (cx, cy) => !(cx < 0 || cy < 0 || cx >= MW || cy >= MH || rock[cy * MW + cx] === 1);
+    const nearCool = (x, y) => COOL.some(r => x >= (r[0] - 1) * TS && x < (r[2] + 1) * TS && y >= r[1] * TS && y < r[3] * TS);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const cx = (x / TS) | 0, cy = (y / TS) | 0, i = (y * W + x) * 4, n = hash(x >> 1, y >> 1);
+      const isOpen = open(cx, cy);
+      let dmin = 99;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        if (open(cx + ox, cy + oy) === isOpen) continue;
+        const rx0 = (cx + ox) * TS, ry0 = (cy + oy) * TS;
+        const ddx = Math.max(rx0 - x, 0, x - (rx0 + TS - 1)), ddy = Math.max(ry0 - y, 0, y - (ry0 + TS - 1));
+        dmin = Math.min(dmin, Math.hypot(ddx, ddy));
+      }
+      let col;
+      if (isOpen) {
+        col = mixc(COL.airDark, COL.air, clamp((dmin - 1) / 9, 0, 1));
+        col = shade(col, (n - 0.5) * 6 + (hash(cx, cy) - 0.5) * 4);
+      } else {
+        col = dmin < 1.5 ? COL.rimHi : dmin < 4 ? COL.rim : dmin < 10 ? COL.mid : COL.deep;
+        if (n > 0.94) col = shade(col, 16); else if (n < 0.05) col = shade(col, -12);
+        // basalt columns: faint vertical seams in the deep rock
+        if (dmin > 6 && ((x + ((y / 24) | 0) * 7) % 12 === 0)) col = shade(col, -10);
+        if (dmin < 5 && nearCool(x, y)) {
+          const t = dmin < 1.5 ? [176, 196, 214] : dmin < 3 ? [92, 112, 132] : [56, 66, 80];
+          col = ((y >> 2) % 4 === 0 && dmin > 2) ? shade(t, -14) : t;
+        }
+      }
+      put(d, i, col);
+    }
+    g.putImageData(img, 0, 0);
+    g.save(); g.scale(TS, TS);
+    g.lineCap = 'round';
+    // glowing cracks in the rock: short zigzags on solid cells a little away from the tunnels
+    const isRock = (cx, cy) => cx < 0 || cy < 0 || cx >= MW || cy >= MH || rock[cy * MW + cx] === 1;
+    let made = 0;
+    for (let k = 0; k < 600 && made < 5; k++) {
+      const cx = Math.floor(hash(k * 1.7, LI * 3.1 + 0.5) * MW), cy = Math.floor(hash(k * 2.3 + 9, LI * 1.3 + 0.2) * MH);
+      if (cx < 2 || cy < 2 || cx > MW - 3 || cy > MH - 3) continue;
+      let near2 = false, near4 = false;
+      for (let oy = -2; oy <= 2; oy++) for (let ox = -2; ox <= 2; ox++) { if (!isRock(cx + ox, cy + oy)) near2 = true; }
+      for (let oy = -4; oy <= 4; oy++) for (let ox = -4; ox <= 4; ox++) { if (!isRock(cx + ox, cy + oy)) near4 = true; }
+      if (near2 || !near4) continue;
+      const pts = [], vert = hash(k, 7) > 0.5;
+      for (let s = 0; s < 3; s++) pts.push(vert ? [cx + 0.3 + hash(k + s, 3) * 0.4, cy - 0.3 + s * 0.6] : [cx - 0.3 + s * 0.6, cy + 0.3 + hash(k + s, 5) * 0.4]);
+      g.strokeStyle = 'rgba(255,110,40,0.18)'; g.lineWidth = 0.28; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke();
+      g.strokeStyle = 'rgba(255,170,80,0.7)'; g.lineWidth = 0.07; g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke();
+      made++;
+    }
+    // rivets on cooling pipes
+    for (const r of COOL) for (let y = r[1] + 0.6; y < r[3]; y += 1.4) for (const x of [r[0] - 0.45, r[2] + 0.45]) { g.fillStyle = '#c8d6e2'; g.fillRect(x - 0.08, y - 0.08, 0.16, 0.16); }
+    // the vent: an iron nozzle in the ceiling
+    if (VENT) {
+      g.fillStyle = '#2e2a2a'; g.fillRect(VENT.x - 0.75, VENT.y - 0.55, 1.5, 0.55);
+      g.fillStyle = '#4a4442'; g.fillRect(VENT.x - 0.75, VENT.y - 0.55, 1.5, 0.12);
+      g.fillStyle = '#1c1717'; g.fillRect(VENT.x - 0.5, VENT.y - 0.05, 1.0, 0.3);
+      g.fillStyle = '#ff9a3a'; g.fillRect(VENT.x - 0.38, VENT.y + 0.18, 0.76, 0.07);
+      for (const bx of [-0.62, 0.5]) { g.fillStyle = '#5a5250'; g.fillRect(VENT.x + bx, VENT.y - 0.42, 0.12, 0.12); }
+    }
+    g.restore();
+    return cv;
+  }
+
+  // lava image: splat particles into a density field (8 texels per tile), threshold, colour
+  const LS = 8, LT = 0.42;
+  let LTW = 8, LTH = 8, lf = null, lcr = null, lfr = null;
+  let lavaCv = null, lavaCtx = null, lavaImg = null, glowA = null, glowB = null, lavaDrawn = -1;
+  const LCOL = { edge: [255, 228, 150], hot: [255, 156, 48], core: [238, 98, 30], crust: [150, 46, 22], crustDeep: [92, 26, 14],
+    coolEdge: [150, 64, 34], cool: [74, 28, 18], coolDeep: [52, 20, 14], coolSeam: [196, 76, 26] };
+  function buildArt() {
+    lvlCv = buildLevel();
+    LTW = MW * LS; LTH = MH * LS;
+    lf = new Float32Array(LTW * LTH); lcr = new Float32Array(LTW * LTH); lfr = new Float32Array(LTW * LTH);
+    lavaCv = mk(LTW, LTH); lavaCtx = lavaCv.getContext('2d'); lavaImg = lavaCtx.createImageData(LTW, LTH);
+    glowA = mk(LTW >> 2, LTH >> 2); glowB = mk(LTW >> 4, LTH >> 4);
+    lavaDrawn = -1;
+  }
+  function buildLava() {
+    lf.fill(0); lcr.fill(0); lfr.fill(0);
+    const R = 0.4, R2 = R * R, rc = R * LS;
+    for (let i = 0; i < L.n; i++) {
+      const px = L.x[i] * LS, py = L.y[i] * LS, cr = L.c[i], fr = L.fz[i];
+      const x0 = Math.max(0, Math.floor(px - rc)), x1 = Math.min(LTW - 1, Math.floor(px + rc)), y0 = Math.max(0, Math.floor(py - rc)), y1 = Math.min(LTH - 1, Math.floor(py + rc));
+      for (let y = y0; y <= y1; y++) {
+        const dy = (y + 0.5 - py) / LS, row = y * LTW;
+        for (let x = x0; x <= x1; x++) {
+          const dx = (x + 0.5 - px) / LS, d2 = dx * dx + dy * dy;
+          if (d2 >= R2) continue;
+          const q = 1 - d2 / R2, w = q * q;
+          lf[row + x] += w; if (cr) lcr[row + x] += w; if (fr) lfr[row + x] += w;
+        }
+      }
+    }
+    const d = lavaImg.data, flick = Math.floor(S.time * 6);
+    for (let k = 0, o = 0; k < LTW * LTH; k++, o += 4) {
+      const f = lf[k];
+      if (f < LT) { d[o + 3] = 0; continue; }
+      const e = f - LT, cr = lcr[k] / f;
+      let c;
+      if (lfr[k] > f * 0.5) {        // asleep: dark crust with faint glowing seams
+        const hx = (k % LTW) >> 1, hy = ((k / LTW) | 0) >> 1, sm = hash(hx * 0.37 + hy * 1.31, hy * 0.53 - hx * 0.21);
+        c = e < 0.14 ? LCOL.coolEdge : sm > 0.9 ? LCOL.coolSeam : cr > 0.42 ? LCOL.coolDeep : LCOL.cool;
+        d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255; continue;
+      }
+      if (e < 0.14) c = LCOL.edge;
+      else if (cr > 0.42) c = e < 0.6 ? LCOL.crust : LCOL.crustDeep;
+      else c = e < 0.45 ? LCOL.hot : LCOL.core;
+      let b = 0;
+      if (c === LCOL.core && hash((k % LTW) >> 1, ((k / LTW) | 0) + flick * 3) > 0.93) b = 30;   // sparkle
+      d[o] = Math.min(255, c[0] + b); d[o + 1] = Math.min(255, c[1] + b); d[o + 2] = Math.min(255, c[2] + b); d[o + 3] = 255;
+    }
+    lavaCtx.putImageData(lavaImg, 0, 0);
+    const ga = glowA.getContext('2d'), gb = glowB.getContext('2d');
+    ga.clearRect(0, 0, glowA.width, glowA.height); ga.imageSmoothingEnabled = true; ga.drawImage(lavaCv, 0, 0, glowA.width, glowA.height);
+    gb.clearRect(0, 0, glowB.width, glowB.height); gb.imageSmoothingEnabled = true; gb.drawImage(glowA, 0, 0, glowB.width, glowB.height);
+    lavaDrawn = L.ver;
+  }
+
+  // ---------------- drawing ----------------
+  const view = document.getElementById('view'), ctx = view.getContext('2d');
+  const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const IMG = {};
+  function tinted(src, rgba) { const c = mk(src.width, src.height), g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = rgba; g.fillRect(0, 0, c.width, c.height); return c; }
+  const ANIMS = { idle: { img: 'idle', n: 4, f: 0.2, loop: true }, fallstart: { img: 'fallstart', n: 2, f: 0.06, next: 'float' },
+    float: { img: 'float', n: 6, f: 0.09, loop: true }, land: { img: 'land', n: 3, f: 0.07, next: 'idle' } };
+  function animFrame(dt) {
+    let a = ANIMS[S.anim];
+    if (!S.grounded && (S.anim === 'idle' || S.anim === 'land')) { S.anim = 'fallstart'; S.animT = 0; a = ANIMS.fallstart; }
+    if (S.grounded && (S.anim === 'float' || S.anim === 'fallstart')) { S.anim = 'idle'; S.animT = 0; a = ANIMS.idle; }
+    S.animT += dt;
+    let idx = Math.floor(S.animT / a.f);
+    if (idx >= a.n) { if (a.loop) idx %= a.n; else { S.anim = a.next; S.animT = 0; a = ANIMS[S.anim]; idx = 0; } }
+    return { img: a.img, idx };
+  }
+
+  let K = 40, CX = 0, CY = 0, alpha = 1, W = 0, H = 0;
+  function resize() {
+    const r = view.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    view.width = Math.max(320, Math.round(r.width * dpr)); view.height = Math.max(200, Math.round(r.height * dpr));
+  }
+  function render(dt) {
+    W = view.width; H = view.height;
+    K = Math.min(H / (Math.max(MW, MH) + 3), W / (Math.max(MW, MH) + 8)); CX = W / 2; CY = H * 0.53;
+    if (lavaDrawn !== L.ver) buildLava();
+    const lp_ = (a, b) => a + (b - a) * alpha;
+    const th = lp_(prev.theta, S.theta), Tx = lp_(prev.tx, S.tx), Ty = lp_(prev.ty, S.ty);
+    const Px = lp_(prev.px, S.px), Py = lp_(prev.py, S.py);
+    let camx = lp_(prev.cam[0], S.cam[0]), camy = lp_(prev.cam[1], S.cam[1]);
+    if (S.shake > 0.01 && !REDUCED) { camx += (Math.random() - 0.5) * S.shake * 0.9; camy += (Math.random() - 0.5) * S.shake * 0.9; }
+    const c = Math.cos(th), s = Math.sin(th);
+    const ox = CX + K * (Tx - camx), oy = CY + K * (Ty - camy);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#0c0605'; ctx.fillRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = false;
+    ctx.setTransform(K * c, K * s, -K * s, K * c, ox, oy);
+    ctx.fillStyle = 'rgb(38,18,15)'; ctx.fillRect(-40, -40, MW + 80, MH + 80);
+    ctx.drawImage(lvlCv, 0, 0, MW, MH);
+    // door
+    ctx.save(); ctx.translate(DOOR.bx, DOOR.by); ctx.rotate(DOOR.rot);
+    if (S.state === 'clear' || S.state === 'over') ctx.drawImage(IMG.doorOpen, Math.floor(S.doorF) * 32, 0, 32, 32, -1, -2, 2, 2);
+    else ctx.drawImage(IMG.door, (Math.floor(S.time * 7) % 6) * 32, 0, 32, 32, -1, -2, 2, 2);
+    const lock = (S.unlocked || S.state === 'clear' || S.state === 'over') ? IMG.lockOpen : (S.hint > 0 && Math.floor(S.hint * 8) % 2 === 0) ? IMG.lockHint : IMG.lockLocked;
+    ctx.drawImage(lock, -1, -2, 2, 2);
+    ctx.translate((15.5 - 16) / 16, -2 + 10.5 / 16); ctx.rotate(-(th + DOOR.rot) + S.needleA);
+    ctx.drawImage(IMG.needle, -1 / 16, 0, 2 / 16, 8 / 16);
+    ctx.restore();
+    // lava: soft glow first, then the crisp pixel body
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = 0.5; ctx.drawImage(glowB, 0, 0, MW, MH);
+    ctx.globalAlpha = 0.35; ctx.drawImage(glowA, 0, 0, MW, MH);
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(lavaCv, 0, 0, MW, MH);
+    // particles
+    for (const p of S.fx) {
+      const a = clamp(p.life / p.max, 0, 1);
+      if (p.k === 'ember') { ctx.globalAlpha = a; ctx.fillStyle = a > 0.5 ? '#ffd27a' : '#ff8a3a'; }
+      else if (p.k === 'smoke') { ctx.globalAlpha = a * 0.5; ctx.fillStyle = '#3a3030'; }
+      else if (p.k === 'steam') { ctx.globalAlpha = a * 0.6; ctx.fillStyle = '#c9d4dc'; }
+      else { ctx.globalAlpha = a * 0.55; ctx.fillStyle = '#7a5a4a'; }
+      const sz = p.k === 'dust' || p.k === 'smoke' || p.k === 'steam' ? p.s * (1.8 - a * 0.8) : p.s;
+      ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+    }
+    ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const toS = (wx, wy) => [CX + K * (wx - camx), CY + K * (wy - camy)];
+    // player
+    const fr = animFrame(dt), sc = K * 1.54 / 92, pS = toS(Px, Py);
+    let src = IMG[fr.img];
+    if (S.state === 'dead') src = IMG[fr.img + 'Red'];
+    ctx.globalAlpha = S.state === 'clear' ? Math.max(0, 1 - (2.0 - S.timer) * 1.6) : S.state === 'over' ? 0 : 1;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(src, fr.idx * 96, 0, 96, 112, Math.round(pS[0] - 49.5 * sc), Math.round(pS[1] - 112 * sc), Math.round(96 * sc), Math.round(112 * sc));
+    ctx.globalAlpha = 1;
+    // speed lines
+    const spd = Math.abs(S.vy);
+    if (spd > 7.5) {
+      const dx = 0, dy = S.vy < 0 ? 1 : -1;
+      ctx.strokeStyle = 'rgba(255,236,210,0.28)'; ctx.lineWidth = Math.max(1, K * 0.035);
+      const n = Math.min(14, Math.floor((spd - 7) * 2.2));
+      for (let k = 0; k < n; k++) {
+        const h1 = hash(k * 3.1, Math.floor(S.time * 14) + k), h2 = hash(k * 7.7, Math.floor(S.time * 14) - k);
+        const off = (h1 - 0.5) * K * 7, along = (h2 - 0.2) * K * 6, len = K * (1.2 + spd * 0.12);
+        const x0 = pS[0] - dy * off + dx * along, y0 = pS[1] - K * 0.8 + dx * off + dy * along;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + dx * len, y0 + dy * len); ctx.stroke();
+      }
+    }
+    // heat haze vignette
+    const vg = ctx.createRadialGradient(CX, CY, H * 0.3, CX, CY, H * 0.95);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(18,3,0,0.55)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    if (S.flash > 0) { ctx.fillStyle = S.flashColor + Math.min(0.35, S.flash).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+    drawHud(pS);
+  }
+
+  function drawHud(pS) {
+    const u = Math.max(1, H / 640);
+    ctx.textBaseline = 'alphabetic';
+    for (const p of S.pops) {
+      const a = 1 - p.t / (p.big ? 0.9 : 0.8), rise = p.t * K * 1.6;
+      ctx.globalAlpha = clamp(a * 1.5, 0, 1);
+      ctx.font = `600 ${Math.round((p.big ? 34 : 20) * u)}px "Noto Serif SC", serif`;
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 4 * u; ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillStyle = p.big ? '#ffd27a' : '#ffe2bd';
+      const x = pS[0] + (p.big ? K * 1.6 : 0), y = pS[1] - K * 2.4 - rise;
+      ctx.strokeText(p.text, x, y); ctx.fillText(p.text, x, y);
+    }
+    ctx.globalAlpha = 1;
+    if (S.toast && S.time - S.toast.t < (S.toast.kind === 'clear' ? 2.0 : 0.9)) {
+      const a = clamp((S.time - S.toast.t) / 0.15, 0, 1);
+      ctx.globalAlpha = a; ctx.textAlign = 'center';
+      ctx.font = `600 ${Math.round(34 * u)}px "Noto Serif SC", serif`;
+      ctx.lineWidth = 6 * u; ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.fillStyle = S.toast.kind === 'clear' ? '#3fd6e0' : '#ff8a5a';
+      ctx.strokeText(S.toast.text, CX, CY - H * 0.18); ctx.fillText(S.toast.text, CX, CY - H * 0.18);
+      ctx.globalAlpha = 1;
+    }
+    // level badge, top-left
+    ctx.textAlign = 'left'; ctx.fillStyle = '#ff9a4a'; ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`;
+    ctx.fillText(LV.id, 14 * u, 26 * u);
+    ctx.fillStyle = '#eadfd2'; ctx.font = `600 ${Math.round(16 * u)}px "Noto Serif SC", serif`;
+    ctx.fillText(LV.name, 14 * u + ctx.measureText(LV.id).width + 40 * u, 26 * u);
+    if (S.state === 'intro') { drawIntro(u); return; }
+    if (S.mode === 'idle') return;
+    const st = PLAN[S.step], age = S.time - S.stepAt, ap = clamp(age / 0.22, 0, 1);
+    if (S.state === 'play' || S.state === 'dead') {
+      const bw = Math.min(W * 0.62, 560 * u), bh = (st.sub ? 64 : 46) * u, bx = CX - bw / 2, by = 12 * u - (1 - ap) * 10 * u;
+      ctx.globalAlpha = 0.25 + 0.75 * ap;
+      ctx.fillStyle = 'rgba(16,7,5,0.8)'; rr(bx, by, bw, bh, 10 * u); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,140,60,0.55)'; ctx.lineWidth = 1.5 * u; rr(bx, by, bw, bh, 10 * u); ctx.stroke();
+      ctx.textAlign = 'left'; ctx.fillStyle = '#ff9a4a'; ctx.font = `600 ${Math.round(13 * u)}px ui-monospace, Menlo, monospace`;
+      ctx.fillText(`第 ${S.step + 1} 拍`, bx + 14 * u, by + 28 * u);
+      ctx.textAlign = 'center'; ctx.fillStyle = '#fff1df'; ctx.font = `600 ${Math.round(20 * u)}px "Noto Serif SC", serif`;
+      ctx.fillText(st.cap, CX + 22 * u, by + 30 * u);
+      if (st.sub) { ctx.fillStyle = '#d6b9a4'; ctx.font = `${Math.round(14 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`; ctx.fillText(st.sub, CX + 22 * u, by + 52 * u); }
+      ctx.globalAlpha = 1;
+    }
+    ctx.textAlign = 'left'; ctx.fillStyle = '#eadfd2'; ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`;
+    ctx.fillText(S.runTime.toFixed(1) + ' s', 14 * u, H - 18 * u);
+    ctx.fillStyle = S.mode === 'demo' ? '#ff9a4a' : '#a8968a'; ctx.font = `${Math.round(12 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(S.mode === 'demo' ? '演示中' : '自己玩', 14 * u, H - 38 * u);
+    const n = PLAN.length, gap = 26 * u, tw = (n - 1) * gap, tx0 = CX - tw / 2, ty = H - 26 * u;
+    ctx.fillStyle = 'rgba(16,7,5,0.6)'; rr(tx0 - 16 * u, ty - 14 * u, tw + 32 * u, 28 * u, 14 * u); ctx.fill();
+    ctx.strokeStyle = 'rgba(234,223,210,0.25)'; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.moveTo(tx0, ty); ctx.lineTo(tx0 + tw, ty); ctx.stroke();
+    for (let i = 0; i < n; i++) {
+      const x = tx0 + i * gap, done = i < S.step || S.state === 'clear' || S.state === 'over', cur = i === S.step && S.state === 'play';
+      ctx.beginPath(); ctx.arc(x, ty, (cur ? 7 + Math.sin(S.time * 10) * 1.5 : 5) * u, 0, Math.PI * 2);
+      ctx.fillStyle = done ? '#ff9a4a' : cur ? '#fff1df' : 'rgba(20,10,8,0.9)'; ctx.fill();
+      ctx.strokeStyle = done || cur ? '#ff9a4a' : 'rgba(234,223,210,0.45)'; ctx.lineWidth = 1.5 * u; ctx.stroke();
+    }
+    const wx = W - 52 * u, wy = H - 52 * u, wr = 30 * u;
+    S.uVis += (S.u - S.uVis) * 0.25;
+    ctx.save(); ctx.translate(wx, wy);
+    ctx.fillStyle = 'rgba(16,7,5,0.7)'; ctx.beginPath(); ctx.arc(0, 0, wr + 10 * u, 0, Math.PI * 2); ctx.fill();
+    const full = Math.abs(S.u) > 0.95;
+    if (Math.abs(S.uVis) > 0.05) {
+      ctx.strokeStyle = full ? '#ff9a4a' : 'rgba(255,154,74,0.6)'; ctx.lineWidth = 4 * u; ctx.beginPath();
+      ctx.arc(0, 0, wr + 5 * u, -Math.PI / 2, -Math.PI / 2 + S.uVis * 1.4, S.uVis < 0); ctx.stroke();
+    }
+    ctx.rotate(S.uVis * 75 * DEG);
+    ctx.strokeStyle = '#eadfd2'; ctx.lineWidth = 4 * u; ctx.beginPath(); ctx.arc(0, 0, wr, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.moveTo(-wr, 0); ctx.lineTo(wr, 0); ctx.moveTo(0, 0); ctx.lineTo(0, wr); ctx.stroke();
+    ctx.fillStyle = '#ff9a4a'; ctx.beginPath(); ctx.arc(0, -wr, 4 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#eadfd2'; ctx.beginPath(); ctx.arc(0, 0, 6 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // world angle readout left of the wheel (the slosh beat asks for 45°)
+    ctx.fillStyle = '#a8968a'; ctx.textAlign = 'center'; ctx.font = `${Math.round(11 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(S.u > 0.05 ? '顺时针' : S.u < -0.05 ? '逆时针' : '手柄', wx, wy - wr - 16 * u);
+    ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`; ctx.fillStyle = '#eadfd2'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(S.theta / DEG) + '°', wx - wr - 18 * u, wy + 5 * u);
+  }
+  // title card shown for a moment when a level starts
+  function drawIntro(u) {
+    const t = P.intro - S.timer, a = clamp(Math.min(t / 0.18, S.timer / 0.25), 0, 1);
+    ctx.globalAlpha = a * 0.72; ctx.fillStyle = '#0c0605'; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = a; ctx.textAlign = 'center';
+    ctx.fillStyle = '#ff9a4a'; ctx.font = `600 ${Math.round(22 * u)}px ui-monospace, Menlo, monospace`;
+    ctx.fillText('岩浆 ' + LV.id, CX, CY - 40 * u);
+    ctx.fillStyle = '#fff1df'; ctx.font = `600 ${Math.round(52 * u)}px "Noto Serif SC", serif`;
+    ctx.fillText(LV.name, CX, CY + 22 * u);
+    ctx.fillStyle = '#d6b9a4'; ctx.font = `${Math.round(16 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(LV.tip, CX, CY + 62 * u);
+    ctx.globalAlpha = 1;
+  }
+  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+  // ---------------- page UI ----------------
+  function toast(text, kind) { S.toast = { text, kind, t: S.time }; }
+  const $ = (id) => document.getElementById(id);
+  const pTime = $('pTime'), pDeath = $('pDeath'), overlay = $('startOverlay'), ovText = $('ovText');
+  const ovDemo = $('ovDemo'), ovPlay = $('ovPlay'), ovNext = $('ovNext');
+  let lastHud = -1;
+  function updateHud() { pTime.textContent = S.runTime.toFixed(1) + ' 秒'; pDeath.textContent = String(S.deaths); }
+  function showOverlay(kind) {
+    overlay.hidden = false;
+    const nx = LEVELS[LI + 1];
+    if (kind === 'start') {
+      ovDemo.textContent = '▶ 看演示通关'; ovPlay.textContent = '自己玩';
+      ovNext.hidden = true;
+      ovText.textContent = LV.id + ' ' + LV.name + '：' + LV.tip;
+    } else {
+      ovDemo.textContent = S.mode === 'demo' ? '▶ 再看一遍' : '▶ 看演示';
+      ovPlay.textContent = S.mode === 'demo' ? '自己玩这关' : '再玩一次';
+      ovNext.hidden = !nx;
+      if (nx) ovNext.textContent = '下一关 ' + nx.id + ' ' + nx.name + ' ▶';
+      ovText.textContent = LV.id + ' ' + (S.mode === 'demo' ? '演示通关' : '通关') + '，用时 ' + S.runTime.toFixed(1) + ' 秒' + (S.deaths ? '，死亡 ' + S.deaths + ' 次' : '') + (nx ? '。' : '。岩浆的关都过完了。');
+    }
+  }
+  function onRunOver() {
+    if (window.__lavaHeadless) return;
+    showOverlay('over');
+    if (S.mode === 'demo' && LEVELS[LI + 1] && $('chkChain') && $('chkChain').checked) {
+      overlay.hidden = true; selectLevel(LI + 1, false); begin('demo');
+    }
+  }
+  (() => { const box = document.querySelector('.levels'); if (!box) return; box.innerHTML = ''; LEVELS.forEach((lv, i) => { const b = document.createElement('button'); b.className = 'lv' + (i === 0 ? ' active' : ''); b.type = 'button'; b.dataset.level = String(i); b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false'); b.innerHTML = '<b>' + lv.id + '</b>' + lv.name + (lv.isNew ? ' <i class="newtag">新</i>' : ''); box.appendChild(b); }); })();
+  const lvButtons = [...document.querySelectorAll('[data-level]')];
+  function selectLevel(i, show) {
+    loadLevel(i);
+    lvButtons.forEach(b => { const on = +b.dataset.level === i; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    if (show) showOverlay('start');
+  }
+  lvButtons.forEach(b => b.addEventListener('click', () => { selectLevel(+b.dataset.level, true); }));
+  function begin(mode) { overlay.hidden = true; startRun(mode); view.focus({ preventScroll: true }); }
+  ovDemo.addEventListener('click', () => begin('demo'));
+  ovPlay.addEventListener('click', () => begin('play'));
+  ovNext.addEventListener('click', () => { const m = S.mode === 'demo' ? 'demo' : 'play'; selectLevel(LI + 1, false); begin(m); });
+  $('btnDemo').addEventListener('click', () => begin('demo'));
+  $('btnPlay').addEventListener('click', () => begin('play'));
+  $('btnReset').addEventListener('click', () => { if (S.mode === 'idle') begin('play'); else { overlay.hidden = true; resetLevel(false); } view.focus({ preventScroll: true }); });
+  $('chkSlow').addEventListener('change', (e) => { P.slowmo = e.target.checked; });
+
+  const held = new Set();
+  const KEYMAP = { ArrowLeft: -1, KeyQ: -1, KeyA: -1, ArrowRight: 1, KeyE: 1, KeyD: 1 };
+  function syncKeys() { let v = 0; for (const k of held) v += KEYMAP[k]; input.keys = clamp(v, -1, 1); }
+  function takeOver() { if (S.mode === 'idle' || S.state === 'over') begin('play'); else if (S.mode === 'demo') S.mode = 'play'; }
+  window.addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+    if (KEYMAP[e.code] !== undefined) { e.preventDefault(); held.add(e.code); syncKeys(); takeOver(); }
+    else if (e.code === 'KeyR') { e.preventDefault(); if (S.mode !== 'idle') { overlay.hidden = true; resetLevel(false); } }
+  });
+  window.addEventListener('keyup', (e) => { if (held.delete(e.code)) syncKeys(); });
+  window.addEventListener('blur', () => { held.clear(); syncKeys(); input.buttons = 0; });
+  const holdBtn = (id, dir) => {
+    const b = $(id);
+    const on = (e) => { e.preventDefault(); input.buttons = dir; b.classList.add('active'); takeOver(); };
+    const off = () => { if (input.buttons === dir) input.buttons = 0; b.classList.remove('active'); };
+    b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
+  };
+  holdBtn('btnCcw', -1); holdBtn('btnCw', 1);
+  let padReset = false;
+  // some hosts (e.g. an embedded page) block the gamepad API and the call throws: then keyboard / buttons only
+  let padOK = true;
+  function pollPad() {
+    if (!padOK) return;
+    let v = 0, rs = false, pads = [];
+    try { pads = (navigator.getGamepads && navigator.getGamepads()) || []; }
+    catch (e) {
+      padOK = false; input.pad = 0;
+      const note = $('padNote');
+      if (note) note.textContent = '手柄：这个网页里浏览器不让读手柄，用本地的 html 文件打开就能用（摇杆横向或 L2 / R2，Options 重来）';
+      return;
+    }
+    for (const p of pads) {
+      if (!p) continue;
+      const ax = [p.axes[2] || 0, p.axes[0] || 0].find(a => Math.abs(a) > 0.18) || 0;
+      const trig = ((p.buttons[7] && p.buttons[7].value) || 0) - ((p.buttons[6] && p.buttons[6].value) || 0);
+      v = Math.abs(trig) > 0.05 ? trig : ax;
+      rs = !!(p.buttons[9] && p.buttons[9].pressed);
+      if (v) break;
+    }
+    input.pad = v;
+    if (v && S.mode === 'demo') S.mode = 'play';
+    if (rs && !padReset && S.mode !== 'idle') { overlay.hidden = true; resetLevel(false); }
+    padReset = rs;
+  }
+  const sliders = [['tRot', 'oRot', 'rotSpeed', v => v + '°/s'], ['tDrag', 'oDrag', 'lavaDrag', v => v.toFixed(2)]];
+  for (const [id, out, key, fmt] of sliders) {
+    const el = $(id), o = $(out);
+    if (!el) continue;
+    el.addEventListener('input', () => { P[key] = parseFloat(el.value); o.textContent = fmt(P[key]); if (key === 'lavaDrag') lavaInit(); if (S.mode !== 'idle') { overlay.hidden = true; startRun(S.mode); } else resetLevel(false); });
+  }
+
+  // ---------------- boot ----------------
+  let last = 0, acc = 0;
+  let loopErr = false;
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    if (window.__lavaStop) return;
+    try {
+      const now = ts / 1000; let dt = last ? now - last : 0; last = now; dt = Math.min(dt, 0.1);
+      pollPad();
+      if (!window.__lavaHeadless) {
+        let scale = 1;
+        if (S.slow > 0) { S.slow -= dt; scale = 0.32; }
+        acc += dt * scale;
+        let guard = 0;
+        while (acc >= DT && guard++ < 6) { step(DT); acc -= DT; }
+        if (acc > DT) acc = DT;
+        alpha = acc / DT;
+      } else alpha = 1;
+      render(dt);
+      if (S.time - lastHud > 0.1 || S.time < lastHud) { lastHud = S.time; updateHud(); }
+    } catch (e) { if (!loopErr) { loopErr = true; console.error(e); } }
+  }
+  const load = (src) => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+  Promise.all(Object.entries(A).map(([k, v]) => load(v).then(im => { IMG[k] = im; }))).then(() => {
+    for (const k of ['idle', 'float', 'fallstart', 'land']) IMG[k + 'Red'] = tinted(IMG[k], 'rgba(255,90,30,0.62)');
+    L.onCool = (x, y) => { if (S.fx.length < 300) S.fx.push({ x, y, vx: 0, vy: 0, life: 0.7, max: 0.7, k: inCool(x, y) ? 'steam' : 'smoke', s: 0.26, up: 1.6 }); };
+    resize(); window.addEventListener('resize', resize);
+    selectLevel(0, true);
+    requestAnimationFrame(frame);
+    window.__lavaReady = true;
+  });
+  window.__lava = {
+    S, P, L, LQ, LEVELS, step, startRun, loadLevel, resetLevel, input, DT, lavaIn, lavaInit, solidAt, lp,
+    get LV() { return LV; }, get LI() { return LI; }, get PLAN() { return PLAN; },
+    render: () => render(0), renderAt: (a, dt) => { alpha = a; render(dt); },
+  };
+})();
+</script>

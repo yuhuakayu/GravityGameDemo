@@ -1,0 +1,16 @@
+第二轮定稿 仕样书 6：岩浆 烫死规则（所有岩浆关）、删 Lava_04
+
+看效果：原型/第二轮_岩浆.html 选 2-2（这一页的岩浆关都已经是新规则）。
+
+1. 问题：以前要同时碰到 4 颗岩浆粒子才死，薄薄一层岩浆人能直接穿过去，Lava_02 追击这种关就没了压力。
+2. 改法（LavaMechanisms.CheckHazards，参照原型 checkHazards 里 heat 那两行）
+   touch 还是现在的算法：CountNear(circle, radius + .08f, true)，两个碰撞圆取大的那个；冷水不算（仕样书 9）。
+   把 if (touch >= 4) player.Die(); 换成：
+     heat ＝ touch > 0 ? heat + dt × touch : max(0, heat - dt × 3)
+     touch >= 3 或者 heat > 0.09 就死。
+   冰晶冻住期间 touch 按 0 算（现在本来就跳过），heat 照样往下掉。死了重来时 heat 清零。
+   效果：一大片岩浆当场死；一两颗粘在身上 0.06～0.1 秒也会死；擦一下马上离开只冒烟（冒烟照旧）。
+3. 这条对所有岩浆关生效。组合关 Lava_05～10 的演示路线照样能过，但比以前紧：每一步都晚 0.1 秒的话，以前大多能过，现在多数会被烫死。
+4. 删 Lava_04（照总表第四节）。LevelOrder 岩浆段先改成：Lava_01，Lava_02，Lava_03，Lava_05 ～ Lava_10。
+5. 验证：Build Small Levels，ValidateGeneratedLevels 通过；Play Lava_02：被追上时想贴着岩浆边硬穿过去会被烫死；
+   照原型页的演示路线还能通关。Lava_01、Lava_03 各走一遍。汇报 3 到 5 行，不写报告文件。

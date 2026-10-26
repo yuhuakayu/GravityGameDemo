@@ -62,7 +62,7 @@ namespace Resource.Scripts.Debugging
             Vector3? bias = _runtime.Processor.Calibration.IsCalibrated
                 ? _runtime.Processor.Calibration.Bias : (Vector3?)null;
             _status = "正在录制：" + _recorder.Start(bias, _runtime.Processor.SteeringAxis,
-                _runtime.Processor.SteeringCrossedDegeneracy);
+                _runtime.Processor.SteeringCrossedDegeneracy, _runtime.Processor.UseJoyConWheelAxis);
         }
 
         public void StopRecording()

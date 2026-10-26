@@ -24,10 +24,10 @@ namespace GravityGame.Tests.PlayMode
             bool oldStartup = (bool)startup.GetValue(null), oldEntered = (bool)entered.GetValue(null);
             Component sfx = (Component)FindType("SfxManager").GetProperty("Instance").GetValue(null);
             bool oldSfxEnabled = Field<bool>(sfx, "sfxEnabled");
-            Component player = null, oxygen = null, world = null;
+            Component player = null, world = null;
             Rigidbody2D playerBody = null;
             bool oldAutoMove = false, oldSimulated = false;
-            float oldDrain = 0f, deadline = Time.realtimeSinceStartup + 18f;
+            float deadline = Time.realtimeSinceStartup + 18f;
             Application.runInBackground = true;
             try
             {
@@ -66,18 +66,15 @@ namespace GravityGame.Tests.PlayMode
                 yield return SceneManager.LoadSceneAsync("Stage1", LoadSceneMode.Single);
                 yield return null;
                 player = Find("PlayerController");
-                oxygen = Find("PlayerOxygen");
                 world = Find("WorldRotator");
                 Component intro = Find("LevelIntroUI");
                 intro.GetType().GetMethod("BeginGameplayFromPreview").Invoke(intro, null);
                 yield return null;
                 yield return null;
                 oldAutoMove = Field<bool>(player, "autoMoveMode");
-                oldDrain = Property<float>(oxygen, "DrainPerSecond");
                 playerBody = player.GetComponent<Rigidbody2D>();
                 oldSimulated = playerBody.simulated;
                 SetField(player, "autoMoveMode", false);
-                oxygen.GetType().GetProperty("DrainPerSecond").SetValue(oxygen, 0f);
                 playerBody.simulated = false;
                 float start = Property<float>(world, "ClockwiseAngleReadout"), previous = start;
                 MethodInfo setTarget = world.GetType().GetMethod("SetTargetAngle");
@@ -99,7 +96,6 @@ namespace GravityGame.Tests.PlayMode
             {
                 if (world != null) world.GetType().GetMethod("DiscardPendingRotation").Invoke(world, null);
                 if (playerBody != null) { playerBody.simulated = oldSimulated; SetField(player, "autoMoveMode", oldAutoMove); }
-                if (playerBody != null && oxygen != null) oxygen.GetType().GetProperty("DrainPerSecond").SetValue(oxygen, oldDrain);
                 if (sfx != null) SetField(sfx, "sfxEnabled", oldSfxEnabled);
                 startup.SetValue(null, oldStartup);
                 entered.SetValue(null, oldEntered);

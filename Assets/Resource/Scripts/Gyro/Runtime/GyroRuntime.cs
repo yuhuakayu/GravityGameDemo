@@ -12,6 +12,10 @@ namespace Resource.Scripts.Gyro
     {
         private static GyroRuntime _instance;
         private bool _wasConnected;
+        private int _connectionGeneration;
+        private int _controllerHandle = -1;
+        private int _controllerType;
+        private JoyConGamepadBridge _joyConGamepad;
         private readonly GyroStickMapper _mapper = new GyroStickMapper();
         private readonly StickDeadzoneProcessor _stickDeadzone = new StickDeadzoneProcessor();
         private static bool _consoleCapturesInput;
@@ -34,12 +38,15 @@ namespace Resource.Scripts.Gyro
         public GyroSettings Settings { get; private set; }
         public GyroProcessor Processor { get; private set; }
         public GyroDevice Device { get; private set; }
+        public PhysicalWheelInput Wheel { get; private set; }
         public string SettingsStatus { get; private set; }
         public double FrameStickIntegral { get; private set; }
         public double FrameCombinedIntegral { get; private set; }
         public float PhysicalRightStickX { get; private set; }
         public float StickOutput => HasFreshGyro ? Processor.StickOutput : 0f;
-        public bool HasFreshGyro => Processor != null && Processor.IsFresh(GyroDevice.NowSeconds) &&
+        public bool HasFreshGyro => Processor != null && Processor.IsFresh(GyroDevice.NowSeconds,
+            Processor.UseJoyConWheelAxis && Settings.mode == GyroControlMode.Speed
+                ? GyroDevice.StaleAfterSeconds : GyroProcessor.HoldSeconds) &&
             (IsPlaybackActive || (Device != null && Device.IsConnected));
         public bool IsPlaybackActive => _playback != null;
         public GyroInputSource EffectiveInputSource => IsPlaybackActive ? GyroInputSource.Gyro : Settings.inputSource;
@@ -99,16 +106,41 @@ namespace Resource.Scripts.Gyro
             if (Processor == null) Processor = new GyroProcessor(Settings);
             Device = new GyroDevice();
             Device.Start();
+            _joyConGamepad = new JoyConGamepadBridge();
+            Wheel = new PhysicalWheelInput();
+            InputSystem.onBeforeUpdate += UpdateJoyConGamepad;
         }
+
+        private void UpdateJoyConGamepad() => _joyConGamepad?.Update(Device);
 
         private void Update()
         {
+            Wheel?.Update(Settings);
             if (Device == null) return;
             if (_playbackFinishedFrame) FinishPlayback("回放完成");
             bool connected = Device.IsConnected;
             if (!IsPlaybackActive)
             {
-                if (connected && !_wasConnected) Processor.Reset();
+                bool useJoyConAxis = Device.IsJoyCon || Settings.controllerProfile == GyroControllerProfile.JoyCon2;
+                bool axisChanged = Processor.UseJoyConWheelAxis != useJoyConAxis;
+                if (axisChanged)
+                {
+                    Processor.Reset();
+                    Device.ClearSamples();
+                    Recenter();
+                }
+                Processor.UseJoyConWheelAxis = useJoyConAxis;
+                if (connected)
+                {
+                    // A brief Bluetooth interruption must not reselect the opposite wheel hemisphere.
+                    bool sameJoyCon = Device.IsJoyCon && _controllerHandle == Device.ControllerHandle &&
+                        _controllerType == Device.ControllerType;
+                    if (!axisChanged && !sameJoyCon && (!_wasConnected || _connectionGeneration != Device.ConnectionGeneration))
+                        Processor.Reset();
+                    _connectionGeneration = Device.ConnectionGeneration;
+                    _controllerHandle = Device.ControllerHandle;
+                    _controllerType = Device.ControllerType;
+                }
                 if (!connected && _wasConnected) Processor.Disconnect();
             }
             _wasConnected = connected;
@@ -178,6 +210,9 @@ namespace Resource.Scripts.Gyro
                 case GyroRecenterButton.RightShoulder: nativeButton = GyroButtons.RightShoulder; break;
                 default: nativeButton = GyroButtons.LeftStick; break;
             }
+            if (Device != null && Device.IsJoyCon &&
+                (nativeButton == GyroButtons.LeftStick || nativeButton == GyroButtons.RightStick))
+                nativeButton = Device.IsRightJoyCon ? GyroButtons.RightStick : GyroButtons.LeftStick;
             if ((PressedButtons & nativeButton) != 0) return true;
             foreach (var pad in Gamepad.all)
             {
@@ -211,6 +246,7 @@ namespace Resource.Scripts.Gyro
             _playbackFinishedFrame = false;
             Device?.ClearSamples();
             Processor.Reset();
+            Processor.UseJoyConWheelAxis = recording.UseJoyConWheelAxis;
             if (recording.InitialBias.HasValue) Processor.Calibration.SetInitialBias(recording.InitialBias.Value);
             if (recording.InitialAxis.HasValue)
                 Processor.SetInitialSteeringAxis(recording.InitialAxis.Value, recording.InitialAxisCrossedDegeneracy);
@@ -234,6 +270,8 @@ namespace Resource.Scripts.Gyro
             FrameStickIntegral = FrameCombinedIntegral = 0;
             PhysicalRightStickX = 0;
             _wasConnected = false;
+            _controllerHandle = -1;
+            _controllerType = 0;
             Recenter();
         }
 
@@ -253,11 +291,18 @@ namespace Resource.Scripts.Gyro
 
         private void OnDisable()
         {
+            InputSystem.onBeforeUpdate -= UpdateJoyConGamepad;
+            _joyConGamepad?.Dispose();
+            _joyConGamepad = null;
+            Wheel?.Dispose();
+            Wheel = null;
             StopPlayback();
             Device?.Dispose();
             Device = null;
             FrameStickIntegral = FrameCombinedIntegral = 0;
             _wasConnected = false;
+            _controllerHandle = -1;
+            _controllerType = 0;
         }
         private void OnDestroy() { if (_instance == this) _instance = null; }
     }

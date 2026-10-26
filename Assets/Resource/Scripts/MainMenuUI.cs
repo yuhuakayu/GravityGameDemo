@@ -77,6 +77,7 @@ namespace Resource.Scripts
             SetTransitionInputLocked(_sceneTransition.IsTransitioning);
             _loc = LocalizationManager.Instance;
             _loc.OnLanguageChanged += RefreshLocalizedTexts;
+            InputPrompts.Changed += RefreshLocalizedTexts;
             StartCoroutine(PauseAmbientAudioNextFrame());
         }
 
@@ -104,6 +105,7 @@ namespace Resource.Scripts
         {
             if (_sceneTransition != null) _sceneTransition.TransitionStateChanged -= SetTransitionInputLocked;
             if (_loc != null) _loc.OnLanguageChanged -= RefreshLocalizedTexts;
+            InputPrompts.Changed -= RefreshLocalizedTexts;
         }
 
         private void SetTransitionInputLocked(bool locked)
@@ -255,7 +257,7 @@ namespace Resource.Scripts
         {
             if (_navLocked) return;
 
-            var gamepad = Gamepad.current;
+            var gamepad = InputPrompts.ActiveGamepad;
 
             bool backPressed = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
                 || (gamepad != null && gamepad.buttonEast.wasPressedThisFrame);
@@ -363,10 +365,10 @@ namespace Resource.Scripts
 
             var titleGO = CreateLocalizedText(_optionsRoot, "settings.title", new Vector2(0f, 0.86f), new Vector2(1f, 0.97f), TextAnchor.MiddleCenter, 36, "Text_Title");
             PixelUI.EnsureText(titleGO, 36, true, TextAnchor.MiddleCenter, PixelUI.TextLight);
-            var backBtn = CreateButton(_optionsRoot, LocalizationManager.Instance.Get("settings.back"), new Vector2(240f, 54f), "Button_Back");
+            var backBtn = CreateButton(_optionsRoot, LocalizationManager.Instance.Get("input.back"), new Vector2(240f, 54f), "Button_Back");
             Place(backBtn.GetComponent<RectTransform>(), new Vector2(0.5f, 0f), new Vector2(0f, 48f), new Vector2(240f, 54f));
             backBtn.onClick.AddListener(() => BackToTitle());
-            _localizedTexts.Add((backBtn.GetComponentInChildren<TextMeshProUGUI>(true), "settings.back"));
+            _localizedTexts.Add((backBtn.GetComponentInChildren<TextMeshProUGUI>(true), "input.back"));
 
             var contentRT = GetRect(_optionsRoot, "Content");
             Place(contentRT, new Vector2(0.5f, 0.5f), new Vector2(0f, -8f), new Vector2(492f, 508f));

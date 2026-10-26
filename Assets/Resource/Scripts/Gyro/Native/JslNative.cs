@@ -7,6 +7,8 @@ namespace Resource.Scripts.Gyro
     internal static class JslNative
     {
         private const string Library = "JoyShockLibrary";
+        internal const int JoyConLeft = 1;
+        internal const int JoyConRight = 2;
         internal const int DualShock4 = 4;
         internal const int DualSense = 5;
 
@@ -73,6 +75,7 @@ namespace Resource.Scripts.Gyro
         LeftShoulder = 0x00100, RightShoulder = 0x00200,
         LeftTrigger = 0x00400, RightTrigger = 0x00800,
         South = 0x01000, East = 0x02000, West = 0x04000, North = 0x08000,
-        Home = 0x10000, Touchpad = 0x20000, Microphone = 0x40000
+        Home = 0x10000, Touchpad = 0x20000, Microphone = 0x40000,
+        SL = 0x40000, SR = 0x80000
     }
 }

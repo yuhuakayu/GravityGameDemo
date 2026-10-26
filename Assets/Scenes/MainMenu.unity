@@ -4794,51 +4794,231 @@ MonoBehaviour:
     unlocked: 1
     cleared: 0
   - displayName: Level 9
-    sceneName: Mine_01
+    sceneName: Maze_09
     unlocked: 1
     cleared: 0
   - displayName: Level 10
-    sceneName: Mine_02
+    sceneName: Maze_10
     unlocked: 1
     cleared: 0
   - displayName: Level 11
-    sceneName: Mine_03
+    sceneName: Maze_11
     unlocked: 1
     cleared: 0
   - displayName: Level 12
-    sceneName: Mine_04
+    sceneName: Maze_12
     unlocked: 1
     cleared: 0
   - displayName: Level 13
-    sceneName: Lava_01
+    sceneName: Maze_13
     unlocked: 1
     cleared: 0
   - displayName: Level 14
-    sceneName: Lava_02
+    sceneName: Maze_14
     unlocked: 1
     cleared: 0
   - displayName: Level 15
-    sceneName: Lava_03
+    sceneName: Maze_15
     unlocked: 1
     cleared: 0
   - displayName: Level 16
-    sceneName: Lava_04
+    sceneName: Maze_16
     unlocked: 1
     cleared: 0
   - displayName: Level 17
-    sceneName: Sky_01
+    sceneName: Maze_17
     unlocked: 1
     cleared: 0
   - displayName: Level 18
-    sceneName: Sky_02
+    sceneName: Maze_18
     unlocked: 1
     cleared: 0
   - displayName: Level 19
-    sceneName: Sky_03
+    sceneName: Maze_19
     unlocked: 1
     cleared: 0
   - displayName: Level 20
+    sceneName: Maze_20
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 21
+    sceneName: Maze_21
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 22
+    sceneName: Maze_22
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 23
+    sceneName: Mine_01
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 24
+    sceneName: Mine_03
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 25
+    sceneName: Mine_12
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 26
+    sceneName: Mine_02
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 27
+    sceneName: Mine_05
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 28
+    sceneName: Mine_06
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 29
+    sceneName: Mine_07
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 30
+    sceneName: Mine_08
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 31
+    sceneName: Mine_09
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 32
+    sceneName: Mine_10
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 33
+    sceneName: Mine_11
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 34
+    sceneName: Mine_13
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 35
+    sceneName: Mine_14
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 36
+    sceneName: Lava_01
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 37
+    sceneName: Lava_02
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 38
+    sceneName: Lava_03
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 39
+    sceneName: Lava_05
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 40
+    sceneName: Lava_06
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 41
+    sceneName: Lava_07
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 42
+    sceneName: Lava_08
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 43
+    sceneName: Lava_09
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 44
+    sceneName: Lava_10
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 45
+    sceneName: Lava_11
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 46
+    sceneName: Lava_12
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 47
+    sceneName: Lava_13
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 48
+    sceneName: Lava_14
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 49
+    sceneName: Sky_01
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 50
+    sceneName: Sky_02
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 51
+    sceneName: Sky_03
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 52
     sceneName: Sky_04
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 53
+    sceneName: Sky_05
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 54
+    sceneName: Sky_06
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 55
+    sceneName: Sky_07
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 56
+    sceneName: Sky_08
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 57
+    sceneName: Sky_09
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 58
+    sceneName: Sky_10
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 59
+    sceneName: Sky_11
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 60
+    sceneName: Sky_12
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 61
+    sceneName: Sky_13
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 62
+    sceneName: Sky_14
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 63
+    sceneName: Sky_15
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 64
+    sceneName: Sky_16
+    unlocked: 1
+    cleared: 0
+  - displayName: Level 65
+    sceneName: Sky_17
     unlocked: 1
     cleared: 0
 --- !u!4 &1629636458

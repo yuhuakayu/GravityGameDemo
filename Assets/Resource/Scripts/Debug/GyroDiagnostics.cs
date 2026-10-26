@@ -38,6 +38,7 @@ namespace Resource.Scripts.Debugging
         private Vector3? _recordedInitialBias;
         private Vector3? _recordedInitialAxis;
         private bool _recordedAxisCrossedDegeneracy;
+        private bool _recordedUseJoyConWheelAxis;
         private GyroSettings _frozenSettings;
         private GyroProcessor _frameProcessor;
         private float _worldRotateSpeed;
@@ -212,6 +213,7 @@ namespace Resource.Scripts.Debugging
             _recordedInitialBias = recording.InitialBias;
             _recordedInitialAxis = recording.InitialAxis;
             _recordedAxisCrossedDegeneracy = recording.InitialAxisCrossedDegeneracy;
+            _recordedUseJoyConWheelAxis = recording.UseJoyConWheelAxis;
             _worldRotateSpeed = worldRotateSpeed;
             _frameResults.Clear();
             FrameTestCompleted = FrameTestPassed = FrameTimingVerified = false;
@@ -240,6 +242,7 @@ namespace Resource.Scripts.Debugging
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = RequestedRates[_runIndex];
             _frameProcessor = new GyroProcessor(_frozenSettings.Clone());
+            _frameProcessor.UseJoyConWheelAxis = _recordedUseJoyConWheelAxis;
             if (_recordedInitialBias.HasValue) _frameProcessor.Calibration.SetInitialBias(_recordedInitialBias.Value);
             if (_recordedInitialAxis.HasValue)
                 _frameProcessor.SetInitialSteeringAxis(_recordedInitialAxis.Value, _recordedAxisCrossedDegeneracy);

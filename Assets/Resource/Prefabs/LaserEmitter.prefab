@@ -165,6 +165,7 @@ MonoBehaviour:
   beamCollider: {fileID: 2823102888191604108}
   core: {fileID: 8709931914910530401}
   glow: {fileID: 3465760460781854854}
+  externalBeam: 0
 --- !u!1 &8128980397426416986
 GameObject:
   m_ObjectHideFlags: 0

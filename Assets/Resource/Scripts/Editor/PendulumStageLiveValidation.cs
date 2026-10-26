@@ -97,7 +97,7 @@ namespace Resource.Scripts.Editor
                 }
                 foreach (var behaviour in roots.SelectMany(r => r.GetComponentsInChildren<Behaviour>(true)))
                 {
-                    if (!(behaviour is PlayerController) && !(behaviour is PlayerOxygen) && !(behaviour is WorldRotator) &&
+                    if (!(behaviour is PlayerController) && !(behaviour is WorldRotator) &&
                         !(behaviour is PivotPendulum) && !(behaviour is LevelIntroUI)) continue;
                     runner._sourceEnabled[behaviour] = behaviour.enabled;
                     behaviour.enabled = false;

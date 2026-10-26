@@ -1,0 +1,1280 @@
+<title>云海坠落</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600&display=swap">
+<style>
+/* Level picker, one game stage, a control row, then the notes. A single bright sky theme on purpose: it is the level's palette. */
+:root {
+  --bg: #eaf5fd;
+  --panel: #ffffff;
+  --line: #bcd8ee;
+  --line-hi: #7fb2dc;
+  --ink: #163054;
+  --muted: #4f6b8c;
+  --amber: #e08a1e;
+  --cyan: #2f9fd8;
+  --red: #d84a5c;
+  --stage: #9fd3f5;
+  --scrim: rgba(234, 245, 253, 0.66);
+  --primary-bg: #163054;
+  --primary-fg: #ffffff;
+  --active-bg: #d7ebfa;
+  --kbd-bg: #f4f9fe;
+  --font-display: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --font-ui: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-num: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); }
+.wrap { max-width: 1060px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 28px; display: flex; flex-direction: column; gap: 12px; }
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.45rem; letter-spacing: 0.04em; text-wrap: balance; }
+.sub { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.newtag { font-style: normal; font-size: 11px; padding: 1px 5px; border-radius: 6px; background: #e8a04a; color: #241a10; margin-left: 4px; }
+.levels { display: flex; flex-wrap: wrap; gap: 8px; }
+.lv { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font: inherit; font-size: 0.92rem; padding: 8px 14px; border-radius: 999px; cursor: pointer; display: inline-flex; gap: 8px; align-items: baseline; }
+.lv b { font-family: var(--font-num); font-weight: 600; color: var(--cyan); }
+.lv:hover { border-color: var(--line-hi); color: var(--ink); }
+.lv.active { background: var(--active-bg); border-color: var(--cyan); color: var(--ink); }
+.lv:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.stage { position: relative; width: min(100%, calc(72vh * 1.6)); max-width: 100%; aspect-ratio: 16 / 10; margin: 0 auto; background: var(--stage); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.stage canvas { display: block; width: 100%; height: 100%; outline: none; }
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: var(--scrim); text-align: center; padding: 16px; }
+.overlay[hidden] { display: none; }
+.overlay p { margin: 0; color: var(--ink); font-size: 0.92rem; max-width: 34em; line-height: 1.6; }
+.overlay .row2 { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 0.95rem; padding: 9px 14px; border-radius: 6px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+.btn:hover { border-color: var(--line-hi); }
+.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.btn.primary { background: var(--primary-bg); border-color: var(--primary-bg); color: var(--primary-fg); }
+.btn.big { font-size: 1.05rem; padding: 12px 22px; }
+.btn.hold { min-width: 88px; }
+.btn.active { background: var(--active-bg); border-color: var(--cyan); }
+.btn[hidden] { display: none; }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; color: var(--muted); cursor: pointer; margin-left: 4px; }
+.chk input { accent-color: var(--cyan); width: 16px; height: 16px; margin: 0; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.pill { font-size: 0.8rem; padding: 4px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pill b { color: var(--ink); font-weight: 600; font-family: var(--font-num); }
+details { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; }
+summary { cursor: pointer; font-size: 0.92rem; color: var(--ink); }
+.tune { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 22px; margin-top: 10px; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; font-size: 0.85rem; min-width: 0; }
+.row input { grid-column: 1 / -1; width: 100%; accent-color: var(--cyan); }
+.row output { font-family: var(--font-num); color: var(--amber); font-variant-numeric: tabular-nums; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 22px; font-size: 0.88rem; line-height: 1.7; }
+.notes > div { min-width: 0; }
+.notes h2 { margin: 0 0 4px; font-size: 0.95rem; font-family: var(--font-display); font-weight: 600; color: var(--cyan); }
+.notes ol, .notes ul { margin: 0; padding-left: 1.2em; }
+.notes li { margin: 2px 0; }
+.notes .muted { color: var(--muted); }
+kbd { font-family: var(--font-num); font-size: 0.8em; padding: 1px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; background: var(--kbd-bg); }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>天空 · 4 个小关</h1>
+    <p class="sub">动作向关卡原型 · 一关一个机关，每关 3 到 5 拍、几秒钟</p>
+  </div>
+
+  <div class="levels" role="group" aria-label="选关">
+    <button class="lv active" type="button" data-level="0" aria-pressed="true"><b>3-1</b>跷跷板</button>
+    <button class="lv" type="button" data-level="1" aria-pressed="false"><b>3-2</b>气球雷</button>
+    <button class="lv" type="button" data-level="2" aria-pressed="false"><b>3-3</b>散云</button>
+    <button class="lv" type="button" data-level="3" aria-pressed="false"><b>3-4</b>气球平台</button>
+  </div>
+
+  <div class="stage">
+    <canvas id="view" tabindex="0" aria-label="关卡画面，左右方向键旋转世界"></canvas>
+    <div class="overlay" id="startOverlay">
+      <div class="row2">
+        <button class="btn primary big" id="ovDemo" type="button">▶ 看演示通关</button>
+        <button class="btn big" id="ovPlay" type="button">自己玩</button>
+        <button class="btn big" id="ovNext" type="button" hidden>下一关 ▶</button>
+      </div>
+      <p id="ovText">演示会自动打完这一关：画面上方写着每一拍该怎么转，右下角的方向盘是手柄输入、左边是当前角度，擦身而过时会慢动作。</p>
+    </div>
+  </div>
+
+  <div class="bar">
+    <button class="btn primary" id="btnDemo" type="button">▶ 看演示</button>
+    <button class="btn" id="btnPlay" type="button">自己玩</button>
+    <button class="btn" id="btnReset" type="button">重来</button>
+    <button class="btn hold" id="btnCcw" type="button" aria-label="逆时针旋转（按住）">↺ 逆时针</button>
+    <button class="btn hold" id="btnCw" type="button" aria-label="顺时针旋转（按住）">顺时针 ↻</button>
+    <label class="chk"><input type="checkbox" id="chkSlow" checked>险情慢动作</label>
+    <label class="chk"><input type="checkbox" id="chkChain" checked>演示连播下一关</label>
+    <div class="pills">
+      <span class="pill">用时 <b id="pTime">0.0 秒</b></span>
+      <span class="pill">死亡 <b id="pDeath">0</b></span>
+    </div>
+  </div>
+
+  <details>
+    <summary>调参（改了会从这一关开头重来）</summary>
+    <div class="tune">
+      <label class="row" for="tRot">旋转速度 <output id="oRot">180°/s</output><input id="tRot" type="range" min="90" max="300" step="5" value="180"></label>
+      <label class="row" for="tVmax">下落速度上限 <output id="oVmax">11 格/秒</output><input id="tVmax" type="range" min="8" max="16" step="0.5" value="11"></label>
+      <label class="row" for="tCloud">云能托住几秒 <output id="oCloud">1.0 秒</output><input id="tCloud" type="range" min="0.5" max="2" step="0.1" value="1"></label>
+    </div>
+  </details>
+
+  <div class="notes">
+    <div>
+      <h2>四关各自的爽点</h2>
+      <ol>
+        <li>3-1 跷跷板：一站上去就翻，把你倒进半空；转世界拐弯，落到下一块上它又翻。</li>
+        <li>3-2 气球雷：横着往下掉的时候来回拧，气球也跟着摆，要从缝里钻过去。</li>
+        <li>3-3 散云：云只托你 1 秒，散之前转走，还要从两排刺中间的缝里穿过去。</li>
+        <li>3-4 气球平台：被带着往上飘，刺破前转身飞向门，边飞边微调把门转正。</li>
+      </ol>
+    </div>
+    <div>
+      <h2>操作</h2>
+      <ul>
+        <li><kbd>←</kbd> <kbd>Q</kbd> 逆时针，<kbd>→</kbd> <kbd>E</kbd> 顺时针，<kbd>R</kbd> 这一关重来</li>
+        <li id="padNote">手柄：摇杆横向或 L2 / R2，Options 重来</li>
+        <li class="muted">在空中转世界就是在拐弯：你永远往屏幕下方掉。</li>
+      </ul>
+    </div>
+    <div>
+      <h2>和游戏一致的规则</h2>
+      <ul>
+        <li>玩家照 PlayerController：横向速度每步清零，只往屏幕下方掉；在空中时世界绕你 0.16 秒前的位置转；门转正（20° 以内）才开。</li>
+        <li>镜头大致对着整关，稍微跟着玩家；演示用 180°/s（游戏里现在是 135°/s，可以在调参里改）。下落速度上限 11 格/秒。</li>
+        <li class="muted">跷跷板、气球雷、会散的云、气球平台是这个原型新加的，游戏里还没有。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+<script>
+window.__ASSETS={"tiles": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAAAwCAYAAACG5f33AAACuUlEQVR42u1bO5LCMAy1MzkJBZncIEO9zdLsVXYoOESqnIaKeocbMNlir8JWZoxGsuQPsQ1xFceRYz9LTx+C7rqPm8rY5vmsv48ndA3TuH8Yg32JjHQs5J3TuNc6N4CfXwc1Xy/oWNcPD2OwL5GRjoW8s+sHVTSApbeuH1Sj1hbVigbw7/eH7VPPmDH7GR95ql8VgLHAb7Y7tdnuRECEtrZ0ECQaAe9ttjvynkQe65uDiAbQnsg+aanKU2GDcSSYPNQiqg/lXXNJ5sPmMmNdP6hp3Os2lpdizcMGjwMnxIQprpMqC7WO+XpR38fTrfXROumJpeIdah6uj5lriAkbDnXto4nRvBTP+oBpALWvsXEXSJwsNu5qXoE0dxrSZ7BUzsWBIfPGHpZrHTYHOgGUTMRpHbdxKhNZCqwQ5+mdiUC1xiaD4yHkz5nt0mBJ9tGkOAnJ2Ks272KCDVLXD3eXHmp60IRLM11u/2sx4ZmpnHEAVHhAlaHs5329J5TNqZXYWqI50LWZZ240hxNJVkyQJNdcDro6kcyBdGlOxATSjS8XUHFhaBGAKibkigGl6zDFhOYZvBCzYVhRzqWV0nUEc6BPP9b75fTCXDSQvaD60nGgNFRJDVopHl1CIcVlIrU4keBcOHWrPYwp9ssESN45CqpcKrcWExK0agBc0rR93tWWDFRuPnT9LnwHcJ7POisHqsNtNeHEBJ47lKHej61hdSJLZyLvwIc+RYzsGjiNe21+nILVDyoHX8qEIaj2uu6BdG4AYT3QFUhj11gFRwIOJctdw0C6rYVrOHPGPiTCsgtO1pcqiudAV7WbKqe5Pm/z+T5QAmjxHBj6XZ8LuFCtr44DUxcDYuesigMhCBiZcyaMHYhE3tV/i0A6lQlLWrEmXENb64GvWEyAJ+zqS2Ri5TkZXQJQNf/d9R+/Ie1yH4RvbQAAAABJRU5ErkJggg==", "idle": "data:image/png;base64,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", "float": "data:image/png;base64,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", "fallstart": "data:image/png;base64,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", "land": "data:image/png;base64,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", "door": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAAAgCAYAAABEmHeFAAACeElEQVR42u3cv2uTQRzH8c8TAqKCWDso0haaoQUV2qdDBqeK4iIuLmYRuvQfENRFFMVFhCyCf0NcXMRFEJ0csjzt2A4OaSkKBqPo0KHqIJGzyZO7J32eO0PeXyglcH1e94Pv3T1faKQh49TJuV/mjzzH/+A/6/zAH/H1j7Ki5ufj169JkjrPX/zT7uOnzaioQZufTz9+JEnauXM3iD//9rUkaePC5SD+vY1EkvRwPh7L8eex/lEWNK7WnB6aNBu5TQY+fpF+yXbErKzWFVdrWlmtS5IWFqrW3932cbWmYY8ofHwffpSGu2abayTNhvNugI/vy4+y4ubx0i9sf2ubBHx8n37kipvw1PSiJKndbmm2sqRvXz9Lkra31qwdGTQJ+Pi+/cgV76Jm7O+AGdtba5kmAR8/hF9yuTv1w20xNb1oPa5c7274+EX5pYPgh64ua+fsscImweZP3L8Z1J951VDnxnIw/1byRntPb4/t+PNY/54E6JaTkmZDZ85dOnAGHz5y4m8nPmy+t7bHx/fp9yTA+npTRUVl7ry1DT6+Tz/1BCgisuwA+Pg+fE4A/LH2y/0y0OxEu91KfwlWxdpmfwbaJiGLP+HQpkj/aGBfYz7+PNa/bMvAycmZ1Ad+d2hjdm6YHWDQs38G9oU/8uvPOwA+7wDcQfGpArED4XMCsAPhUwWiCkQViCoQVSCqMFSBuIPi8w7AHRSfKhA7ED4nADsQPlUgqkBUgagCUQWiCkMViDso/sj71hNgUOy+fPfnv/ID3QG/PKgH9VtXakH9J/FFzVaWgt3BQ48/j/Uvp2VhEZnoOjh8fF9+JPV+666v6H43Cz5+KP83B7AOK07ebiAAAAAASUVORK5CYII=", "doorOpen": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAgCAYAAADaInAlAAADAUlEQVR42u2bMWvbQBTHn0wWe3QGe0gK8aDSUnDkQdCu7dS1BDxmyRxKsIYOHTp0KWQp9BsUPHTIB3DWDk5cJaC4NEMHJ0MCFbSFbpavS1UkWad7J51OxLwHD2P7rN/z3bt39z/LADmt3TLZh59/WLtlsnbLZKDZiK+Gb8hCo89ff3MBAODNfSvW7ub20ijrSxNfLd+QgVp2H3VRdzxU1hnEL5dfywK3Wybb3TsEy+7D7t4hAAB0u7bwMWxv2X3IW6KIr4dv8ODYbMOaOx6iZwPx9fENWXi0vKSZ6LOiTiC+Xr6BhUfBG5vbAADg+zPY6vTg968fAABwfXUmDCSrE7D8eqMJA/c49v6nFwOYeiMt/HDzlbToZuyu8A0sPBz0qCUTIGrXV2dSnSDD9/0ZvJyMYm2OdpxYHKr59UZzicmzox0Hpt5IKf/V1y9SJf/tgx6KX8OsHWmDL7KNzW1hucKuXWn8OWMx18FPMnmumu9MJ2h26M50guLXigz+wD2G4L1TWhJk8QPGYq6Dn2TyXCX/4OIUzU36wcWpkL+UAKGccMdDePjoWeEMrjea/4P4fvlZ2B7LF1WAMvgyFUAFf987kZ75Sd/3TjL5a8kXzs/HpR1fdswnwjZYftagl8XPwyzCL8rD8LkVoAyTmQEiwywBqvmyS0BRft7Sz4uHKgBVAHECdLt2LAjfnwkvjGkTZqCoE7D8gMnHUZQfSIxHWiyy/EDxb4xpfGEFWF+/J7xwVptoR+SZgWnX9v1Z6uzgtVXB5zFFfVKET3sAwRKAUQEq+XlUQBF+UQWQjGel9gBBBXuAQPMeIKAKQBWAKgBvMBYVqICFZhWwIBWQoQJYBSoAPyBqVIDaBCAVQCpglU4C467nJBDn6k4C1TidBNJJIKkAUgF0DkDnAKukAuYVqIC5ZhUwJxVAKoD2ABnlmO4HqPh+gHfWU9jq9EgF3GEVsMbLwjIqAXZwUfyPXvz54+fl85NMnnFikeZjeQKz//2tLI1vACz/61SXhfemE786/l8ES8S8pRcSqgAAAABJRU5ErkJggg==", "lockLocked": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAsElEQVR42mNkIBNIiKv9R+a/eHmLkRxzmBhGwSgYYMA40LmAhVyLlVRt0KX+k+MQFnJcraRqw3Dz2l4UMXUtZ4Z7t4/QthyQEFf7D7Ocj18SRe7mtb0MSqo2GFFDs4Lo08fnVEmEA14SDi0HvHh5i/He7SMM6lrOGHKwREiXXABzRExYEAMDAwPDklXryMoBg6IgoggoKlr8V1S0+D+aC0YdMOqAUQeMOmDUAaNgSAMAYdo6NsNoe9UAAAAASUVORK5CYII=", "lockOpen": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAqklEQVR42mNgGAWjYKQDRnI1Soir/Ufmv3h5iyyzWMi1WH3/LlQJR7f/5DiEhRxXq+/fxXDFxh5FTOfIQYabjm4km8VEqu9hlvPxS6LIXbGxZ1DfvwsjaqjqAGTw6eNzqiRCpoHOBUxDLt9KiKv9t7/24L+wkDwKtr/24D+p8U92Lrjp6Magc+QgQ7iUKAMDAwPDymevycoBg6IgGgWjYBSMglEwCkbBKAAAjds10AcEzB0AAAAASUVORK5CYII=", "lockHint": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAsklEQVR42mNkIBNIiKv9R+a/eHmLkRxzmBhGwSgYYMA40LmAkVyL17iGoIiH7F5DlkNYyHH1GtcQBv9tS1HENnpFwx1Bs3JAQlztP8xyPn5JFDn/bUsZ1riGYEQNzQqiTx+fUyURDnhJOPSKYglxtf9HYqr+CwvJo+AjMVX/SY1/irPhJTMrBgYGBga9U8fIzoYDXhBRBBQVLf4rKlr8H80Fow4YdcCoA0YdMOqAUTCkAQBJbT6K1790SwAAAABJRU5ErkJggg==", "needle": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAAICAYAAADTLS5CAAAAH0lEQVR42mNgIAwYz595/J+BgYGBCSbConrnKgOKCACSNAVdvXwtkwAAAABJRU5ErkJggg=="};
+
+</script>
+<script>
+(() => {
+  'use strict';
+  const A = window.__ASSETS;
+  const DEG = Math.PI / 180;
+  // Player rules ported from the game's PlayerController / WorldRotator (fixed step 0.02, no own horizontal speed)
+  const G = 9.81, PR = 0.4, PC = [0.4, 1.13];
+  const DT = 0.02, SUB = 4, SKIN = 0.02, PIVOT_LAG = 8;
+  const P = { rotSpeed: 180, vmax: 11, mineLift: 16, cloudTime: 1.0, riseSpeed: 3.2, slowmo: true, react: 0.12, intro: 1.2 };
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+  const air = () => !S.grounded && S.airTime > 0.06;
+  // balloon mines: give where each balloon should float while you hold angle th; the anchor goes on the "down" side
+  function minesAt(list, th, len = 0.9) { const t = th * DEG; return list.map(([x, y]) => [x + len * Math.sin(t), y + len * Math.cos(t), len]); }
+
+  // ---------------- the four small levels (tiles, y down). Open sky; past `bound` is the cloud sea ----------------
+  const LEVELS = [
+    {
+      id: '3-1', name: '跷跷板', w: 28, h: 18,
+      tip: '一站上去它就翻，把你倒进半空。在空中转世界拐弯，落到下一块上，它又翻。',
+      bound: { x0: 0, y0: -3, x1: 28, y1: 13.5 },
+      isles: [[24, 5, 27, 12]],
+      sees: [{ px: 4.5, py: 5, hl: 2.4, ht: 0.16, a0: 0 }, { px: 13, py: 9.4, hl: 2.6, ht: 0.16, a0: 90 }],
+      start: [5.8, 4.84],
+      door: { bx: 24, by: 9, dir: 90 },
+      cue: { a: 5.6, b: 15.0 },
+      plan: [
+        { t: 0, cap: '跷跷板一翻，就把你倒出去了', sub: '下面是云海，掉下去就没了', next: () => air() && lp()[1] > LV.cue.a },
+        { t: 90, cap: '顺时针转 90°：横着往右掉', sub: '落到竖着的那块跷跷板上', react: 0.55, next: () => S.on.has('see1') },
+        { t: 90, cap: '它也翻了，把你倒出去', sub: '', next: () => air() && lp()[0] > LV.cue.b },
+        { t: () => 90 - clamp((DOOR.by - lp()[1]) * 12, -30, 30), cap: '边飞边对准门', sub: '门在 ±20° 内才开', next: () => lp()[0] > DOOR.bx - 2.2 },
+        { t: 90, cap: '摆正，冲进门', sub: '', next: () => false },
+      ],
+    },
+    {
+      id: '3-2', name: '气球雷', w: 27, h: 15,
+      tip: '气球雷永远往屏幕上方飘，你一拧它们也跟着摆。从缝里钻过去。',
+      bound: { x0: 0, y0: -3, x1: 27, y1: 14.5 },
+      isles: [[1, 5, 5, 7], [23, 3, 26, 11]],
+      mines: [...minesAt([[11.2, 3.4], [11.4, 4.8], [11.6, 6.2], [11.8, 7.6]], 90), ...minesAt([[19.4, -1.6], [19.6, -0.2], [19.8, 1.2], [20.0, 2.6]], 90)],
+      cue: { climb: 5.2, level: 3.2, dive: 11.6 },
+      start: [3.5, 5.0],
+      door: { bx: 23, by: 6.2, dir: 90 },
+      plan: [
+        { t: 90, cap: '顺时针转 90°：横着往右掉', sub: '在半空中转世界，就是在拐弯', next: () => lp()[0] > LV.cue.climb },
+        { t: 135, cap: '再顺时针拧：从气球雷上面飞过', sub: '气球也跟着摆', next: () => lp()[1] < LV.cue.level },
+        { t: 90, cap: '摆平', sub: '', next: () => lp()[0] > LV.cue.dive },
+        { t: 45, cap: '逆时针拧：钻到下面去', sub: '', next: () => lp()[1] > 4.2 },
+        { t: () => 90 - clamp((DOOR.by - lp()[1]) * 12, -30, 30), cap: '摆平，边飞边对准门', sub: '门在 ±20° 内才开', next: () => lp()[0] > DOOR.bx - 2.2 },
+        { t: 90, cap: '摆正，冲进门', sub: '', next: () => false },
+      ],
+    },
+    {
+      id: '3-3', name: '散云', w: 20, h: 22,
+      tip: '云只能托你 1 秒。散之前转走，从两排刺中间的缝里穿过去。',
+      bound: { x0: 0, y0: -3, x1: 20, y1: 21.5 },
+      isles: [[1, 4, 5, 6], [14, 13, 18, 19]],
+      clouds: [{ cx: 9, cy: 4, hx: 0.8, hy: 3 }, { cx: 7.8, cy: 16, hx: 2.2, hy: 0.6 }],
+      spikes: [[2, 11.6, 6.6, 12.4], [9, 11.6, 16, 12.4]],
+      start: [3, 4.0],
+      door: { bx: 14, by: 15, dir: 90 },
+      plan: [
+        { t: 90, cap: '顺时针转 90°：落到云上', sub: '云只能托你 1 秒', next: () => S.on.has('cloud0') },
+        { t: 0, cap: '云要散了！逆时针转回来往下掉', sub: '从两排刺中间的缝里穿过去', react: 0.5, next: () => S.on.has('cloud1') },
+        { t: 90, cap: '又一朵会散的云：马上顺时针，冲进门', sub: '', react: 0.5, next: () => false },
+      ],
+    },
+    {
+      id: '3-4', name: '气球平台', w: 22, h: 24,
+      tip: '平台被气球带着往上飘，撞上刺就爆。爆之前转身飞向门。',
+      bound: { x0: 0, y0: -3, x1: 22, y1: 23.5 },
+      isles: [[15, 4, 19, 6], [1, 11, 4, 19]],
+      plats: [{ cx: 10.8, cy: 18, hx: 1.9, hy: 0.16 }],
+      spikes: [[4.6, 10.6, 8.7, 11.4], [12.8, 10.6, 20, 11.4]],
+      start: [16, 4.0],
+      door: { bx: 4, by: 14.2, dir: -90 },
+      plan: [
+        { t: -90, cap: '逆时针转 90°：从岛边掉下去', sub: '', next: () => air() && lp()[0] < 14.6 },
+        { t: 0, cap: '顺时针转回来：往下掉', sub: '从刺中间的缝里穿过去，落到气球平台上', react: 0.18, next: () => S.on.has('plat0') },
+        { t: -90, cap: '气球扎破前，逆时针转 90°：飞向门', sub: '慢了就跟着平台掉进云海', react: 0.9, next: () => air() && lp()[0] < 10.5 },
+        { t: () => -90 + clamp((DOOR.by - lp()[1]) * 10, -15, 15), cap: '边飞边微调：对准门', sub: '门在 ±20° 内才开', next: () => lp()[0] < DOOR.bx + 3.5 },
+        { t: -90, cap: '摆正，冲进门', sub: '', next: () => false },
+      ],
+    },
+    // ======== new combo levels ========
+    {
+      id: '3-5', name: '翻板接云', isNew: true, w: 26, h: 26,
+      tip: '跷跷板把你倒出去，落到会散的云上；云一散就往下掉，从刺中间穿过去，下面还有一块跷跷板。',
+      bound: { x0: 0, y0: -3, x1: 26, y1: 25.5 },
+      isles: [[20, 17, 24, 24]],
+      sees: [{ px: 4.5, py: 5, hl: 2.4, ht: 0.16, a0: 0 }, { px: 10, py: 18.5, hl: 2.4, ht: 0.16, a0: 0 }],
+      clouds: [{ cx: 12.5, cy: 8.8, hx: 0.8, hy: 3 }],
+      spikes: [[6, 13.1, 10.3, 13.9], [13, 13.1, 18, 13.9]],
+      start: [5.8, 4.84],
+      door: { bx: 20, by: 20.5, dir: 90 },
+      plan: [
+        { t: 0, cap: '跷跷板一翻，就把你倒出去了', sub: '', next: () => air() && lp()[1] > 5.6 },
+        { t: 90, cap: '顺时针转 90°：横着往右掉', sub: '落到竖着的云上，云只能托你 1 秒', react: 0.3, next: () => S.on.has('cloud0') },
+        { t: 0, cap: '云要散了！逆时针转回来往下掉', sub: '从两排刺中间穿过去，落到跷跷板上', react: 0.5, next: () => S.on.has('see1') },
+        { t: 0, cap: '它也翻了，把你倒出去', sub: '', next: () => air() && lp()[1] > 19.6 },
+        { t: () => 90 - clamp((DOOR.by - lp()[1]) * 12, -30, 30), cap: '顺时针：边飞边对准门', sub: '门在 ±20° 内才开', next: () => lp()[0] > DOOR.bx - 2.2 },
+        { t: 90, cap: '摆正，冲进门', sub: '', next: () => false },
+      ],
+    },
+    {
+      id: '3-6', name: '雷云', isNew: true, w: 26, h: 22,
+      tip: '从气球雷的缝里钻过去，落到会散的云上。云一散，下面又是一排雷。',
+      bound: { x0: 0, y0: -3, x1: 26, y1: 21.5 },
+      isles: [[1, 5, 5, 7], [21, 13, 25, 20]],
+      mines: [...minesAt([[10.6, 0.6], [10.8, 2.0], [11.0, 3.4], [11.0, 8.0], [10.8, 9.4], [10.6, 10.8]], 90), ...minesAt([[10.4, 12.4], [11.8, 12.6], [13.2, 12.8], [16.4, 12.8], [17.8, 12.6]], 0)],
+      clouds: [{ cx: 16, cy: 5.8, hx: 0.8, hy: 3 }, { cx: 14.6, cy: 17.2, hx: 2.2, hy: 0.6 }],
+      start: [3.5, 5.0],
+      door: { bx: 21, by: 16.2, dir: 90 },
+      plan: [
+        { t: 90, cap: '顺时针转 90°：横着往右掉', sub: '从两串气球雷中间钻过去', next: () => S.on.has('cloud0') },
+        { t: 0, cap: '云要散了！逆时针转回来往下掉', sub: '下面那排雷中间有条缝', react: 0.55, next: () => S.on.has('cloud1') },
+        { t: 90, cap: '又要散了：顺时针，冲进门', sub: '', react: 0.5, next: () => false },
+      ],
+    },
+    {
+      id: '3-7', name: '升降雷阵', isNew: true, w: 24, h: 26,
+      tip: '气球平台托着你往上飘，两边都是气球雷，顶上是刺。飘到门那么高，从雷的缺口飞出去。',
+      bound: { x0: 0, y0: -3, x1: 24, y1: 25.5 },
+      isles: [[14, 2, 18, 4], [1, 8, 4, 16]],
+      plats: [{ cx: 11.3, cy: 21, hx: 1.9, hy: 0.16 }],
+      mines: [...minesAt([[8.4, 8.0], [8.4, 9.4], [8.4, 14.8], [8.4, 16.2], [8.4, 17.6], [14.6, 8.6], [14.6, 10.0], [14.6, 11.4], [14.6, 12.8], [14.6, 14.2], [14.6, 15.6]], 0)],
+      spikes: [[5, 6.6, 9.4, 7.4], [13.6, 6.6, 17, 7.4]],
+      start: [15.0, 2.0],
+      door: { bx: 4, by: 12, dir: -90 },
+      cue: { a: 13.9, b: 13.0 },
+      plan: [
+        { t: -90, cap: '逆时针转 90°：从岛边掉下去', sub: '', next: () => air() && lp()[0] < LV.cue.a },
+        { t: 0, cap: '顺时针转回来：往下掉', sub: '从刺中间的缝里穿过去，落到气球平台上', react: 0.25, next: () => S.on.has('plat0') },
+        { t: 0, cap: '平台往上飘', sub: '等它飘到门那么高', next: () => lp()[1] < LV.cue.b },
+        { t: -90, cap: '逆时针转 90°：从雷的缺口飞向门', sub: '慢了平台就撞上刺', next: () => false },
+      ],
+    },
+    {
+      id: '3-8', name: '滑降', isNew: true, w: 23, h: 38,
+      tip: '一路往下掉，左右拧着世界拐弯，从刺木的缺口里钻过去。最后落到云上，转身进门。',
+      bound: { x0: 0, y0: -3, x1: 23, y1: 37.5 },
+      isles: [[2, 3, 6, 5], [19, 28, 23, 35]],
+      spikes: [[2, 9, 12, 9.8], [10, 17, 21, 17.8], [2, 25, 12, 25.8]],
+      clouds: [{ cx: 15.2, cy: 32.6, hx: 2.2, hy: 0.6 }],
+      start: [4, 3.0],
+      door: { bx: 19, by: 31.0, dir: 90 },
+      cue: { a: 6.3, k: 14, max: 55 },
+      plan: [
+        { t: 90, cap: '顺时针转 90°：从岛边掉下去', sub: '', next: () => air() && lp()[0] > LV.cue.a },
+        { t: () => clamp((15.5 - lp()[0]) * LV.cue.k, -LV.cue.max, LV.cue.max), cap: '拧着世界往右下拐', sub: '第一根刺木的缺口在右边', react: 0.02, next: () => lp()[1] > 10.2 },
+        { t: () => clamp((6.5 - lp()[0]) * LV.cue.k, -LV.cue.max, LV.cue.max), cap: '一过去马上往左下拐', sub: '第二根的缺口在左边', react: 0.02, next: () => lp()[1] > 18.2 },
+        { t: () => clamp((15.2 - lp()[0]) * LV.cue.k, -LV.cue.max, LV.cue.max), cap: '再往右下拐', sub: '落到云上', react: 0.02, next: () => S.on.has('cloud0') },
+        { t: 90, cap: '云要散了：顺时针转 90°，冲进门', sub: '', react: 0.3, next: () => false },
+      ],
+    },
+    {
+      id: '3-9', name: '翻板雷阵', isNew: true, w: 28, h: 28,
+      tip: '撞开竖着的跷跷板，飞过去再转回来往下掉；一路拧着世界从气球雷中间钻下去，落到下一块跷跷板上，再被倒向门。',
+      bound: { x0: 0, y0: -3, x1: 28, y1: 27.5 },
+      isles: [[1, 3, 5, 5], [22, 17, 26, 25]],
+      sees: [{ px: 9.2, py: 3.4, hl: 2.4, ht: 0.16, a0: 90 }, { px: 15.4, py: 21.5, hl: 2.4, ht: 0.16, a0: 0 }],
+      mines: [...minesAt([[12.6, 12.0], [14.8, 12.0], [19.0, 12.2], [20.4, 12.0], [13.2, 16.6], [18.4, 16.6], [19.8, 16.4]], 0)],
+      start: [3, 3.0],
+      door: { bx: 22, by: 23.8, dir: 90 },
+      cue: { a: 13, x: 16.2, k: 10, max: 40 },
+      plan: [
+        { t: 90, cap: '顺时针转 90°：横着往右掉', sub: '撞上竖着的跷跷板', next: () => S.on.has('see0') },
+        { t: 90, cap: '跷跷板一翻，门开了，飞过去', sub: '', react: 0.07, next: () => air() && lp()[0] > LV.cue.a },
+        { t: () => clamp((LV.cue.x - lp()[0]) * LV.cue.k, -LV.cue.max, LV.cue.max), cap: '逆时针转回来往下掉', sub: '边掉边拧，从雷中间的缺口钻下去', react: 0.05, next: () => S.on.has('see1') },
+        { t: 0, cap: '落到跷跷板上，它又翻了', sub: '', react: 0.07, next: () => air() && lp()[1] > 22.6 },
+        { t: () => 90 - clamp((DOOR.by - lp()[1]) * 12, -30, 30), cap: '顺时针：边飞边对准门', sub: '门在 ±20° 内才开', react: 0.07, next: () => lp()[0] > DOOR.bx - 2.2 },
+        { t: 90, cap: '摆正，冲进门', sub: '', react: 0.07, next: () => false },
+      ],
+    },
+    {
+      id: '3-10', name: '双浮台', isNew: true, w: 28, h: 26,
+      tip: '坐第一个气球平台往上飘，飘过第二个平台的高度就飞过去落到它上面；再坐它飘到门那么高，飞进门。顶上都是刺。',
+      bound: { x0: 0, y0: -3, x1: 28, y1: 25.5 },
+      isles: [[1, 8, 5, 10], [23, 2, 27, 9]],
+      plats: [{ cx: 9.6, cy: 22, hx: 1.9, hy: 0.16 }, { cx: 17.4, cy: 16, hx: 1.9, hy: 0.16 }],
+      spikes: [[5.5, 3.6, 13, 4.4], [14, -1.6, 21.5, -0.8]],
+      start: [3, 8.0],
+      door: { bx: 23, by: 5.4, dir: 90 },
+      cue: { a: 6.2, b: 12.6, c: 15.0, d: 6.4 },
+      plan: [
+        { t: 90, cap: '顺时针转 90°：从岛边掉下去', sub: '', next: () => air() && lp()[0] > LV.cue.a },
+        { t: 0, cap: '逆时针转回来：往下掉', sub: '落到第一个气球平台上', react: 0.2, next: () => S.on.has('plat0') },
+        { t: 0, cap: '平台往上飘', sub: '飘过第二个平台的高度', next: () => lp()[1] < LV.cue.b },
+        { t: 90, cap: '顺时针转 90°：飞向第二个平台', sub: '', next: () => lp()[0] > LV.cue.c },
+        { t: 0, cap: '逆时针转回来：落到平台上', sub: '', react: 0.1, next: () => S.on.has('plat1') },
+        { t: 0, cap: '又往上飘', sub: '飘到门那么高', next: () => lp()[1] < LV.cue.d },
+        { t: 90, cap: '顺时针转 90°：飞进门', sub: '慢了平台就撞上刺', next: () => false },
+      ],
+    },
+    {
+      id: '3-11', name: '天空大回环', isNew: true, w: 28, h: 30,
+      tip: '跷跷板、气球雷、散云、刺木、气球平台，一口气全来：倒出去、钻雷缝、踩云、穿刺、坐平台飞进门。',
+      bound: { x0: 0, y0: -3, x1: 28, y1: 29.5 },
+      isles: [[2, 17, 6, 25]],
+      sees: [{ px: 4.5, py: 6, hl: 2.4, ht: 0.16, a0: 0 }],
+      mines: [...minesAt([[11.2, 3.4], [11.2, 4.8], [11.2, 6.2], [11.2, 12.6], [11.2, 14.0], [9.4, 19.0], [9.4, 23.6]], 90)],
+      clouds: [{ cx: 17.5, cy: 9.2, hx: 0.8, hy: 3 }],
+      spikes: [[8, 15, 15.6, 15.8], [17.6, 15, 24, 15.8]],
+      plats: [{ cx: 16.6, cy: 25, hx: 1.9, hy: 0.16 }],
+      start: [5.8, 5.84],
+      door: { bx: 6, by: 21.2, dir: -90 },
+      cue: { b: 22.2 },
+      plan: [
+        { t: 0, cap: '跷跷板一翻，就把你倒出去了', sub: '', next: () => air() && lp()[1] > 6.6 },
+        { t: 90, cap: '顺时针转 90°：横着往右掉', sub: '从两串气球雷中间钻过去，落到云上', react: 0.3, next: () => S.on.has('cloud0') },
+        { t: 0, cap: '云要散了！逆时针转回来往下掉', sub: '从刺木的缺口穿过去，落到气球平台上', react: 0.5, next: () => S.on.has('plat0') },
+        { t: 0, cap: '平台往上飘', sub: '等它飘到门那么高，刺会把气球扎破', next: () => lp()[1] < LV.cue.b },
+        { t: -90, cap: '逆时针转 90°：从雷中间飞向门', sub: '', next: () => false },
+      ],
+    },
+    {
+      id: '3-12', name: '翻板浮台', isNew: true, w: 26, h: 26,
+      tip: '跷跷板把你倒出去，从刺木的缺口里钻下去，边掉边拧落到气球平台上；平台往上飘，飘到门那么高就飞过去，慢了平台撞上刺就爆。',
+      bound: { x0: 0, y0: -3, x1: 26, y1: 25.5 },
+      isles: [[21, 11, 25, 18]],
+      sees: [{ px: 4.5, py: 5, hl: 2.4, ht: 0.16, a0: 0 }],
+      plats: [{ cx: 11.8, cy: 21, hx: 1.9, hy: 0.16 }],
+      spikes: [[1, 9.0, 5.4, 9.8], [8.4, 9.0, 20, 9.8]],
+      start: [5.8, 4.84],
+      door: { bx: 21, by: 13.6, dir: 90 },
+      cue: { a: 5.6, x1: 6.5, x2: 11.8, k: 10, max: 40, y2: 10.6, b: 14.6 },
+      plan: [
+        { t: 0, cap: '跷跷板一翻，就把你倒出去了', sub: '', next: () => air() && lp()[1] > LV.cue.a },
+        { t: () => clamp((LV.cue.x1 - lp()[0]) * LV.cue.k, -LV.cue.max, LV.cue.max), cap: '边掉边拧：对准刺木的缺口', sub: '', react: 0.05, next: () => lp()[1] > LV.cue.y2 },
+        { t: () => clamp((LV.cue.x2 - lp()[0]) * LV.cue.k, -LV.cue.max, LV.cue.max), cap: '钻过去了，再往右拧', sub: '落到气球平台上', react: 0.05, next: () => S.on.has('plat0') },
+        { t: 0, cap: '平台往上飘', sub: '等它飘到门那么高，头顶是刺', next: () => lp()[1] < LV.cue.b },
+        { t: () => 90 - clamp((DOOR.by - lp()[1]) * 12, -30, 30), cap: '顺时针转 90°：飞向门，边飞边对准', sub: '慢了平台撞刺就爆；门在 ±20° 内才开', next: () => lp()[0] > DOOR.bx - 2.2 },
+        { t: 90, cap: '摆正，冲进门', sub: '', next: () => false },
+      ],
+    },
+    {
+      id: '3-13', name: '云台接力', isNew: true, w: 26, h: 26,
+      tip: '掉下去边掉边拧，落到气球平台上；平台往上飘，赶在气球撞刺之前跳到竖着的云上；云只能托你 1 秒，马上往右上飞进门。',
+      bound: { x0: 0, y0: -3, x1: 26, y1: 25.5 },
+      isles: [[1, 5, 5, 7], [20, 7, 24, 13]],
+      plats: [{ cx: 12, cy: 22, hx: 1.9, hy: 0.16 }],
+      clouds: [{ cx: 15.6, cy: 10, hx: 0.8, hy: 3 }],
+      spikes: [[11.2, 6.0, 14.2, 6.8]],
+      start: [3, 5.0],
+      door: { bx: 20, by: 10.0, dir: 90 },
+      cue: { a: 5.4, y1: 8.0, x: 12, k: 10, max: 40, b: 12.5 },
+      plan: [
+        { t: 90, cap: '顺时针转 90°：从岛边掉下去', sub: '', next: () => air() && lp()[0] > LV.cue.a },
+        { t: 0, cap: '逆时针转回来：往下掉', sub: '从刺木左边掉下去', react: 0.2, next: () => lp()[1] > LV.cue.y1 },
+        { t: () => clamp((LV.cue.x - lp()[0]) * LV.cue.k, -LV.cue.max, LV.cue.max), cap: '边掉边往右拧', sub: '落到气球平台上', react: 0.02, next: () => S.on.has('plat0') },
+        { t: 0, cap: '平台往上飘', sub: '飘到云那么高；头顶是刺', next: () => lp()[1] < LV.cue.b },
+        { t: 90, cap: '顺时针转 90°：跳到竖着的云上', sub: '慢了气球撞刺就爆；云只能托你 1 秒', next: () => S.on.has('cloud0') },
+        { t: () => 90 - clamp((DOOR.by - lp()[1]) * 12, -30, 30), cap: '马上往右上飞：边飞边对准门', sub: '门在 ±20° 内才开', react: 0.25, next: () => lp()[0] > DOOR.bx - 2.2 },
+        { t: 90, cap: '摆正，冲进门', sub: '', next: () => false },
+      ],
+    },
+
+  ];
+
+  // ---------------- current level (rebuilt by setupLevel) ----------------
+  let LI = 0, LV = LEVELS[0], MW = 1, MH = 1, PLAN = LV.plan, BOUND = null, DOOR = null;
+  let rock = new Uint8Array(1), SEES = [], MINES0 = [], CLOUDS = [], PLATS = [], SPKS = [];
+  const TS = 16;
+  const solidAt = (cx, cy) => cx >= 0 && cy >= 0 && cx < MW && cy < MH && rock[cy * MW + cx] === 1;
+  function setupLevel(i) {
+    LI = i; LV = LEVELS[i]; MW = LV.w; MH = LV.h; PLAN = LV.plan; BOUND = LV.bound;
+    rock = new Uint8Array(MW * MH);
+    for (const [x0, y0, x1, y1] of LV.isles || []) for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) rock[y * MW + x] = 1;
+    SEES = LV.sees || []; MINES0 = LV.mines || []; CLOUDS = LV.clouds || []; PLATS = LV.plats || []; SPKS = LV.spikes || [];
+    const rot = -LV.door.dir * DEG;
+    DOOR = { bx: LV.door.bx, by: LV.door.by, rot, ux: Math.sin(rot), uy: -Math.cos(rot), rx: Math.cos(rot), ry: Math.sin(rot) };
+  }
+
+  // ---------------- state ----------------
+  const S = {
+    mode: 'idle', theta: 0, tx: 0, ty: 0, px: 0, py: 0, vx: 0, vy: 0, grounded: true, airTime: 0, stick: 0, u: 0, uVis: 0, hist: [],
+    state: 'play', timer: 0, time: 0, runStart: 0, runTime: 0, step: 0, stepAt: 0, deaths: 0, on: new Set(), leftAt: {},
+    anim: 'idle', animT: 0, flash: 0, flashColor: '', shake: 0, slow: 0, near: {},
+    fx: [], pops: [], needleA: 0, needleV: 0, unlocked: false, doorF: 0, hint: 0, cam: [0, 0], done: false, dbg: {},
+  };
+  let O = null;    // moving things: seesaws, mines, clouds, balloon platforms
+  function freshWorld() {
+    return {
+      sees: SEES.map(() => ({ ang: 0, av: 0, st: 'idle', t: 0, side: 1 })),
+      mines: MINES0.map(([ax, ay, len]) => ({ bx: ax, by: ay - len, vx: 0, vy: 0, boom: 0 })),
+      clouds: CLOUDS.map(() => ({ st: 'solid', t: 0 })),
+      plats: PLATS.map(p => ({ cx: p.cx, cy: p.cy, st: 'wait', t: 0, vx: 0, vy: 0, bob: 0 })),
+    };
+  }
+  const prev = { theta: 0, tx: 0, ty: 0, px: 0, py: 0, cam: [0, 0], see: [], plat: [], mines: [] };
+  function snapshot() {
+    prev.theta = S.theta; prev.tx = S.tx; prev.ty = S.ty; prev.px = S.px; prev.py = S.py; prev.cam = [S.cam[0], S.cam[1]];
+    prev.see = O.sees.map(s => s.ang); prev.plat = O.plats.map(p => [p.cx, p.cy]); prev.mines = O.mines.map(m => [m.bx, m.by]);
+  }
+
+  // ---------------- transforms ----------------
+  function toLevel(wx, wy) { const c = Math.cos(S.theta), s = Math.sin(S.theta), dx = wx - S.tx, dy = wy - S.ty; return [dx * c + dy * s, -dx * s + dy * c]; }
+  function toWorld(lx, ly) { const c = Math.cos(S.theta), s = Math.sin(S.theta); return [S.tx + lx * c - ly * s, S.ty + lx * s + ly * c]; }
+  function vW(x, y) { const c = Math.cos(S.theta), s = Math.sin(S.theta); return [x * c - y * s, x * s + y * c]; }
+  const lp = () => toLevel(S.px, S.py - PC[0]);
+  function doorTilt() { const u = vW(DOOR.ux, DOOR.uy); return Math.acos(clamp(-u[1], -1, 1)) / DEG; }
+
+  // ---------------- collision: tiles + moving boxes (level space) ----------------
+  let COLS = [];
+  function buildCols() {
+    COLS = [];
+    SEES.forEach((d, i) => COLS.push({ kind: 'see' + i, cx: d.px, cy: d.py, hx: d.hl, hy: d.ht, ang: d.a0 * DEG + O.sees[i].ang }));
+    CLOUDS.forEach((d, i) => { if (O.clouds[i].st !== 'gone') COLS.push({ kind: 'cloud' + i, cx: d.cx, cy: d.cy, hx: d.hx, hy: d.hy, ang: 0 }); });
+    PLATS.forEach((d, i) => { const p = O.plats[i]; if (p.st !== 'gone') COLS.push({ kind: 'plat' + i, cx: p.cx, cy: p.cy, hx: d.hx, hy: d.hy, ang: 0 }); });
+  }
+  // circle vs oriented box: [nx, ny, penetration] in level space, or null
+  function boxPush(lx, ly, r, b) {
+    const c = Math.cos(b.ang), s = Math.sin(b.ang), dx = lx - b.cx, dy = ly - b.cy;
+    const ux = dx * c + dy * s, uy = -dx * s + dy * c;
+    const qx = clamp(ux, -b.hx, b.hx), qy = clamp(uy, -b.hy, b.hy), ex = ux - qx, ey = uy - qy, d2 = ex * ex + ey * ey;
+    if (d2 >= r * r) return null;
+    let nx, ny, pen;
+    if (d2 > 1e-9) { const d = Math.sqrt(d2); nx = ex / d; ny = ey / d; pen = r - d; }
+    else { const px = b.hx - Math.abs(ux), py = b.hy - Math.abs(uy); if (px < py) { nx = ux < 0 ? -1 : 1; ny = 0; pen = px + r; } else { nx = 0; ny = uy < 0 ? -1 : 1; pen = py + r; } }
+    return [nx * c - ny * s, nx * s + ny * c, pen];
+  }
+  function resolveCircleL(lx, ly, r, normals) {
+    for (let it = 0; it < 4; it++) {
+      let hit = false;
+      const x0 = Math.floor(lx - r), x1 = Math.floor(lx + r), y0 = Math.floor(ly - r), y1 = Math.floor(ly + r);
+      for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+        if (!solidAt(cx, cy)) continue;
+        const qx = clamp(lx, cx, cx + 1), qy = clamp(ly, cy, cy + 1);
+        const dx = lx - qx, dy = ly - qy, d2 = dx * dx + dy * dy;
+        if (d2 >= r * r) continue;
+        let nx, ny, pen;
+        if (d2 > 1e-9) { const d = Math.sqrt(d2); nx = dx / d; ny = dy / d; pen = r - d; }
+        else {
+          const opts = [[-1, 0, lx - cx], [1, 0, cx + 1 - lx], [0, -1, ly - cy], [0, 1, cy + 1 - ly]].sort((a, b) => a[2] - b[2]);
+          const o = opts.find(q => !solidAt(cx + q[0], cy + q[1])) || opts[0];
+          nx = o[0]; ny = o[1]; pen = o[2] + r;
+        }
+        lx += nx * pen; ly += ny * pen; hit = true;
+        if (normals) normals.push([nx, ny]);
+      }
+      for (const b of COLS) {
+        const o = boxPush(lx, ly, r, b);
+        if (!o) continue;
+        lx += o[0] * o[2]; ly += o[1] * o[2]; hit = true;
+        if (normals) normals.push([o[0], o[1]]);
+      }
+      if (!hit) break;
+    }
+    return [lx, ly];
+  }
+  // contacts within r: normals (level) plus which moving box they belong to
+  function touchingL(lx, ly, r, out) {
+    const x0 = Math.floor(lx - r), x1 = Math.floor(lx + r), y0 = Math.floor(ly - r), y1 = Math.floor(ly + r);
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+      if (!solidAt(cx, cy)) continue;
+      const qx = clamp(lx, cx, cx + 1), qy = clamp(ly, cy, cy + 1);
+      const dx = lx - qx, dy = ly - qy, d2 = dx * dx + dy * dy;
+      if (d2 >= r * r || d2 < 1e-9) continue;
+      const d = Math.sqrt(d2); out.push({ n: [dx / d, dy / d], kind: 'tile' });
+    }
+    for (const b of COLS) { const o = boxPush(lx, ly, r, b); if (o) out.push({ n: [o[0], o[1]], kind: b.kind }); }
+  }
+  function resolveW(wx, wy, r, normals) {
+    const [lx, ly] = toLevel(wx, wy), ns = [];
+    const [nx, ny] = resolveCircleL(lx, ly, r, ns);
+    for (const n of ns) normals.push(vW(n[0], n[1]));
+    return vW(nx - lx, ny - ly);
+  }
+  function contactsNow() {
+    const cs = [];
+    for (const o of PC) { const [lx, ly] = toLevel(S.px, S.py - o); touchingL(lx, ly, PR + SKIN, cs); }
+    return cs.map(c => ({ n: vW(c.n[0], c.n[1]), kind: c.kind }));
+  }
+  function project(ns) {
+    for (let pass = 0; pass < 3; pass++) for (const n of ns) {
+      const vn = S.vx * n[0] + S.vy * n[1];
+      if (vn < 0) { S.vx -= vn * n[0]; S.vy -= vn * n[1]; }
+    }
+  }
+
+  // ---------------- reset ----------------
+  let lvlCv = null;
+  function resetLevel(intro) {
+    S.theta = 0; S.tx = 0; S.ty = 0; S.vx = 0; S.vy = 0; S.grounded = true;
+    S.stick = 0; S.u = 0; S.hist = []; S.airTime = 0; S.state = intro ? 'intro' : 'play'; S.timer = intro ? P.intro : 0; S.on = new Set(); S.leftAt = {};
+    S.anim = 'idle'; S.animT = 0; S.flash = 0; S.shake = 0; S.slow = 0; S.near = {}; S.fx = []; S.pops = []; S.toast = null;
+    S.needleA = 0; S.needleV = 0; S.doorF = 0; S.hint = 0;
+    S.step = 0; S.stepAt = S.time; S.done = false;
+    const w = toWorld(LV.start[0], LV.start[1]); S.px = w[0]; S.py = w[1];
+    O = freshWorld();
+    buildCols();
+    S.unlocked = doorTilt() <= 20;
+    S.cam = camTarget();
+    S.runStart = S.time + (intro ? P.intro : 0); S.runTime = 0;
+    snapshot();
+  }
+  function loadLevel(i) {
+    setupLevel(i);
+    if (IMG.door) lvlCv = buildLevel();
+    S.mode = 'idle'; S.time = 0; S.deaths = 0;
+    resetLevel(false);
+  }
+  function startRun(mode) {
+    S.dbg = {}; S.time = 0;
+    S.mode = mode; S.deaths = 0;
+    resetLevel(P.intro > 0);
+  }
+  // camera: mostly the level's centre, pulled part of the way toward the player, so the whole small level stays in view
+  function camTarget() {
+    const c = toWorld((BOUND.x0 + BOUND.x1) / 2, (BOUND.y0 + BOUND.y1) / 2), f = 0.4;
+    return [c[0] + (S.px - c[0]) * f, c[1] + (S.py - 0.8 - c[1]) * f];
+  }
+
+  // ---------------- simulation ----------------
+  const input = { keys: 0, buttons: 0, pad: 0, auto: null };
+  function step(dt) {
+    S.time += dt;
+    snapshot();
+    const live = S.state === 'play' && S.mode !== 'idle';
+    let u = 0;
+    if (live && S.mode === 'demo') {
+      const react = PLAN[S.step].react ?? LV.react ?? P.react;
+      const b = S.time - S.stepAt < react && S.step > 0 ? PLAN[S.step - 1] : PLAN[S.step];
+      const tgt = typeof b.t === 'function' ? b.t() : b.t;
+      u = clamp((tgt * DEG - S.theta) * 4, -1, 1);
+    }
+    else if (live && input.auto) u = clamp(input.auto(S), -1, 1);
+    else if (live) {
+      S.stick += (input.pad - S.stick) * Math.min(1, dt * 12);
+      const st = Math.abs(S.stick) > 0.05 ? S.stick : 0;
+      u = st !== 0 ? st : clamp(input.keys + input.buttons, -1, 1);
+    }
+    S.u = u;
+    const dth = u * P.rotSpeed * DEG * dt;
+    const lc = [S.px, S.py - PC[0]];
+    S.hist.push(lc); if (S.hist.length > PIVOT_LAG) S.hist.shift();
+    if (dth !== 0) {
+      const pv = S.grounded ? lc : S.hist[0];
+      const c = Math.cos(dth), s = Math.sin(dth), rx = S.tx - pv[0], ry = S.ty - pv[1];
+      S.tx = pv[0] + rx * c - ry * s; S.ty = pv[1] + rx * s + ry * c; S.theta += dth;
+    }
+    if (S.mode !== 'idle' && S.state !== 'intro') {
+      stepSees(dt); stepMines(dt); stepClouds(dt); stepPlats(dt);
+      buildCols();
+    }
+    if (live) {
+      stepPlayer(dt);
+      checkHazards();
+      advancePlan();
+      if (!S.done) S.runTime = S.time - S.runStart;
+    }
+    updateDoor(dt);
+    stepFx(dt);
+    const tgt = camTarget(), kc = 1 - Math.exp(-6 * dt);
+    S.cam[0] += (tgt[0] - S.cam[0]) * kc; S.cam[1] += (tgt[1] - S.cam[1]) * kc;
+    if (S.state !== 'play') {
+      S.timer -= dt;
+      if (S.timer <= 0) {
+        if (S.state === 'intro') { S.state = 'play'; S.stepAt = S.time; S.runStart = S.time; }
+        else if (S.state === 'dead') resetLevel(false);
+        else if (S.state === 'clear') { S.state = 'over'; onRunOver(); }
+      }
+    }
+  }
+
+  function stepPlayer(dt) {
+    S.vx = 0;
+    S.vy = Math.min(S.vy + G * dt, P.vmax);
+    project(contactsNow().map(c => c.n));
+    for (let k = 0; k < SUB; k++) {
+      S.px += S.vx * dt / SUB; S.py += S.vy * dt / SUB;
+      const ns = [];
+      for (const o of [PC[0], PC[1], PC[0]]) { const cr = resolveW(S.px, S.py - o, PR, ns); S.px += cr[0]; S.py += cr[1]; }
+      project(ns);
+    }
+    const after = contactsNow();
+    project(after.map(c => c.n));
+    const feet = after.filter(c => c.n[1] < -0.5);
+    const grounded = feet.length > 0;
+    const on = new Set(feet.map(c => c.kind));
+    for (const k of S.on) if (!on.has(k)) S.leftAt[k] = S.time;
+    S.on = on;
+    if (grounded && !S.grounded && S.airTime > 0.18) { S.anim = 'land'; S.animT = 0; if (S.airTime > 0.5) puff(lp(), 6, 'dust'); }
+    if (!grounded && S.grounded) { S.anim = 'fallstart'; S.animT = 0; }
+    S.airTime = grounded ? 0 : S.airTime + dt;
+    S.grounded = grounded;
+  }
+
+  // seesaw: whichever side you land on drops (toward the current down), steeply enough to pour you off
+  function stepSees(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta);
+    O.sees.forEach((s, i) => {
+      const d = SEES[i];
+      if (s.st === 'idle') {
+        if (S.on.has('see' + i)) {
+          const l = lp(), rx = l[0] - d.px, ry = l[1] - d.py;
+          s.side = rx * gy - ry * gx >= 0 ? 1 : -1;
+          s.st = 'load'; s.t = 0.15;
+        }
+      } else if (s.st === 'load') { s.t -= dt; S.shake = Math.max(S.shake, 0.05); if (s.t <= 0) { s.st = 'tip'; s.av = 0; pop('咔！'); } }
+      else if (s.st === 'tip') {
+        s.av += s.side * 16 * dt; s.ang += s.av * dt;
+        if (Math.abs(s.ang) >= 82 * DEG) { s.ang = s.side * 82 * DEG; s.av = 0; s.st = 'tipped'; s.t = 1.6; S.shake = Math.max(S.shake, 0.2); }
+      } else if (s.st === 'tipped') { s.t -= dt; if (s.t <= 0) s.st = 'back'; }
+      else if (s.st === 'back') {
+        const dd = -s.ang, st = Math.sign(dd) * Math.min(Math.abs(dd), 1.4 * dt);
+        s.ang += st; if (Math.abs(s.ang) < 1e-4) { s.ang = 0; s.st = 'idle'; }
+      }
+    });
+  }
+  // tethered balloon mines float to the "up" side of their anchor, so every turn swings the whole field
+  function stepMines(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta);
+    O.mines.forEach((m, i) => {
+      if (m.boom) { m.boom += dt; return; }
+      const [ax, ay, len] = MINES0[i];
+      m.vx += -gx * P.mineLift * dt; m.vy += -gy * P.mineLift * dt;
+      m.vx *= 1 - 3.5 * dt; m.vy *= 1 - 3.5 * dt;
+      m.bx += m.vx * dt; m.by += m.vy * dt;
+      const dx = m.bx - ax, dy = m.by - ay, d = Math.hypot(dx, dy);
+      if (d > len) {
+        const nx = dx / d, ny = dy / d;
+        m.bx = ax + nx * len; m.by = ay + ny * len;
+        const vr = m.vx * nx + m.vy * ny; if (vr > 0) { m.vx -= vr * nx; m.vy -= vr * ny; }
+      }
+    });
+  }
+  // a cloud holds you for one second, then it is gone for a while
+  function stepClouds(dt) {
+    O.clouds.forEach((c, i) => {
+      const d = CLOUDS[i], k = 'cloud' + i;
+      if (c.st === 'solid') { if (S.on.has(k)) { c.st = 'fade'; c.t = P.cloudTime; pop('云要散了！'); } }
+      else if (c.st === 'fade') {
+        c.t -= dt;
+        if (c.t <= 0) {
+          c.st = 'gone'; c.t = 3; if (S.time - (S.leftAt[k] ?? -9) < 0.45) nearMiss('cloud');
+          for (let j = 0; j < 26; j++) S.fx.push({ x: d.cx + (Math.random() - 0.5) * d.hx * 2.4, y: d.cy + (Math.random() - 0.5) * d.hy * 2, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, life: 1, max: 1, k: 'cloud', s: 0.5 + Math.random() * 0.6 });
+        }
+      } else if (c.st === 'gone') { c.t -= dt; if (c.t <= 0) c.st = 'solid'; }
+    });
+  }
+  // balloon platform: carries you up toward the spikes; the balloons pop when they reach them
+  const BALLOONS = [[-0.9, 2.4], [0, 2.75], [0.9, 2.35]];
+  function balloonSpots(cx, cy, gx, gy) { const ux = -gx, uy = -gy, sx = -uy, sy = ux; return BALLOONS.map(([o, h]) => [cx + sx * o + ux * h, cy + sy * o + uy * h]); }
+  function spikeDist(x, y) { let m = 99; for (const k of SPKS) { const qx = clamp(x, k[0], k[2]), qy = clamp(y, k[1], k[3]); m = Math.min(m, Math.hypot(x - qx, y - qy)); } return m; }
+  function stepPlats(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta);
+    O.plats.forEach((p, i) => {
+      const d = PLATS[i], k = 'plat' + i;
+      if (p.st === 'wait') { p.bob += dt; p.cy = d.cy + Math.sin(p.bob * 2.2) * 0.06; if (S.on.has(k)) { p.st = 'rise'; p.t = 0; pop('被气球带上去了'); } }
+      else if (p.st === 'rise') {
+        p.t += dt;
+        p.cx += -gx * P.riseSpeed * dt; p.cy += -gy * P.riseSpeed * dt;
+        const bs = balloonSpots(p.cx, p.cy, gx, gy), bx = bs[1][0], by = bs[1][1];
+        const gap = Math.min(...bs.map(b => spikeDist(b[0], b[1]))) - 0.55;
+        dbgMin('balloon', gap);
+        if (gap < 0.45 && gap >= 0 && (S.on.has(k) || S.time - (S.leftAt[k] ?? -9) < 0.5)) nearMiss('pop');
+        if (gap < 0 || p.t > 4) {
+          p.st = 'popped'; p.vx = 0; p.vy = 0; pop('啪！'); S.shake = Math.max(S.shake, 0.3);
+          if (S.time - (S.leftAt[k] ?? -9) < 0.45) nearMiss('pop');
+          for (let j = 0; j < 18; j++) S.fx.push({ x: bx + (Math.random() - 0.5) * 1.4, y: by + (Math.random() - 0.5) * 1.0, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6, life: 0.7, max: 0.7, k: 'shred', s: 0.14, grav: 0.5 });
+        }
+      } else if (p.st === 'popped') {
+        p.vx += gx * G * dt; p.vy += gy * G * dt; p.cx += p.vx * dt; p.cy += p.vy * dt;
+        if (p.cx < BOUND.x0 - 6 || p.cx > BOUND.x1 + 6 || p.cy < BOUND.y0 - 6 || p.cy > BOUND.y1 + 6) p.st = 'gone';
+      }
+    });
+  }
+
+  function die(msg) {
+    if (S.state !== 'play') return;
+    S.state = 'dead'; S.timer = 0.9; S.flash = 0.5; S.flashColor = 'rgba(230,80,90,'; S.deaths++;
+    S.shake = Math.max(S.shake, 0.4);
+    toast(msg, 'dead');
+  }
+  function clear() {
+    if (S.state !== 'play') return;
+    S.state = 'clear'; S.timer = 2.0; S.flash = 0.45; S.flashColor = 'rgba(255,255,255,'; S.doorF = 0; S.done = true;
+    S.runTime = S.time - S.runStart;
+    toast(LV.id + ' 通关！' + S.runTime.toFixed(1) + ' 秒', 'clear');
+  }
+  function nearMiss(kind) {
+    if (S.time - (S.near[kind] ?? -9) < 1.4) return;
+    S.near[kind] = S.time;
+    pop('险！', true);
+    if (P.slowmo && (!window.__skyHeadless || window.__skyVideo)) S.slow = 0.42;
+  }
+
+  const dbgMin = (k, v) => { S.dbg[k] = Math.min(S.dbg[k] ?? 99, v); };
+  function checkHazards() {
+    if (S.state !== 'play') return;
+    const cs = PC.map(o => toLevel(S.px, S.py - o));
+    // the cloud sea around the map
+    for (const c of cs) {
+      const m = Math.min(c[0] - BOUND.x0, BOUND.x1 - c[0], c[1] - BOUND.y0, BOUND.y1 - c[1]);
+      dbgMin('void' + S.step, m);
+      if (m < 0) return die('掉进云海了');
+      if (m < 2.2 && S.vy > 3) nearMiss('void');
+    }
+    // balloon mines
+    for (let i = 0; i < O.mines.length; i++) {
+      const m = O.mines[i];
+      if (m.boom) continue;
+      for (const c of cs) {
+        const d = Math.hypot(c[0] - m.bx, c[1] - m.by) - PR - 0.42;
+        dbgMin('mine' + S.step, d);
+        if (d < -0.1) { m.boom = 0.001; boom(m); return die('撞上气球雷了'); }
+        if (d < 1.15) nearMiss('mine');
+      }
+    }
+    // spiked logs
+    for (const c of cs) for (const k of SPKS) {
+      const qx = clamp(c[0], k[0], k[2]), qy = clamp(c[1], k[1], k[3]), d = Math.hypot(c[0] - qx, c[1] - qy) - PR;
+      dbgMin('spike' + S.step, d);
+      if (d < -0.05) return die('被刺扎到了');
+      if (d < 0.75) nearMiss('spike');
+    }
+    // door
+    const c = cs[0], dx = c[0] - DOOR.bx, dy = c[1] - DOOR.by;
+    const u = dx * DOOR.rx + dy * DOOR.ry, v = dx * DOOR.ux + dy * DOOR.uy;
+    if (Math.abs(u) < 0.95 && v > -0.2 && v < 2.0) { if (S.unlocked) clear(); else S.hint = 1; }
+  }
+  function boom(m) {
+    S.shake = Math.max(S.shake, 0.5);
+    for (let i = 0; i < 22; i++) S.fx.push({ x: m.bx, y: m.by, vx: (Math.random() - 0.5) * 9, vy: (Math.random() - 0.5) * 9, life: 0.6, max: 0.6, k: 'spark', s: 0.12 });
+  }
+
+  function advancePlan() {
+    while (S.step < PLAN.length - 1 && PLAN[S.step].next()) { S.step++; S.stepAt = S.time; }
+  }
+
+  function updateDoor(dt) {
+    const tilt = doorTilt();
+    if (S.unlocked && tilt > 23) S.unlocked = false;
+    else if (!S.unlocked && tilt <= 20) S.unlocked = true;
+    if (S.hint > 0) S.hint = Math.max(0, S.hint - dt);
+    S.needleV += (-40 * Math.sin(S.needleA) - 5 * S.needleV) * dt;
+    S.needleA += S.needleV * dt;
+    if (S.state === 'clear' || S.state === 'over') S.doorF = Math.min(3, S.doorF + dt * 10);
+  }
+
+  // ---------------- effects ----------------
+  function puff(at, n, k) {
+    for (let i = 0; i < n; i++) S.fx.push({ x: at[0] + (Math.random() - 0.5) * 0.8, y: at[1] + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 1.6, vy: (Math.random() - 0.5) * 1.6, life: 0.9, max: 0.9, k, s: 0.18 + Math.random() * 0.22 });
+  }
+  function pop(text, big) { S.pops.push({ text, t: 0, big: !!big }); if (S.pops.length > 3) S.pops.shift(); }
+  function stepFx(dt) {
+    const gx = Math.sin(S.theta), gy = Math.cos(S.theta);
+    // wind streaks while you fall fast
+    if (S.mode !== 'idle' && S.vy > 6 && Math.random() < 0.6) {
+      const l = lp();
+      S.fx.push({ x: l[0] + (Math.random() - 0.5) * 8, y: l[1] + (Math.random() - 0.5) * 8, vx: -gx * 4, vy: -gy * 4, life: 0.4, max: 0.4, k: 'wind', s: 0.06 });
+    }
+    for (const p of S.fx) {
+      p.life -= dt;
+      const g = p.grav ? G * p.grav : 0;
+      p.vx += gx * g * dt; p.vy += gy * g * dt;
+      if (p.k === 'dust' || p.k === 'cloud') { p.vx *= 1 - 1.5 * dt; p.vy *= 1 - 1.5 * dt; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+    S.fx = S.fx.filter(p => p.life > 0);
+    if (S.fx.length > 300) S.fx.splice(0, S.fx.length - 300);
+    for (const p of S.pops) p.t += dt;
+    S.pops = S.pops.filter(p => p.t < (p.big ? 0.9 : 0.8));
+    S.shake *= Math.exp(-6 * dt);
+    if (S.flash > 0) S.flash = Math.max(0, S.flash - dt);
+  }
+
+  // ---------------- art ----------------
+  const COL = { grass: [118, 196, 92], grassHi: [168, 226, 120], grassLo: [78, 150, 70], dirt: [150, 104, 70], dirtLo: [112, 76, 54] };
+  const put = (d, i, c) => { d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; d[i + 3] = 255; };
+  const shade = (c, k) => [clamp(c[0] + k, 0, 255), clamp(c[1] + k, 0, 255), clamp(c[2] + k, 0, 255)];
+  function buildLevel() {
+    const W_ = MW * TS, H_ = MH * TS, cv = mk(W_, H_), g = cv.getContext('2d');
+    const img = g.createImageData(W_, H_), d = img.data;
+    for (let y = 0; y < H_; y++) for (let x = 0; x < W_; x++) {
+      const cx = (x / TS) | 0, cy = (y / TS) | 0, i = (y * W_ + x) * 4;
+      if (!solidAt(cx, cy)) { d[i + 3] = 0; continue; }
+      const n = hash(x >> 1, y >> 1);
+      const fy = y - cy * TS;
+      let col;
+      if (!solidAt(cx, cy - 1) && fy < 5) col = fy < 2 ? COL.grassHi : COL.grass;
+      else if (!solidAt(cx, cy - 1) && fy < 7 && hash(x, cy) > 0.45) col = COL.grassLo;
+      else col = (cy % 2 === 0 ? n > 0.5 : n > 0.4) ? COL.dirt : COL.dirtLo;
+      if (n > 0.95) col = shade(col, 14);
+      if ((!solidAt(cx - 1, cy) && x - cx * TS < 2) || (!solidAt(cx + 1, cy) && (cx + 1) * TS - 1 - x < 2)) col = shade(col, -18);
+      put(d, i, col);
+    }
+    g.putImageData(img, 0, 0);
+    // hanging roots under each island
+    g.save(); g.scale(TS, TS);
+    for (let cx = 0; cx < MW; cx++) for (let cy = 0; cy < MH; cy++) {
+      if (!solidAt(cx, cy) || solidAt(cx, cy + 1)) continue;
+      const k = (hash(cx, cy) * 3) | 0;
+      for (let j = 0; j < k; j++) {
+        const rx = cx + 0.15 + hash(cx * 3 + j, cy) * 0.7, rl = 0.3 + hash(cx, cy * 5 + j) * 0.6, bend = (hash(cx + j, cy * 2) - 0.5) * 0.3;
+        g.strokeStyle = '#8a5a34'; g.lineWidth = 0.09; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(rx, cy + 1); g.quadraticCurveTo(rx + bend, cy + 1 + rl * 0.5, rx - bend * 0.5, cy + 1 + rl); g.stroke();
+        g.fillStyle = '#76c45c'; g.fillRect(rx - bend * 0.5 - 0.05, cy + 1 + rl - 0.05, 0.1, 0.1);
+      }
+    }
+    // spiked logs
+    for (const [x0, y0, x1, y1] of SPKS) {
+      const my = (y0 + y1) / 2;
+      for (let x = x0 + 0.05; x < x1 - 0.2; x += 0.42) for (const dir of [-1, 1]) {
+        g.fillStyle = dir < 0 ? '#d7dce6' : '#9aa1ae';
+        g.beginPath(); g.moveTo(x, my); g.lineTo(x + 0.36, my); g.lineTo(x + 0.18, dir < 0 ? y0 - 0.05 : y1 + 0.05); g.closePath(); g.fill();
+      }
+      g.fillStyle = '#7a5532'; g.fillRect(x0, my - 0.2, x1 - x0, 0.4);
+      g.fillStyle = '#9c7046'; g.fillRect(x0, my - 0.2, x1 - x0, 0.1);
+      g.fillStyle = '#5e3f24'; g.beginPath(); g.ellipse(x0, my, 0.12, 0.2, 0, 0, Math.PI * 2); g.ellipse(x1, my, 0.12, 0.2, 0, 0, Math.PI * 2); g.fill();
+    }
+    g.restore();
+    return cv;
+  }
+  // soft cloud blobs drawn in level space
+  const DECO = [];
+  for (let i = 0; i < 22; i++) DECO.push([hash(i, 1) * 44 - 10, hash(i, 2) * 36 - 10, 1.2 + hash(i, 3) * 2.4, 0.18 + hash(i, 4) * 0.22]);
+  function cloudBlob(g, x, y, w, h, a) {
+    g.globalAlpha = a;
+    g.beginPath();
+    g.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
+    g.ellipse(x - w * 0.55, y + h * 0.25, w * 0.6, h * 0.75, 0, 0, Math.PI * 2);
+    g.ellipse(x + w * 0.55, y + h * 0.2, w * 0.65, h * 0.8, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 1;
+  }
+
+  // ---------------- drawing ----------------
+  const view = document.getElementById('view'), ctx = view.getContext('2d');
+  const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const IMG = {};
+  function tinted(src, rgba) { const c = mk(src.width, src.height), g = c.getContext('2d'); g.drawImage(src, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = rgba; g.fillRect(0, 0, c.width, c.height); return c; }
+  const ANIMS = { idle: { img: 'idle', n: 4, f: 0.2, loop: true }, fallstart: { img: 'fallstart', n: 2, f: 0.06, next: 'float' },
+    float: { img: 'float', n: 6, f: 0.09, loop: true }, land: { img: 'land', n: 3, f: 0.07, next: 'idle' } };
+  function animFrame(dt) {
+    let a = ANIMS[S.anim];
+    if (!S.grounded && (S.anim === 'idle' || S.anim === 'land')) { S.anim = 'fallstart'; S.animT = 0; a = ANIMS.fallstart; }
+    if (S.grounded && (S.anim === 'float' || S.anim === 'fallstart')) { S.anim = 'idle'; S.animT = 0; a = ANIMS.idle; }
+    S.animT += dt;
+    let idx = Math.floor(S.animT / a.f);
+    if (idx >= a.n) { if (a.loop) idx %= a.n; else { S.anim = a.next; S.animT = 0; a = ANIMS[S.anim]; idx = 0; } }
+    return { img: a.img, idx };
+  }
+
+  let K = 40, CX = 0, CY = 0, alpha = 1, W = 0, H = 0;
+  function resize() {
+    const r = view.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    view.width = Math.max(320, Math.round(r.width * dpr)); view.height = Math.max(200, Math.round(r.height * dpr));
+  }
+  function render(dt) {
+    W = view.width; H = view.height;
+    const span = Math.max(BOUND.x1 - BOUND.x0, BOUND.y1 - BOUND.y0);
+    K = Math.min(H / (span + 2), W / (span + 7)); CX = W / 2; CY = H * 0.53;
+    const lp_ = (a, b) => a + (b - a) * alpha;
+    const th = lp_(prev.theta, S.theta), Tx = lp_(prev.tx, S.tx), Ty = lp_(prev.ty, S.ty);
+    const Px = lp_(prev.px, S.px), Py = lp_(prev.py, S.py);
+    let camx = lp_(prev.cam[0], S.cam[0]), camy = lp_(prev.cam[1], S.cam[1]);
+    if (S.shake > 0.01 && !REDUCED) { camx += (Math.random() - 0.5) * S.shake * 0.9; camy += (Math.random() - 0.5) * S.shake * 0.9; }
+    const c = Math.cos(th), s = Math.sin(th);
+    const ox = CX + K * (Tx - camx), oy = CY + K * (Ty - camy);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#9fd3f5'; ctx.fillRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = false;
+    ctx.setTransform(K * c, K * s, -K * s, K * c, ox, oy);
+    // sky: high up is deep blue, the cloud sea below is warm and bright
+    const sky = ctx.createLinearGradient(0, BOUND.y0 - 10, 0, BOUND.y1 + 6);
+    sky.addColorStop(0, '#4f9fe0'); sky.addColorStop(0.55, '#a9daf6'); sky.addColorStop(0.85, '#ffe9cf'); sky.addColorStop(1, '#fff4e4');
+    ctx.fillStyle = sky; ctx.fillRect(-60, -60, MW + 120, MH + 120);
+    ctx.fillStyle = '#ffffff';
+    for (const [x, y, w, a] of DECO) cloudBlob(ctx, x, y, w, w * 0.45, a);
+    // the cloud sea: a thick cloud wall all around the playable box, with a soft shadow line where it begins
+    const B = BOUND;
+    ctx.fillStyle = 'rgba(110,140,185,0.22)';
+    ctx.fillRect(-60, B.y1 + 0.2, MW + 120, 1.0); ctx.fillRect(B.x0 - 1.2, -60, 1.0, MH + 120); ctx.fillRect(B.x1 + 0.2, -60, 1.0, MH + 120); ctx.fillRect(-60, B.y0 - 1.2, MW + 120, 1.0);
+    const edge = (x, y, w, h) => { ctx.globalAlpha = 0.94; ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1; };
+    ctx.fillStyle = '#eef2f9';
+    edge(-60, B.y1 + 1.2, MW + 120, 60); edge(-60, -60, 60 + B.x0 - 1.2, MH + 120); edge(B.x1 + 1.2, -60, 60, MH + 120); edge(-60, -60, MW + 120, 60 + B.y0 - 1.2);
+    ctx.fillStyle = '#f7f9fd';
+    for (let x = B.x0 - 2; x < B.x1 + 2; x += 1.6) { cloudBlob(ctx, x, B.y1 + 1.4 + hash(x, 7) * 0.4, 1.3, 0.8, 0.95); cloudBlob(ctx, x, B.y0 - 1.4 - hash(x, 6) * 0.4, 1.3, 0.8, 0.95); }
+    for (let y = B.y0 - 2; y < B.y1 + 2; y += 1.6) { cloudBlob(ctx, B.x0 - 1.4 - hash(y, 8) * 0.4, y, 0.9, 1.1, 0.95); cloudBlob(ctx, B.x1 + 1.4 + hash(y, 9) * 0.4, y, 0.9, 1.1, 0.95); }
+    ctx.drawImage(lvlCv, 0, 0, MW, MH);
+    // door
+    ctx.save(); ctx.translate(DOOR.bx, DOOR.by); ctx.rotate(DOOR.rot);
+    if (S.state === 'clear' || S.state === 'over') ctx.drawImage(IMG.doorOpen, Math.floor(S.doorF) * 32, 0, 32, 32, -1, -2, 2, 2);
+    else ctx.drawImage(IMG.door, (Math.floor(S.time * 7) % 6) * 32, 0, 32, 32, -1, -2, 2, 2);
+    const lock = (S.unlocked || S.state === 'clear' || S.state === 'over') ? IMG.lockOpen : (S.hint > 0 && Math.floor(S.hint * 8) % 2 === 0) ? IMG.lockHint : IMG.lockLocked;
+    ctx.drawImage(lock, -1, -2, 2, 2);
+    ctx.translate((15.5 - 16) / 16, -2 + 10.5 / 16); ctx.rotate(-(th + DOOR.rot) + S.needleA);
+    ctx.drawImage(IMG.needle, -1 / 16, 0, 2 / 16, 8 / 16);
+    ctx.restore();
+    // seesaws: plank on a stone hub
+    SEES.forEach((d, i) => {
+      const sa = d.a0 * DEG + lp_(prev.see[i] ?? O.sees[i].ang, O.sees[i].ang);
+      ctx.save(); ctx.translate(d.px, d.py);
+      ctx.fillStyle = '#ffffff'; cloudBlob(ctx, 0, 0.9, 1.5, 0.7, 0.85);
+      ctx.rotate(sa);
+      if (O.sees[i].st === 'load') ctx.translate((Math.random() - 0.5) * 0.06, 0);
+      ctx.fillStyle = '#9a6a3c'; ctx.fillRect(-d.hl, -d.ht, d.hl * 2, d.ht * 2);
+      ctx.fillStyle = '#c38c52'; ctx.fillRect(-d.hl, -d.ht, d.hl * 2, 0.08);
+      ctx.fillStyle = '#6e4826'; for (let k = -2; k <= 2; k++) ctx.fillRect(k * 1.05 - 0.03, -d.ht, 0.06, d.ht * 2);
+      ctx.rotate(-sa);
+      ctx.fillStyle = '#7d7684'; ctx.beginPath(); ctx.arc(0, 0, 0.32, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#b4adbb'; ctx.beginPath(); ctx.arc(-0.08, -0.08, 0.12, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    });
+    // cloud platforms
+    CLOUDS.forEach((d, i) => {
+      const cl = O.clouds[i];
+      if (cl.st === 'gone') return;
+      const fade = cl.st === 'fade' ? clamp(cl.t / P.cloudTime, 0, 1) : 1;
+      ctx.save(); ctx.translate(d.cx, d.cy);
+      if (cl.st === 'fade') ctx.translate((Math.random() - 0.5) * 0.08 * (1 - fade), (Math.random() - 0.5) * 0.08 * (1 - fade));
+      ctx.fillStyle = '#ffffff';
+      if (d.hy > d.hx) { for (let k = 0; k < 5; k++) { const yy = -d.hy + 0.6 + k * (d.hy * 2 - 1.2) / 4; cloudBlob(ctx, 0, yy, d.hx * 1.2, 0.95, 0.35 + 0.6 * fade); } }
+      else { for (let k = 0; k < 4; k++) { const xx = -d.hx + 0.5 + k * (d.hx * 2 - 1.0) / 3; cloudBlob(ctx, xx, 0, 0.95, d.hy * 1.3, 0.35 + 0.6 * fade); } }
+      ctx.globalAlpha = 0.5 + 0.5 * fade; ctx.fillStyle = '#ffffff'; ctx.fillRect(-d.hx, -d.hy + 0.15, d.hx * 2, d.hy * 2 - 0.3); ctx.globalAlpha = 1;
+      ctx.restore();
+    });
+    // balloon platforms: board hanging under three balloons that always pull toward screen-up
+    PLATS.forEach((d, i) => {
+      const pl = O.plats[i];
+      if (pl.st === 'gone') return;
+      const pp = prev.plat[i] || [pl.cx, pl.cy], pcx = lp_(pp[0], pl.cx), pcy = lp_(pp[1], pl.cy);
+      const up = [-Math.sin(th), -Math.cos(th)];
+      ctx.save(); ctx.translate(pcx, pcy);
+      if (pl.st !== 'popped') {
+        const side = [-up[1], up[0]];
+        BALLOONS.forEach(([o, h], k) => {
+          const bx = side[0] * o + up[0] * h, by = side[1] * o + up[1] * h;
+          ctx.strokeStyle = 'rgba(80,70,70,0.8)'; ctx.lineWidth = 0.04; ctx.beginPath(); ctx.moveTo(o * 0.8, -d.hy); ctx.lineTo(bx, by); ctx.stroke();
+          ctx.fillStyle = ['#ff7a8a', '#ffd166', '#6fd3e8'][k]; ctx.beginPath(); ctx.arc(bx, by, 0.55, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.arc(bx - 0.18, by - 0.18, 0.15, 0, Math.PI * 2); ctx.fill();
+        });
+      }
+      ctx.fillStyle = '#9a6a3c'; ctx.fillRect(-d.hx, -d.hy, d.hx * 2, d.hy * 2);
+      ctx.fillStyle = '#c38c52'; ctx.fillRect(-d.hx, -d.hy, d.hx * 2, 0.08);
+      ctx.restore();
+    });
+    // balloon mines on their strings
+    O.mines.forEach((m, i) => {
+      const [ax, ay] = MINES0[i], pm = prev.mines[i] || [m.bx, m.by];
+      const bx = lp_(pm[0], m.bx), by = lp_(pm[1], m.by);
+      ctx.fillStyle = '#6b6577'; ctx.fillRect(ax - 0.18, ay - 0.12, 0.36, 0.24);
+      if (m.boom) return;
+      ctx.strokeStyle = 'rgba(70,60,70,0.75)'; ctx.lineWidth = 0.04; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      ctx.save(); ctx.translate(bx, by);
+      ctx.fillStyle = '#3d3a46';
+      for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2 + S.time * 0.6; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 0.3, Math.sin(a) * 0.3); ctx.lineTo(Math.cos(a + 0.2) * 0.62, Math.sin(a + 0.2) * 0.62); ctx.lineTo(Math.cos(a + 0.4) * 0.3, Math.sin(a + 0.4) * 0.3); ctx.fill(); }
+      ctx.fillStyle = '#e04f5f'; ctx.beginPath(); ctx.arc(0, 0, 0.42, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(-0.13, -0.14, 0.12, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    });
+    // particles
+    for (const p of S.fx) {
+      const a = clamp(p.life / p.max, 0, 1);
+      if (p.k === 'wind') { ctx.globalAlpha = a * 0.5; ctx.fillStyle = '#ffffff'; ctx.fillRect(p.x - 0.03, p.y - 0.3, 0.06, 0.6); continue; }
+      ctx.globalAlpha = p.k === 'cloud' ? a * 0.8 : a;
+      ctx.fillStyle = p.k === 'spark' ? '#ffb347' : p.k === 'shred' ? '#ff7a8a' : p.k === 'cloud' ? '#ffffff' : '#c2a78a';
+      const sz = p.k === 'dust' || p.k === 'cloud' ? p.s * (1.8 - a * 0.8) : p.s;
+      ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+    }
+    ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const toS = (wx, wy) => [CX + K * (wx - camx), CY + K * (wy - camy)];
+    // player
+    const fr = animFrame(dt), sc = K * 1.54 / 92, pS = toS(Px, Py);
+    let src = IMG[fr.img];
+    if (S.state === 'dead') src = IMG[fr.img + 'Red'];
+    ctx.globalAlpha = S.state === 'clear' ? Math.max(0, 1 - (2.0 - S.timer) * 1.6) : S.state === 'over' ? 0 : 1;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(src, fr.idx * 96, 0, 96, 112, Math.round(pS[0] - 49.5 * sc), Math.round(pS[1] - 112 * sc), Math.round(96 * sc), Math.round(112 * sc));
+    ctx.globalAlpha = 1;
+    // speed lines
+    const spd = Math.abs(S.vy);
+    if (spd > 7) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = Math.max(1, K * 0.035);
+      const n = Math.min(14, Math.floor((spd - 6.5) * 2.4));
+      for (let k = 0; k < n; k++) {
+        const h1 = hash(k * 3.1, Math.floor(S.time * 14) + k), h2 = hash(k * 7.7, Math.floor(S.time * 14) - k);
+        const off = (h1 - 0.5) * K * 7, along = (h2 - 0.2) * K * 6, len = K * (1.2 + spd * 0.12);
+        const x0 = pS[0] + off, y0 = pS[1] - K * 0.8 - along;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0, y0 - len); ctx.stroke();
+      }
+    }
+    // the cloud sea glows red when you get close to it
+    const l = lp(), m = Math.min(l[0] - BOUND.x0, BOUND.x1 - l[0], l[1] - BOUND.y0, BOUND.y1 - l[1]);
+    if (m < 3 && S.state === 'play' && S.mode !== 'idle') {
+      const a = clamp((3 - m) / 3, 0, 1) * 0.45;
+      const vg = ctx.createRadialGradient(CX, CY, H * 0.3, CX, CY, H * 0.9);
+      vg.addColorStop(0, 'rgba(230,60,80,0)'); vg.addColorStop(1, `rgba(230,60,80,${a.toFixed(3)})`);
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    }
+    if (S.flash > 0) { ctx.fillStyle = S.flashColor + Math.min(0.35, S.flash).toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+    drawHud(pS);
+  }
+
+  function drawHud(pS) {
+    const u = Math.max(1, H / 640);
+    ctx.textBaseline = 'alphabetic';
+    for (const p of S.pops) {
+      const a = 1 - p.t / (p.big ? 0.9 : 0.8), rise = p.t * K * 1.6;
+      ctx.globalAlpha = clamp(a * 1.5, 0, 1);
+      ctx.font = `600 ${Math.round((p.big ? 34 : 20) * u)}px "Noto Serif SC", serif`;
+      ctx.textAlign = 'center';
+      ctx.lineWidth = 4 * u; ctx.strokeStyle = 'rgba(20,40,70,0.75)';
+      ctx.fillStyle = p.big ? '#ffd166' : '#ffffff';
+      const x = pS[0] + (p.big ? K * 1.6 : 0), y = pS[1] - K * 2.4 - rise;
+      ctx.strokeText(p.text, x, y); ctx.fillText(p.text, x, y);
+    }
+    ctx.globalAlpha = 1;
+    if (S.toast && S.time - S.toast.t < (S.toast.kind === 'clear' ? 2.0 : 0.9)) {
+      const a = clamp((S.time - S.toast.t) / 0.15, 0, 1);
+      ctx.globalAlpha = a; ctx.textAlign = 'center';
+      ctx.font = `600 ${Math.round(34 * u)}px "Noto Serif SC", serif`;
+      ctx.lineWidth = 6 * u; ctx.strokeStyle = 'rgba(20,40,70,0.8)';
+      ctx.fillStyle = S.toast.kind === 'clear' ? '#ffffff' : '#ff8a96';
+      ctx.strokeText(S.toast.text, CX, CY - H * 0.18); ctx.fillText(S.toast.text, CX, CY - H * 0.18);
+      ctx.globalAlpha = 1;
+    }
+    // level badge, top-left, on a pill so it reads on the bright sky
+    ctx.font = `600 ${Math.round(16 * u)}px "Noto Serif SC", serif`;
+    const bw = ctx.measureText(LV.id + '  ' + LV.name).width + 24 * u;
+    ctx.fillStyle = 'rgba(22,48,84,0.72)'; rr(8 * u, 8 * u, bw, 28 * u, 14 * u); ctx.fill();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#ffd166'; ctx.fillText(LV.id, 20 * u, 28 * u);
+    ctx.fillStyle = '#ffffff'; ctx.fillText(LV.name, 20 * u + ctx.measureText(LV.id + '  ').width, 28 * u);
+    if (S.state === 'intro') { drawIntro(u); return; }
+    if (S.mode === 'idle') return;
+    const st = PLAN[S.step], age = S.time - S.stepAt, ap = clamp(age / 0.22, 0, 1);
+    if (S.state === 'play' || S.state === 'dead') {
+      const bw2 = Math.min(W * 0.6, 560 * u), bh = (st.sub ? 64 : 46) * u, bx = CX - bw2 / 2, by = 12 * u - (1 - ap) * 10 * u;
+      ctx.globalAlpha = 0.25 + 0.75 * ap;
+      ctx.fillStyle = 'rgba(22,48,84,0.78)'; rr(bx, by, bw2, bh, 10 * u); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5 * u; rr(bx, by, bw2, bh, 10 * u); ctx.stroke();
+      ctx.textAlign = 'left'; ctx.fillStyle = '#ffd166'; ctx.font = `600 ${Math.round(13 * u)}px ui-monospace, Menlo, monospace`;
+      ctx.fillText(`第 ${S.step + 1} 拍`, bx + 14 * u, by + 28 * u);
+      ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.font = `600 ${Math.round(20 * u)}px "Noto Serif SC", serif`;
+      ctx.fillText(st.cap, CX + 22 * u, by + 30 * u);
+      if (st.sub) { ctx.fillStyle = '#d4e6f7'; ctx.font = `${Math.round(14 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`; ctx.fillText(st.sub, CX + 22 * u, by + 52 * u); }
+      ctx.globalAlpha = 1;
+    }
+    ctx.textAlign = 'left'; ctx.fillStyle = '#163054'; ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`;
+    ctx.fillText(S.runTime.toFixed(1) + ' s', 14 * u, H - 18 * u);
+    ctx.fillStyle = S.mode === 'demo' ? '#c2410c' : '#41587a'; ctx.font = `${Math.round(12 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(S.mode === 'demo' ? '演示中' : '自己玩', 14 * u, H - 38 * u);
+    const n = PLAN.length, gap = 26 * u, tw = (n - 1) * gap, tx0 = CX - tw / 2, ty = H - 26 * u;
+    ctx.fillStyle = 'rgba(22,48,84,0.55)'; rr(tx0 - 16 * u, ty - 14 * u, tw + 32 * u, 28 * u, 14 * u); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.moveTo(tx0, ty); ctx.lineTo(tx0 + tw, ty); ctx.stroke();
+    for (let i = 0; i < n; i++) {
+      const x = tx0 + i * gap, done = i < S.step || S.state === 'clear' || S.state === 'over', cur = i === S.step && S.state === 'play';
+      ctx.beginPath(); ctx.arc(x, ty, (cur ? 7 + Math.sin(S.time * 10) * 1.5 : 5) * u, 0, Math.PI * 2);
+      ctx.fillStyle = done ? '#f59e0b' : cur ? '#ffffff' : 'rgba(22,48,84,0.9)'; ctx.fill();
+      ctx.strokeStyle = done || cur ? '#ffd166' : 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5 * u; ctx.stroke();
+    }
+    const wx = W - 52 * u, wy = H - 52 * u, wr = 30 * u;
+    S.uVis += (S.u - S.uVis) * 0.25;
+    ctx.save(); ctx.translate(wx, wy);
+    ctx.fillStyle = 'rgba(22,48,84,0.7)'; ctx.beginPath(); ctx.arc(0, 0, wr + 10 * u, 0, Math.PI * 2); ctx.fill();
+    const full = Math.abs(S.u) > 0.95;
+    if (Math.abs(S.uVis) > 0.05) {
+      ctx.strokeStyle = full ? '#ffd166' : 'rgba(255,209,102,0.6)'; ctx.lineWidth = 4 * u; ctx.beginPath();
+      ctx.arc(0, 0, wr + 5 * u, -Math.PI / 2, -Math.PI / 2 + S.uVis * 1.4, S.uVis < 0); ctx.stroke();
+    }
+    ctx.rotate(S.uVis * 75 * DEG);
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4 * u; ctx.beginPath(); ctx.arc(0, 0, wr, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.moveTo(-wr, 0); ctx.lineTo(wr, 0); ctx.moveTo(0, 0); ctx.lineTo(0, wr); ctx.stroke();
+    ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.arc(0, -wr, 4 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 6 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#163054'; ctx.textAlign = 'center'; ctx.font = `${Math.round(11 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(S.u > 0.05 ? '顺时针' : S.u < -0.05 ? '逆时针' : '手柄', wx, wy - wr - 16 * u);
+    ctx.font = `600 ${Math.round(15 * u)}px ui-monospace, Menlo, monospace`; ctx.fillStyle = '#163054'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(S.theta / DEG) + '°', wx - wr - 18 * u, wy + 5 * u);
+  }
+  // title card shown for a moment when a level starts
+  function drawIntro(u) {
+    const t = P.intro - S.timer, a = clamp(Math.min(t / 0.18, S.timer / 0.25), 0, 1);
+    ctx.globalAlpha = a * 0.62; ctx.fillStyle = '#163054'; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = a; ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffd166'; ctx.font = `600 ${Math.round(22 * u)}px ui-monospace, Menlo, monospace`;
+    ctx.fillText('天空 ' + LV.id, CX, CY - 40 * u);
+    ctx.fillStyle = '#ffffff'; ctx.font = `600 ${Math.round(52 * u)}px "Noto Serif SC", serif`;
+    ctx.fillText(LV.name, CX, CY + 22 * u);
+    ctx.fillStyle = '#d4e6f7'; ctx.font = `${Math.round(16 * u)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+    ctx.fillText(LV.tip, CX, CY + 62 * u);
+    ctx.globalAlpha = 1;
+  }
+  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+  // ---------------- page UI ----------------
+  function toast(text, kind) { S.toast = { text, kind, t: S.time }; }
+  const $ = (id) => document.getElementById(id);
+  const pTime = $('pTime'), pDeath = $('pDeath'), overlay = $('startOverlay'), ovText = $('ovText');
+  const ovDemo = $('ovDemo'), ovPlay = $('ovPlay'), ovNext = $('ovNext');
+  let lastHud = -1;
+  function updateHud() { pTime.textContent = S.runTime.toFixed(1) + ' 秒'; pDeath.textContent = String(S.deaths); }
+  function showOverlay(kind) {
+    overlay.hidden = false;
+    const nx = LEVELS[LI + 1];
+    if (kind === 'start') {
+      ovDemo.textContent = '▶ 看演示通关'; ovPlay.textContent = '自己玩';
+      ovNext.hidden = true;
+      ovText.textContent = LV.id + ' ' + LV.name + '：' + LV.tip;
+    } else {
+      ovDemo.textContent = S.mode === 'demo' ? '▶ 再看一遍' : '▶ 看演示';
+      ovPlay.textContent = S.mode === 'demo' ? '自己玩这关' : '再玩一次';
+      ovNext.hidden = !nx;
+      if (nx) ovNext.textContent = '下一关 ' + nx.id + ' ' + nx.name + ' ▶';
+      ovText.textContent = LV.id + ' ' + (S.mode === 'demo' ? '演示通关' : '通关') + '，用时 ' + S.runTime.toFixed(1) + ' 秒' + (S.deaths ? '，死亡 ' + S.deaths + ' 次' : '') + (nx ? '。' : '。天空的关都过完了。');
+    }
+  }
+  function onRunOver() {
+    if (window.__skyHeadless) return;
+    showOverlay('over');
+    if (S.mode === 'demo' && LEVELS[LI + 1] && $('chkChain') && $('chkChain').checked) {
+      overlay.hidden = true; selectLevel(LI + 1, false); begin('demo');
+    }
+  }
+  (() => { const box = document.querySelector('.levels'); if (!box) return; box.innerHTML = ''; LEVELS.forEach((lv, i) => { const b = document.createElement('button'); b.className = 'lv' + (i === 0 ? ' active' : ''); b.type = 'button'; b.dataset.level = String(i); b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false'); b.innerHTML = '<b>' + lv.id + '</b>' + lv.name + (lv.isNew ? ' <i class="newtag">新</i>' : ''); box.appendChild(b); }); })();
+  const lvButtons = [...document.querySelectorAll('[data-level]')];
+  function selectLevel(i, show) {
+    loadLevel(i);
+    lvButtons.forEach(b => { const on = +b.dataset.level === i; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    if (show) showOverlay('start');
+  }
+  lvButtons.forEach(b => b.addEventListener('click', () => { selectLevel(+b.dataset.level, true); }));
+  function begin(mode) { overlay.hidden = true; startRun(mode); view.focus({ preventScroll: true }); }
+  ovDemo.addEventListener('click', () => begin('demo'));
+  ovPlay.addEventListener('click', () => begin('play'));
+  ovNext.addEventListener('click', () => { const m = S.mode === 'demo' ? 'demo' : 'play'; selectLevel(LI + 1, false); begin(m); });
+  $('btnDemo').addEventListener('click', () => begin('demo'));
+  $('btnPlay').addEventListener('click', () => begin('play'));
+  $('btnReset').addEventListener('click', () => { if (S.mode === 'idle') begin('play'); else { overlay.hidden = true; resetLevel(false); } view.focus({ preventScroll: true }); });
+  $('chkSlow').addEventListener('change', (e) => { P.slowmo = e.target.checked; });
+
+  const held = new Set();
+  const KEYMAP = { ArrowLeft: -1, KeyQ: -1, KeyA: -1, ArrowRight: 1, KeyE: 1, KeyD: 1 };
+  function syncKeys() { let v = 0; for (const k of held) v += KEYMAP[k]; input.keys = clamp(v, -1, 1); }
+  function takeOver() { if (S.mode === 'idle' || S.state === 'over') begin('play'); else if (S.mode === 'demo') S.mode = 'play'; }
+  window.addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+    if (KEYMAP[e.code] !== undefined) { e.preventDefault(); held.add(e.code); syncKeys(); takeOver(); }
+    else if (e.code === 'KeyR') { e.preventDefault(); if (S.mode !== 'idle') { overlay.hidden = true; resetLevel(false); } }
+  });
+  window.addEventListener('keyup', (e) => { if (held.delete(e.code)) syncKeys(); });
+  window.addEventListener('blur', () => { held.clear(); syncKeys(); input.buttons = 0; });
+  const holdBtn = (id, dir) => {
+    const b = $(id);
+    const on = (e) => { e.preventDefault(); input.buttons = dir; b.classList.add('active'); takeOver(); };
+    const off = () => { if (input.buttons === dir) input.buttons = 0; b.classList.remove('active'); };
+    b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off);
+  };
+  holdBtn('btnCcw', -1); holdBtn('btnCw', 1);
+  let padReset = false;
+  // some hosts (e.g. an embedded page) block the gamepad API and the call throws: then keyboard / buttons only
+  let padOK = true;
+  function pollPad() {
+    if (!padOK) return;
+    let v = 0, rs = false, pads = [];
+    try { pads = (navigator.getGamepads && navigator.getGamepads()) || []; }
+    catch (e) {
+      padOK = false; input.pad = 0;
+      const note = $('padNote');
+      if (note) note.textContent = '手柄：这个网页里浏览器不让读手柄，用本地的 html 文件打开就能用（摇杆横向或 L2 / R2，Options 重来）';
+      return;
+    }
+    for (const p of pads) {
+      if (!p) continue;
+      const ax = [p.axes[2] || 0, p.axes[0] || 0].find(a => Math.abs(a) > 0.18) || 0;
+      const trig = ((p.buttons[7] && p.buttons[7].value) || 0) - ((p.buttons[6] && p.buttons[6].value) || 0);
+      v = Math.abs(trig) > 0.05 ? trig : ax;
+      rs = !!(p.buttons[9] && p.buttons[9].pressed);
+      if (v) break;
+    }
+    input.pad = v;
+    if (v && S.mode === 'demo') S.mode = 'play';
+    if (rs && !padReset && S.mode !== 'idle') { overlay.hidden = true; resetLevel(false); }
+    padReset = rs;
+  }
+  const sliders = [['tRot', 'oRot', 'rotSpeed', v => v + '°/s'], ['tVmax', 'oVmax', 'vmax', v => v + ' 格/秒'], ['tCloud', 'oCloud', 'cloudTime', v => v.toFixed(1) + ' 秒']];
+  for (const [id, out, key, fmt] of sliders) {
+    const el = $(id), o = $(out);
+    if (!el) continue;
+    el.addEventListener('input', () => { P[key] = parseFloat(el.value); o.textContent = fmt(P[key]); if (S.mode !== 'idle') { overlay.hidden = true; startRun(S.mode); } });
+  }
+
+  // ---------------- boot ----------------
+  let last = 0, acc = 0;
+  let loopErr = false;
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    if (window.__skyStop) return;
+    try {
+      const now = ts / 1000; let dt = last ? now - last : 0; last = now; dt = Math.min(dt, 0.1);
+      pollPad();
+      if (!window.__skyHeadless) {
+        let scale = 1;
+        if (S.slow > 0) { S.slow -= dt; scale = 0.32; }
+        acc += dt * scale;
+        let guard = 0;
+        while (acc >= DT && guard++ < 6) { step(DT); acc -= DT; }
+        if (acc > DT) acc = DT;
+        alpha = acc / DT;
+      } else alpha = 1;
+      render(dt);
+      if (S.time - lastHud > 0.1 || S.time < lastHud) { lastHud = S.time; updateHud(); }
+    } catch (e) { if (!loopErr) { loopErr = true; console.error(e); } }
+  }
+  const load = (src) => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+  Promise.all(Object.entries(A).map(([k, v]) => load(v).then(im => { IMG[k] = im; }))).then(() => {
+    for (const k of ['idle', 'float', 'fallstart', 'land']) IMG[k + 'Red'] = tinted(IMG[k], 'rgba(230,70,90,0.6)');
+    resize(); window.addEventListener('resize', resize);
+    selectLevel(0, true);
+    requestAnimationFrame(frame);
+    window.__skyReady = true;
+  });
+  window.__sky = {
+    S, P, LEVELS, step, startRun, loadLevel, resetLevel, input, DT, lp,
+    get O() { return O; }, get LV() { return LV; }, get LI() { return LI; }, get PLAN() { return PLAN; },
+    render: () => render(0), renderAt: (a, dt) => { alpha = a; render(dt); },
+  };
+})();
+</script>

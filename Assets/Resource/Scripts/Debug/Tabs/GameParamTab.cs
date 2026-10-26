@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -9,13 +8,11 @@ namespace Resource.Scripts.Debugging
     {
         private int _sceneHandle = int.MinValue;
         private PlayerController _player;
-        private PlayerOxygen _oxygen;
         private CrushGuard _crushGuard;
         private GoalDoor _door;
         private PlayerColorGrade _colorGrade;
         private MazeCameraFit _camera;
         private GUIStyle _descriptionStyle;
-        private readonly List<OxygenTank> _tanks = new List<OxygenTank>();
 
         public void Draw(DebugConsole console)
         {
@@ -39,26 +36,6 @@ namespace Resource.Scripts.Debugging
             if (_player != null) DrawAntiPush();
             if (_door != null) DrawGravityLock();
             if (_colorGrade != null) DrawColorGrade();
-
-            if (_player == null || _oxygen == null)
-            {
-                GUILayout.Label("（当前场景没有氧气参数）");
-                GUILayout.Label("未找到玩家氧气组件。进入关卡后可调节氧气参数。", _descriptionStyle);
-                return;
-            }
-
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label($"氧气 · {_player.name}   当前 {_oxygen.CurrentOxygen:F1} / {_oxygen.MaxOxygen:F1}");
-            float maximum = ConsoleUi.Slider("最大氧气", _oxygen.MaxOxygen, 0.01f,
-                Mathf.Max(500f, _oxygen.MaxOxygen), "F1");
-            if (maximum != _oxygen.MaxOxygen) _oxygen.MaxOxygen = maximum;
-            float drain = ConsoleUi.Slider("每秒消耗", _oxygen.DrainPerSecond, 0f,
-                Mathf.Max(20f, _oxygen.DrainPerSecond), "F2", " / 秒");
-            if (drain != _oxygen.DrainPerSecond) _oxygen.DrainPerSecond = drain;
-            GUILayout.EndVertical();
-
-            GUILayout.Space(8f);
-            DrawTanks();
         }
 
         private void DrawCamera()
@@ -145,53 +122,14 @@ namespace Resource.Scripts.Debugging
             GUILayout.Space(8f);
         }
 
-        private void DrawTanks()
-        {
-            // A collected tank is destroyed after its short animation. Pruning cached references
-            // updates the count without rediscovering every object on every IMGUI event.
-            for (int index = _tanks.Count - 1; index >= 0; --index)
-                if (_tanks[index] == null || _tanks[index].gameObject.scene.handle != _sceneHandle)
-                    _tanks.RemoveAt(index);
-
-            GUILayout.BeginVertical(GUI.skin.box);
-            GUILayout.Label($"氧气瓶 · 当前场景 {_tanks.Count} 个实例");
-            if (_tanks.Count == 0)
-            {
-                GUILayout.Label("当前没有氧气瓶。运行时新增道具后，可点击上方“刷新场景对象”。", _descriptionStyle);
-                GUILayout.EndVertical();
-                return;
-            }
-
-            float minimum = _tanks[0].RestoreAmount;
-            float maximum = minimum;
-            foreach (OxygenTank tank in _tanks)
-            {
-                minimum = Mathf.Min(minimum, tank.RestoreAmount);
-                maximum = Mathf.Max(maximum, tank.RestoreAmount);
-            }
-            bool mixed = !Mathf.Approximately(minimum, maximum);
-            GUILayout.Label(mixed ? $"各实例回复量不同：{minimum:F1}–{maximum:F1}；调整滑条会统一全部实例。"
-                : $"全部实例当前回复量：{minimum:F1}", _descriptionStyle);
-            float previous = _tanks[0].RestoreAmount;
-            float restore = ConsoleUi.Slider("统一回复量", previous, 0f, Mathf.Max(200f, maximum), "F1");
-            bool apply = restore != previous;
-            if (mixed && GUILayout.Button("将全部氧气瓶设为滑条当前值")) apply = true;
-            if (apply)
-                foreach (OxygenTank tank in _tanks) tank.RestoreAmount = restore;
-            GUILayout.Label("包括当前场景中暂未激活的实例；新生成的道具需刷新后再调整。", _descriptionStyle);
-            GUILayout.EndVertical();
-        }
-
         private void Refresh(Scene scene)
         {
             _sceneHandle = scene.handle;
             _player = null;
-            _oxygen = null;
             _crushGuard = null;
             _door = null;
             _colorGrade = null;
             _camera = null;
-            _tanks.Clear();
             foreach (MazeCameraFit candidate in Object.FindObjectsByType<MazeCameraFit>(
                 FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
@@ -208,16 +146,12 @@ namespace Resource.Scripts.Debugging
             }
             if (_player != null)
             {
-                _oxygen = _player.GetComponent<PlayerOxygen>();
                 _crushGuard = _player.GetComponent<CrushGuard>();
                 _colorGrade = _player.GetComponent<PlayerColorGrade>();
             }
             foreach (GoalDoor door in Object.FindObjectsByType<GoalDoor>(
                 FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (door.gameObject.scene.handle == _sceneHandle) { _door = door; break; }
-            foreach (OxygenTank tank in Object.FindObjectsByType<OxygenTank>(
-                FindObjectsInactive.Include, FindObjectsSortMode.None))
-                if (tank.gameObject.scene.handle == _sceneHandle) _tanks.Add(tank);
         }
     }
 }

@@ -1,0 +1,64 @@
+仕样书 10：组合关卡第三批（迷宫 2 关、天空 1 关），接在仕样书 9 后面做
+
+做法和仕样书 8、9 一样，只列新增的部分。设计图：设计图_迷宫_13、14，设计图_天空_3-12。
+原型页 原型/组合关卡_迷宫.html、组合关卡_天空.html 已经包含这 3 关。
+
+====================================
+一、天空 Sky_12 翻板浮台
+====================================
+
+1. 数据/sky_levels.json 追加了 Sky_12（前 11 关逐字没变）；素材/天空/level_Sky_12.png、backdrop_Sky_12.png。
+2. 只用现有机关：跷跷板 + 刺木 + 气球平台。代码不用改，重新 Build Small Levels 生成。
+
+====================================
+二、迷宫 Maze_13、Maze_14
+====================================
+
+1. MazeSceneBuilder.Maps 末尾再加两张：
+
+Maze_13 激光之字
+##########
+#P..v...X#
+######..##
+#X...v...#
+##..######
+#....v..]#
+##########
+
+Maze_14 倒之字
+#########
+####.]###
+####..###
+#.....X##
+##..#####
+#X......#
+#####..##
+#P.....X#
+#########
+
+2. 激光周期（Maze_13，index == 12）：(4,1) 亮 1.4 灭 2；(5,3) 亮 1.6 灭 1.8；(5,5) 亮 1.2 灭 2。Maze_14 没有激光。
+   两关的门都是 ]（右墙）。
+3. 素材（.meta 照 Maze_08 的设，新 GUID）：
+     素材/迷宫/Background/bg_far_Maze_13.png、bg_mid_Maze_13.png、bg_far_Maze_14.png、bg_mid_Maze_14.png
+     素材/迷宫/Exterior/exterior_shade_Maze_13.png、exterior_shade_Maze_14.png
+     素材/迷宫/Foreground/fg_layout.json 再覆盖一次（01～12 不变，加了 13、14）
+4. MazeCameraSettings 补 Maze_13、Maze_14（0 = 默认）。
+
+====================================
+三、顺序、名字、缩略图
+====================================
+
+1. LevelOrder：Maze_13、Maze_14 接在 Maze_12 后面，Sky_12 接在 Sky_11 后面，共 45 关。
+2. 关卡名：
+   level.Maze_13   激光之字   レーザージグザグ   Laser Zigzag
+   level.Maze_14   倒之字     逆さジグザグ       Upside Zigzag
+   level.Sky_12    翻板浮台   シーソーと浮き台   Seesaw Lift
+3. 缩略图：素材/Menu/Thumbs/thumb_Maze_13.png、thumb_Maze_14.png、thumb_Sky_12.png 复制过去，再跑一次 Apply Menu Presentation。
+
+====================================
+四、验证和汇报（只做这些）
+====================================
+
+1. 重新生成，ValidateGeneratedLevels 和 Validate Maze Scenes 通过。
+2. Play 走一遍：Maze_13（三道激光各按自己的周期闪）、Maze_14（往上翻着走，门在最上面的右墙）、Sky_12。
+3. 汇报 3 到 5 行，不写报告文件。

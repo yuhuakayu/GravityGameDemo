@@ -1,0 +1,146 @@
+仕样书 8：组合关卡（新加 18 关：迷宫 2、矿坑 5、岩浆 4、天空 7）
+
+每个新关卡都是把同一个世界里已有的小机关组合起来，机关本身的手感和参数一个都不改。
+关卡数据和素材已经做好、已经放进本目录；代码只有下面几处小改动，再加选关翻页。
+参考：
+  设计图/设计图_<世界>_<编号>_<名字>.png   每关一张：地形、机关、原型演示的路线、每一步怎么转
+  设计图/设计图_总览_<世界>.png            每个世界的新关卡缩略总览
+  原型/组合关卡_矿坑.html、组合关卡_岩浆.html、组合关卡_天空.html、组合关卡_迷宫.html
+      选关按钮上带"新"字的就是新关卡，点"▶ 看演示"会自动通关一遍
+
+====================================
+一、矿坑、岩浆、天空（16 关，数据驱动）
+====================================
+
+1. 数据/mine_levels.json、lava_levels.json、sky_levels.json 已经换成新文件：老的 4 关逐字没变，后面追加了
+   Mine_05～09、Lava_05～08、Sky_05～11。
+2. 素材/矿坑、岩浆、天空 里新加了 level_Mine_05～09.png、level_Lava_05～08.png、level_Sky_05～11.png、
+   backdrop_Sky_05～11.png。Sprites 没有新图。
+3. SmallLevelSceneBuilder 照现在的流程复制、生成，不用改流程。只改两处：
+   (1) 落石的第 5 个值 = 这块石头自己的延迟（秒）。
+       RockSeed 加 public float delay；Parse 里 rocks 有第 5 个值就用它，没有就用 data.rockDelay；
+       MineMechanisms.StepRocks 里松动时 rock.timer = 这块石头自己的 delay（现在是 data.rockDelay）。
+       用到的：Mine_08 右边那堆 3 块是 0.65，Mine_09 的 2 块是 0.6。老关卡没有第 5 个值，行为不变。
+   (2) 云的贴图按形状选，不按序号。
+       SkyMechanisms 生成云的 MakeVisual 现在用 "cloud_platform_" + i；改成 hy > hx 用 cloud_platform_0（竖），
+       否则 cloud_platform_1（横）。Sky_03 结果不变；Sky_08 只有一朵横云，现在会错拿竖图。
+4. ValidateGeneratedLevels 里提示文字写死的"20"改成 LevelOrder.Scenes.Length（检查逻辑本来就按 LevelOrder，不用改）。
+5. 门：Lava_06 的门在天花板上（dir 180），PlaceDoor 已经支持，不用改。
+
+====================================
+二、迷宫 Maze_09、Maze_10
+====================================
+
+1. MazeSceneBuilder.Maps 末尾加两张（上方为初始的"上"）：
+
+Maze_09 双甩
+##########
+#P......X#
+######..##
+######..##
+######..##
+#.......##
+#.......##
+#.......##
+#.......##
+#.XXXXXX##
+#.########
+#........#
+#........#
+#........#
+#.......]#
+#XXXXXXXX#
+##########
+
+Maze_10 倒甩
+##########
+#UXXXXXX##
+#.......##
+#.......##
+#.......##
+######..##
+######>.##
+######..##
+#P......##
+##########
+
+2. 激光周期：Maze_10 的 (6,6) 亮 1.2 秒、灭 1.3 秒（照现有 SetCycle 那几行加一行，index == 9）。Maze_09 没有激光。
+3. 门：Maze_09 是 ]（右墙），Maze_10 是 U（天花板），现有 PlaceDoor 已支持。尖刺照尖刺朝向修正后的规则生成。
+4. 素材（新文件，.meta 照 Maze_08 的设，用新 GUID）：
+     素材/迷宫/Background/bg_far_Maze_09.png、bg_mid_Maze_09.png、bg_far_Maze_10.png、bg_mid_Maze_10.png
+         → Assets/Resource/Mode/Cave Tileset/Background/
+     素材/迷宫/Exterior/exterior_shade_Maze_09.png、exterior_shade_Maze_10.png
+         → Assets/Resource/Mode/Cave Tileset/Exterior/
+     素材/迷宫/Foreground/fg_layout.json 覆盖 → Assets/Resource/Mode/Cave Tileset/Foreground/
+         （Maze_01～08 是项目里现在的原样，只加了 09、10）
+5. MazeCameraSettings 补 Maze_09、Maze_10（0 = 用默认镜头）。MazeSceneValidation 的循环 8 改成 Maps.Length；
+   两个生成器日志里写死的"Maze_08""二十关"改成按实际数量。
+6. maxFallSpeed 照现有规则（index >= 3 写 16），不用改。
+
+====================================
+三、关卡顺序（LevelOrder.Scenes）
+====================================
+
+"Maze_01" ～ "Maze_10",
+"Mine_01" ～ "Mine_09",
+"Lava_01" ～ "Lava_08",
+"Sky_01" ～ "Sky_11"
+共 38 关。门的下一关、Build Settings、选关列表都从这里取（现有逻辑）。
+
+====================================
+四、选关翻页
+====================================
+
+现在一个世界最多 4 张（迷宫 8 张两行）。改成：
+1. 每页最多 8 张：2 行 x 4 张。一个世界的第 p 页显示它的第 8p+1～8p+8 关。
+   这一页不超过 4 张就一行（现在的 y = 430），5～8 张两行（现在迷宫的 300 / 650）。
+   BuildRails、MakeCards 里写死的 _world==0 ? 2 : 1 都改成按当前页的张数算。
+2. 左右键：本页第一张再往左 → 有上一页就翻到上一页（选中那页最后一张），没有才切上一个世界；
+   本页最后一张再往右 → 有下一页就翻到下一页（选中第一张），没有才切下一个世界。上下键只在本页内。
+3. 翻页动画用现成的：旧卡片照 SwitchWorld 的方式松手掉走，新卡片照 MakeCards 掉下来；背景、名牌、吊灯不动。
+4. 切世界：Q/E、鼠标点 Q ◄ / ► E 一律进那个世界的第 1 页；用左键从第 1 页退到上一个世界时进它的最后一页。
+5. 进选关界面时直接打开"第一个没通关的关"所在的那一页并选中它（现在的 ToSelect 规则加上页）。
+6. 有多页时：卡片区下方正中显示页码"1 / 2"（字色用这个世界现有的提示字颜色）；轨道左右两端外侧各放一个小三角
+   ◄ ►，鼠标点它翻页，没有上/下一页的那一边不显示。只有一页时都不显示。
+7. 卡片上的编号保持现在的全局编号（01～38）。
+
+====================================
+五、关卡名（LocalizationManager，中 / 日 / 英）
+====================================
+
+level.Maze_09   双甩       ダブルスイング     Double Swing
+level.Maze_10   倒甩       逆さスイング       Reverse Swing
+level.Mine_05   石雨       石の雨             Rock Rain
+level.Mine_06   断轨       途切れたレール     Broken Rail
+level.Mine_07   塌井       崩れる縦穴         Shaft Collapse
+level.Mine_08   滚石塌方   落石と崩落         Rockslide
+level.Mine_09   大逃亡     大脱出             Great Escape
+level.Lava_05   晃开再追   揺らして逃げろ     Shake and Run
+level.Lava_06   倒灌       逆流               Backflow
+level.Lava_07   封口追击   封鎖と追跡         Seal and Chase
+level.Lava_08   两间熔炉   ふたつの炉         Twin Furnaces
+level.Sky_05    翻板接云   シーソーと雲       Seesaw Cloud
+level.Sky_06    雷云       機雷雲             Mine Cloud
+level.Sky_07    升降雷阵   浮かぶ機雷原       Rising Mines
+level.Sky_08    滑降       滑降               Slalom
+level.Sky_09    翻板雷阵   シーソー機雷       Seesaw Mines
+level.Sky_10    双浮台     ふたつの足場       Twin Lifts
+level.Sky_11    天空大回环 空の大回転         Sky Loop
+
+====================================
+六、选关缩略图
+====================================
+
+素材/Menu/Thumbs/thumb_<场景名>.png（18 张，84x56，和现有的同一种画法）
+  → Assets/Resource/Art/UI/Pixel/Menu/Thumbs/，再跑一次 Tools/Gravity Game/UI/Apply Menu Presentation 收进 MenuArt。
+
+====================================
+七、验证和汇报（只做这些）
+====================================
+
+1. 编译无错误；Build Maze Scenes、Build Small Levels 各跑一次，生成上面 18 个新场景；
+   ValidateGeneratedLevels 和 Validate Maze Scenes 通过。
+2. 挑 4 关进 Play，照设计图的路线走一遍能通关：Mine_08（两堆石头先后滚）、Lava_06（门在天花板）、
+   Sky_08（那朵云是横图）、Maze_10（激光 1.2 亮 / 1.3 灭）。
+3. 选关：矿坑翻到第 2 页再翻回来；天空最后一页往右切到下一个世界；进选关时停在第一个没通关的关那一页。
+4. 汇报 3 到 5 行，不写报告文件。

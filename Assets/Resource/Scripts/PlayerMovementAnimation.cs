@@ -15,9 +15,13 @@ namespace Resource.Scripts
         private static readonly int IsFloatingId = Animator.StringToHash("IsFloating");
         private static readonly int IdleStateId = Animator.StringToHash("Base Layer.Idle");
         private static readonly int LandStateId = Animator.StringToHash("Base Layer.Land");
+        private static readonly int DieStateId = Animator.StringToHash("Base Layer.Die");
         private float _airborneTime;
+        private int _landingFeedbackVersion;
+        private bool _landingFeedbackPending;
         private bool _pausedForDeath;
         private float _speedBeforeDeath;
+        private AnimatorUpdateMode _updateModeBeforeDeath;
 
         public bool IsFloating { get; private set; }
 
@@ -31,6 +35,8 @@ namespace Resource.Scripts
         {
             if (UpdateDeathPause()) return;
             _airborneTime = 0f;
+            _landingFeedbackVersion = player != null ? player.LandingFeedbackVersion : 0;
+            _landingFeedbackPending = false;
             SetFloating(false, true);
         }
 
@@ -50,14 +56,19 @@ namespace Resource.Scripts
             if (player == null || !player.IsGameplayActive)
             {
                 _airborneTime = 0f;
+                _landingFeedbackVersion = player != null ? player.LandingFeedbackVersion : 0;
+                _landingFeedbackPending = false;
                 if (IsFloating) SetFloating(false, true);
                 return;
             }
 
+            _landingFeedbackPending |= _landingFeedbackVersion != player.LandingFeedbackVersion;
+            _landingFeedbackVersion = player.LandingFeedbackVersion;
             if (grounded)
             {
                 _airborneTime = 0f;
-                SetFloating(false);
+                SetFloating(false, IsFloating && !_landingFeedbackPending, _landingFeedbackPending);
+                _landingFeedbackPending = false;
                 return;
             }
 
@@ -73,22 +84,43 @@ namespace Resource.Scripts
                 if (dead && !_pausedForDeath)
                 {
                     _speedBeforeDeath = animator.speed;
+                    _updateModeBeforeDeath = animator.updateMode;
                     animator.speed = 0f;
                     _pausedForDeath = true;
                 }
                 else if (!dead && _pausedForDeath)
                 {
                     animator.speed = _speedBeforeDeath;
+                    animator.updateMode = _updateModeBeforeDeath;
                     _pausedForDeath = false;
                 }
             }
             return dead;
         }
 
-        private void SetFloating(bool floating, bool reset = false)
+        public void FreezeForDeath()
+        {
+            if (player == null) player = GetComponent<PlayerController>();
+            if (animator == null) animator = GetComponentInChildren<Animator>();
+            UpdateDeathPause();
+        }
+
+        public float PlayDeath()
+        {
+            FreezeForDeath();
+            if (animator == null || animator.runtimeAnimatorController == null || !animator.HasState(0, DieStateId))
+                return 0f;
+            animator.updateMode = AnimatorUpdateMode.UnscaledTime;
+            animator.speed = 1f;
+            animator.Play(DieStateId, 0, 0f);
+            animator.Update(0f);
+            return animator.GetCurrentAnimatorStateInfo(0).length;
+        }
+
+        private void SetFloating(bool floating, bool reset = false, bool forceLanding = false)
         {
             if (player != null && player.IsDead) return;
-            if (IsFloating == floating && !reset) return;
+            if (IsFloating == floating && !reset && !forceLanding) return;
             IsFloating = floating;
             if (animator == null || animator.runtimeAnimatorController == null) return;
 

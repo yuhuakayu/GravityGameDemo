@@ -35,7 +35,7 @@ namespace GravityGame.Tests.PlayMode
                 string[,] clips = {
                     { "_landClip", "sfx_land" }, { "_heavyLandClip", "sfx_land_heavy" },
                     { "_wallBumpClip", "sfx_wall_bump" }, { "_playerDeathClip", "sfx_death_suffocate" },
-                    { "_oxygenPickupClip", "sfx_oxygen_pickup" }, { "_doorOpenClip", "sfx_door_open" },
+                    { "_doorOpenClip", "sfx_door_open" },
                     { "_uiMoveClip", "sfx_ui_move" }, { "_buttonClickClip", "sfx_ui_confirm" },
                     { "_uiBackClip", "sfx_ui_back" }, { "_uiErrorClip", "sfx_ui_error" },
                     { "_stageCompleteClip", "sfx_level_clear" }, { "ambientCaveClip", "sfx_ambient_cave_loop" },
@@ -68,12 +68,7 @@ namespace GravityGame.Tests.PlayMode
                 yield return Observe(sfx, "UI move API", () => Call(sfx, "PlayUIMove"));
                 yield return Observe(sfx, "UI confirm API", () => Call(sfx, "PlayButtonClick"));
 
-                Component oxygen = Find("PlayerOxygen"), tank = Find("OxygenTank"), hud = Find("GameHUD");
-                Call(oxygen, "TryConsume", 20f);
-                float beforeOxygen = Property<float>(oxygen, "CurrentOxygen");
-                yield return Observe(sfx, "OxygenTank.TryCollect", () =>
-                    Assert.That((bool)Call(tank, "TryCollect", oxygen), Is.True));
-                Assert.That(Property<float>(oxygen, "CurrentOxygen"), Is.GreaterThan(beforeOxygen));
+                Component hud = Find("GameHUD");
                 yield return Observe(sfx, "GameHUD.OpenPause", () => Call(hud, "OpenPause"));
                 Assert.That(Time.timeScale, Is.Zero);
                 Assert.That(ambient.isPlaying || fall.isPlaying, Is.False);
@@ -151,7 +146,6 @@ namespace GravityGame.Tests.PlayMode
             Set(player, "autoMoveMode", false);
             Set(player, "rumbleEnabled", false);
             player.GetComponent<Rigidbody2D>().simulated = false;
-            Find("PlayerOxygen").GetType().GetProperty("DrainPerSecond").SetValue(Find("PlayerOxygen"), 0f);
             return player;
         }
 

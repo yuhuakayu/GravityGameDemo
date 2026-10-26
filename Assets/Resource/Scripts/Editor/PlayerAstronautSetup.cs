@@ -36,11 +36,13 @@ namespace Resource.Scripts.Editor
                 Sprite[] fallStartSprites = PrepareSheet(ArtPath + "Player/player_fallstart.png", 2);
                 Sprite[] floatSprites = PrepareSheet(ArtPath + "Player/player_float.png", 6);
                 Sprite[] landSprites = PrepareSheet(ArtPath + "Player/player_land.png", 3);
+                Sprite[] dieSprites = PrepareSheet(ArtPath + "Player/player_die.png", 3);
                 AnimationClip idle = PrepareClip("Astronaut_Idle", idleSprites, 0.2f);
                 AnimationClip fallStart = PrepareClip("Astronaut_FallStart", fallStartSprites, 0.06f, false);
                 AnimationClip floating = PrepareClip("Astronaut_Float", floatSprites, 0.09f);
                 AnimationClip land = PrepareClip("Astronaut_Land", landSprites, 0.07f, false);
-                AnimatorController controller = PrepareController(idle, fallStart, floating, land);
+                AnimationClip die = PrepareClip("Astronaut_Die", dieSprites, 0.08f, false);
+                AnimatorController controller = PrepareController(idle, fallStart, floating, land, die);
                 foreach (string guid in AssetDatabase.FindAssets("t:Scene", new[] { "Assets/Scenes" }))
                     InstallInScene(AssetDatabase.GUIDToAssetPath(guid), idleSprites[0], controller);
                 AssetDatabase.SaveAssets();
@@ -50,7 +52,25 @@ namespace Resource.Scripts.Editor
                 if (previous.IsValid() && previous.isLoaded) SceneManager.SetActiveScene(previous);
                 Undo.CollapseUndoOperations(undoGroup);
             }
-            Debug.Log("[Astronaut] Installed Idle / FallStart / Float / Land in all player scenes.");
+            Debug.Log("[Astronaut] Installed Idle / FallStart / Float / Land / Die in all player scenes.");
+        }
+
+        [MenuItem("Tools/Gravity Game/Player/Install Death Animation")]
+        public static void InstallDeathAnimation()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Stop Play mode before installing the death animation.");
+            var sprites = PrepareSheet(ArtPath + "Player/player_die.png", 3);
+            AnimationClip clip = PrepareClip("Astronaut_Die", sprites, .08f, false);
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(AnimationPath + "Astronaut.controller");
+            if (controller == null) throw new FileNotFoundException("Missing player animator controller.");
+            var machine = controller.layers[0].stateMachine;
+            var state = machine.states.FirstOrDefault(s => s.state.name == "Die").state
+                ?? machine.AddState("Die", new Vector3(760f, 240f));
+            state.motion = clip;
+            foreach (var transition in state.transitions) state.RemoveTransition(transition);
+            EditorUtility.SetDirty(controller);
+            AssetDatabase.SaveAssets();
         }
 
         private static Sprite[] PrepareSheet(string path, int count)
@@ -130,7 +150,7 @@ namespace Resource.Scripts.Editor
             return clip;
         }
 
-        private static AnimatorController PrepareController(AnimationClip idle, AnimationClip fallStart, AnimationClip floating, AnimationClip land)
+        private static AnimatorController PrepareController(AnimationClip idle, AnimationClip fallStart, AnimationClip floating, AnimationClip land, AnimationClip die)
         {
             string path = AnimationPath + "Astronaut.controller";
             var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
@@ -141,7 +161,7 @@ namespace Resource.Scripts.Editor
             AnimatorStateMachine machine = controller.layers[0].stateMachine;
             Undo.RegisterCompleteObjectUndo(machine, UndoName);
             foreach (var child in machine.states)
-                if (child.state.name != "Idle" && child.state.name != "FallStart" && child.state.name != "Float" && child.state.name != "Land")
+                if (child.state.name != "Idle" && child.state.name != "FallStart" && child.state.name != "Float" && child.state.name != "Land" && child.state.name != "Die")
                     machine.RemoveState(child.state);
             AnimatorState idleState = machine.states.FirstOrDefault(s => s.state.name == "Idle").state
                 ?? machine.AddState("Idle", new Vector3(240f, 80f));
@@ -151,10 +171,13 @@ namespace Resource.Scripts.Editor
                 ?? machine.AddState("Float", new Vector3(760f, 80f));
             AnimatorState landState = machine.states.FirstOrDefault(s => s.state.name == "Land").state
                 ?? machine.AddState("Land", new Vector3(500f, 240f));
+            AnimatorState dieState = machine.states.FirstOrDefault(s => s.state.name == "Die").state
+                ?? machine.AddState("Die", new Vector3(760f, 240f));
             idleState.motion = idle;
             fallStartState.motion = fallStart;
             floatState.motion = floating;
             landState.motion = land;
+            dieState.motion = die;
             machine.defaultState = idleState;
             foreach (var child in machine.states)
                 foreach (var transition in child.state.transitions) child.state.RemoveTransition(transition);

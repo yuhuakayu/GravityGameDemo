@@ -69,6 +69,24 @@ namespace Resource.Tests.Gyro
         }
 
         [Test]
+        public void JoyConWheelAxisMetadata_RoundTripsAndLegacyCsvDefaultsToGravityAxis()
+        {
+            string path;
+            using (var recorder = new GyroRecorder(_directory))
+            {
+                path = recorder.Start(useJoyConWheelAxis: true);
+                recorder.Append(ValidSample());
+            }
+            Assert.That(GyroRecording.Load(path).UseJoyConWheelAxis, Is.True);
+            Assert.That(File.ReadAllLines(path)[1], Is.EqualTo("#joyConWheelAxis,1"));
+            Assert.That(new GyroRecording(new[] { ValidSample() }, useJoyConWheelAxis: true).UseJoyConWheelAxis, Is.True);
+
+            string legacyPath = WriteCsv(GyroRecording.CsvHeader + "\n0.004,1,0,0,0,1,0,0,-1,0\n");
+            Assert.That(GyroRecording.Load(legacyPath).UseJoyConWheelAxis, Is.False);
+            Assert.That(new GyroRecording(new[] { ValidSample() }).UseJoyConWheelAxis, Is.False);
+        }
+
+        [Test]
         public void CurrentCultureWithDecimalComma_DoesNotChangeCsvFormatOrParsing()
         {
             CultureInfo previous = CultureInfo.CurrentCulture;

@@ -35,6 +35,13 @@ namespace Resource.Scripts
         private Rigidbody2D _worldBody;
         private PlayerController _player;
         private float _phase;
+        [SerializeField] private bool externalBeam;
+
+        public void UseExternalBeam()
+        {
+            externalBeam = true;
+            RefreshBeam();
+        }
 
         public float BeamLength { get; private set; }
         public bool IsBeamActive { get; private set; }
@@ -67,6 +74,7 @@ namespace Resource.Scripts
 
         private void Awake()
         {
+            beamColor = DangerVisual.Red();
             EnsureBeam();
             _player = FindFirstObjectByType<PlayerController>();
             RefreshBeam();
@@ -90,6 +98,12 @@ namespace Resource.Scripts
         public void RefreshBeam()
         {
             if (beamCollider == null || core == null || glow == null) return;
+            if (externalBeam)
+            {
+                IsBeamActive = false;
+                core.enabled = glow.enabled = beamCollider.enabled = false;
+                return;
+            }
 
             Vector2 origin = transform.TransformPoint(muzzleOffset);
             Vector2 direction = transform.right;

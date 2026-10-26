@@ -206,7 +206,7 @@ MonoBehaviour:
   pauseAutoMoveWhileRotating: 1
   autoMoveResumeDelay: 0.15
   autoMoveRotationSource: {fileID: 0}
-  deathFlashDuration: 0.5
+  deathFlashDuration: 0.15
   deathFlashColor: {r: 1, g: 0, b: 0, a: 1}
   deathFlashPeakGlow: 40
 --- !u!61 &63284241

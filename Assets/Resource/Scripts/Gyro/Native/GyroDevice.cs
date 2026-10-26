@@ -24,8 +24,10 @@ namespace Resource.Scripts.Gyro
         private readonly object _stateLock = new object();
         private readonly ConcurrentQueue<GyroSample> _samples = new ConcurrentQueue<GyroSample>();
         private readonly ManualResetEventSlim _stop = new ManualResetEventSlim();
+        private readonly GyroCalibration _joyConStartupCalibration = new GyroCalibration(true);
         private Thread _worker;
         private int _selectedHandle = -1;
+        private int _selectedType;
         private int _queuedCount;
         private int _droppedSamples;
         private int _pressedButtons;
@@ -41,9 +43,18 @@ namespace Resource.Scripts.Gyro
         private GyroControllerState _controls;
         private volatile bool _disposed;
         private bool _started;
+        private bool _joyConInitialized;
+        private int _calibratedJoyConHandle = -1;
+        private int _calibratedJoyConType;
+        private Vector3 _joyConBias;
 
         public static double NowSeconds => (double)Stopwatch.GetTimestamp() / Stopwatch.Frequency;
         public bool IsConnected => Volatile.Read(ref _selectedHandle) >= 0 && SampleAgeSeconds <= StaleAfterSeconds;
+        public int ControllerType => Volatile.Read(ref _selectedType);
+        public int ControllerHandle => Volatile.Read(ref _selectedHandle);
+        public int ConnectionGeneration => Volatile.Read(ref _connectionGeneration);
+        public bool IsJoyCon => ControllerType == JslNative.JoyConLeft || ControllerType == JslNative.JoyConRight;
+        public bool IsRightJoyCon => ControllerType == JslNative.JoyConRight;
         public bool CallbackRunning => IsConnected;
         public bool WorkerRunning => _worker != null && _worker.IsAlive;
         public int QueueCount => Math.Max(0, Volatile.Read(ref _queuedCount));
@@ -132,7 +143,9 @@ namespace Resource.Scripts.Gyro
                     {
                         nextDiscovery = now + 2.0;
                         int handle = Volatile.Read(ref _selectedHandle);
-                        if (handle < 0 || !JslNative.JslStillConnected(handle) || SampleAgeSeconds > StaleAfterSeconds)
+                        // Reopening a live Joy-Con on a short report gap interrupts its HID thread.
+                        if (handle < 0 || !JslNative.JslStillConnected(handle) ||
+                            (!IsJoyCon && SampleAgeSeconds > StaleAfterSeconds))
                             DiscoverDevice();
                     }
                     _stop.Wait(10);
@@ -168,37 +181,56 @@ namespace Resource.Scripts.Gyro
             int found = JslNative.JslGetConnectedDeviceHandles(handles, handles.Length);
             int selected = -1;
             int selectedType = 0;
+            int selectedPriority = 0;
             for (int i = 0; i < found; i++)
             {
                 int type = JslNative.JslGetControllerType(handles[i]);
-                if (type != JslNative.DualSense && type != JslNative.DualShock4) continue;
-                if (selected < 0 || type == JslNative.DualSense)
+                // Use one sensor stream. Prefer the trial Joy-Con, retaining Sony fallback.
+                int priority = type == JslNative.JoyConRight ? 4 : type == JslNative.JoyConLeft ? 3 :
+                    type == JslNative.DualSense ? 2 : type == JslNative.DualShock4 ? 1 : 0;
+                if (priority > selectedPriority)
                 {
                     selected = handles[i];
                     selectedType = type;
-                    if (type == JslNative.DualSense) break;
+                    selectedPriority = priority;
                 }
             }
             if (selected < 0)
             {
                 ResetConnection();
-                SetStatus("未检测到 DualSense / DualShock 4，每 2 秒重试");
+                SetStatus("未检测到 Joy-Con / DualSense / DualShock 4，每 2 秒重试");
                 return;
             }
             if (selected == Volatile.Read(ref _selectedHandle)) return;
 
-            // The pure managed calibration owns all zero-offset changes. Keep input in local space.
+            string transport = WindowsControllerTransport.Find(selectedType);
+            bool resumeJoyCon;
+            Vector3 offset;
+            lock (_stateLock)
+            {
+                // Bluetooth paths retain their JSL handle within this service's lifetime.
+                // Do not reuse offsets across USB ports or another controller.
+                resumeJoyCon = transport == "蓝牙" && selected == _calibratedJoyConHandle &&
+                    selectedType == _calibratedJoyConType;
+                offset = resumeJoyCon ? _joyConBias : Vector3.zero;
+            }
+            ResetConnection();
+            // Keep local sensor axes. Joy-Con learns its initial offset before streaming samples;
+            // Sony devices continue to use the managed runtime calibration only.
             JslNative.JslSetGyroSpace(selected, 0);
             JslNative.JslSetAutomaticCalibration(selected, false);
             JslNative.JslPauseContinuousCalibration(selected);
-            JslNative.JslSetCalibrationOffset(selected, 0, 0, 0);
-            string transport = WindowsControllerTransport.Find(selectedType);
-            ResetConnection();
+            JslNative.JslSetCalibrationOffset(selected, offset.x, offset.y, offset.z);
             lock (_stateLock)
             {
-                _model = selectedType == JslNative.DualSense ? "DualSense" : "DualShock 4";
+                _model = selectedType == JslNative.JoyConRight ? "Joy-Con (R)" :
+                    selectedType == JslNative.JoyConLeft ? "Joy-Con (L)" :
+                    selectedType == JslNative.DualSense ? "DualSense" : "DualShock 4";
                 _transport = transport;
                 _status = "已连接，等待传感器样本";
+                Volatile.Write(ref _selectedType, selectedType);
+                _joyConInitialized = resumeJoyCon;
+                if (IsJoyCon && !resumeJoyCon) _joyConStartupCalibration.BeginManualCalibration();
             }
             Volatile.Write(ref _selectedHandle, selected);
         }
@@ -267,6 +299,25 @@ namespace Resource.Scripts.Gyro
                 do { oldEdges = Volatile.Read(ref _pressedButtons); }
                 while (Interlocked.CompareExchange(ref _pressedButtons, oldEdges | edges, oldEdges) != oldEdges);
                 Interlocked.Exchange(ref _lastSampleTicks, nowTicks);
+                if (IsJoyCon && !_joyConInitialized)
+                {
+                    // Native gravity can drift before this large initial bias is removed.
+                    _joyConStartupCalibration.Process(new GyroSample(deltaTime, gyro, acceleration,
+                        -acceleration.normalized, now));
+                    _status = "Joy-Con 初始化：请平放静止 3 秒";
+                    if (_joyConStartupCalibration.IsCalibrated)
+                    {
+                        Vector3 bias = _joyConStartupCalibration.Bias;
+                        JslNative.JslSetCalibrationOffset(deviceId, bias.x, bias.y, bias.z);
+                        _calibratedJoyConHandle = deviceId;
+                        _calibratedJoyConType = _selectedType;
+                        _joyConBias = bias;
+                        _joyConInitialized = true;
+                        _status = "传感器运行中";
+                    }
+                    // This packet still contains the old offset; only later packets are safe.
+                    return;
+                }
                 _samples.Enqueue(new GyroSample(deltaTime, gyro, acceleration, gravity, now));
                 int queueCount = Interlocked.Increment(ref _queuedCount);
                 if (queueCount > MaximumQueuedSamples && _samples.TryDequeue(out _))
@@ -283,6 +334,7 @@ namespace Resource.Scripts.Gyro
             {
                 Interlocked.Increment(ref _connectionGeneration);
                 Volatile.Write(ref _selectedHandle, -1);
+                Volatile.Write(ref _selectedType, 0);
                 Interlocked.Exchange(ref _lastSampleTicks, 0);
                 Interlocked.Exchange(ref _lastArrivalTicks, 0);
                 Interlocked.Exchange(ref _pressedButtons, 0);
@@ -293,6 +345,8 @@ namespace Resource.Scripts.Gyro
                 _rateWindowStart = 0;
                 _model = "未连接";
                 _transport = "未知";
+                _joyConInitialized = false;
+                _joyConStartupCalibration.Reset();
             }
         }
 

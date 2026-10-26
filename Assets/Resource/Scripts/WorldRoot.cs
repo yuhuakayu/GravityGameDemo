@@ -42,6 +42,15 @@ namespace Resource.Scripts
         private readonly List<AttachedGeometryBody> _attachedBodies = new List<AttachedGeometryBody>();
         private Collider2D[] _movingGeometry;
         private bool _hasIndependentPendulumGeometry;
+        private Rigidbody2D[] _transportBodies = new Rigidbody2D[0];
+        private readonly Dictionary<Rigidbody2D, float> _independentSwingTravel = new Dictionary<Rigidbody2D, float>();
+        private bool _pendingDirectPose;
+        private Vector2 _directPosition;
+        private float _directAngle;
+        private float _directStep;
+        private bool _wheelPhysicsLimitsActive;
+        private float _previousMaxTranslation;
+        private float _previousMaxRotation;
         public Vector2 NextPosition { get; private set; }
         public float NextAngle { get; private set; }
         public bool HasPendingPhysicsPose { get; private set; }
@@ -145,8 +154,9 @@ namespace Resource.Scripts
 
         void Update()
         {
-            SynchronizeActualAngle();
+            SynchronizeActualAngle(true);
             WorldRotationCommand command = _rotationInput.Evaluate(this);
+            if (!_rotationInput.DirectAngleActive) RestoreWheelPhysicsLimits();
             if (_inputRevision != _rotationInput.ContinuityRevision)
             {
                 DiscardPendingRotation();
@@ -205,9 +215,9 @@ namespace Resource.Scripts
 
         public void StepPhysics(float dt)
         {
+            SynchronizeActualAngle(true);
             HasPendingPhysicsPose = false;
             LastAppliedStepAngle = 0f;
-            SynchronizeActualAngle();
             // Recheck live gameplay gates: Update may not run between consecutive physics steps.
             if (dt <= 0f || _rotationInput == null || _rotationInput.IsGameplayBlocked(this))
             {
@@ -224,10 +234,15 @@ namespace Resource.Scripts
                 _incrementalTarget = false;
             }
 
-            float stepLimit = Mathf.Min(Mathf.Max(0f, maxAngularSpeed) * dt,
-                Mathf.Max(0.01f, maxStepAngle));
-            float clockwiseStep = Mathf.Clamp(_targetClockwiseAngle - ClockwiseAngleReadout,
-                -stepLimit, stepLimit);
+            bool directAngle = _rotationInput.DirectAngleActive;
+            float clockwiseStep = _targetClockwiseAngle - ClockwiseAngleReadout;
+            if (!directAngle)
+            {
+                RestoreWheelPhysicsLimits();
+                float stepLimit = Mathf.Min(Mathf.Max(0f, maxAngularSpeed) * dt,
+                    Mathf.Max(0.01f, maxStepAngle));
+                clockwiseStep = Mathf.Clamp(clockwiseStep, -stepLimit, stepLimit);
+            }
             float unityStep = -clockwiseStep;
             Vector2 nextPosition = _body.position;
             Vector3? pivotPosition = ResolveFramePivot();
@@ -238,7 +253,7 @@ namespace Resource.Scripts
             // Root transport must not consume the entire shared travel budget every step:
             // an independently simulated board needs room to respond to gravity afterwards.
             float rootTravelFraction = maxPointTravelFraction * (_hasIndependentPendulumGeometry ? .7f : 1f);
-            if (useGeometrySafetyClamp)
+            if (useGeometrySafetyClamp && !directAngle)
                 unityStep = KinematicMotionSafety.ClampRotationStep(_movingGeometry, center, unityStep,
                     _autoPlayer, rootTravelFraction);
             if (pivotPosition.HasValue)
@@ -247,34 +262,49 @@ namespace Resource.Scripts
                     * (Vector3)(_body.position - center));
             }
 
-            // Unity only uses the final MoveRotation request in one physics step. A loop here
-            // would NOT create collision substeps. Limit each real FixedUpdate and retain the
-            // remaining target for subsequent simulations, without Physics2D.Simulate/global edits.
-            _body.MovePosition(nextPosition);
-            float nextAngle = _body.rotation + unityStep;
-            _body.MoveRotation(nextAngle);
-            NextPosition = nextPosition;
-            NextAngle = nextAngle;
-            HasPendingPhysicsPose = true;
-            LastAppliedStepAngle = unityStep;
-            if (Mathf.Abs(unityStep) > 0.000001f)
+            try
             {
-                IsRotating = true;
-                _lastRotationTime = Time.realtimeSinceStartupAsDouble;
+                // Each request still uses one real physics update. Wheel input owns the absolute
+                // angle; other inputs retain their bounded steps instead of chasing a wheel target.
+                if (directAngle) PrepareWheelPhysicsLimits(center, unityStep, nextPosition);
+                _body.MovePosition(nextPosition);
+                float nextAngle = _body.rotation + unityStep;
+                _body.MoveRotation(nextAngle);
+                _pendingDirectPose = directAngle;
+                if (directAngle)
+                {
+                    _directPosition = nextPosition;
+                    _directAngle = nextAngle;
+                    _directStep = unityStep;
+                }
+                NextPosition = nextPosition;
+                NextAngle = nextAngle;
+                HasPendingPhysicsPose = true;
+                LastAppliedStepAngle = unityStep;
+                if (Mathf.Abs(unityStep) > 0.000001f)
+                {
+                    IsRotating = true;
+                    _lastRotationTime = Time.realtimeSinceStartupAsDouble;
+                }
+                else IsRotating = Time.realtimeSinceStartupAsDouble - _lastRotationTime <= GyroProcessor.HoldSeconds;
+                Quaternion nextOrientation = Quaternion.Euler(0f, 0f, nextAngle);
+                foreach (AttachedGeometryBody geometry in _attachedBodies)
+                {
+                    if (geometry.Body == null || !geometry.Body.gameObject.activeInHierarchy) continue;
+                    // A Composite requires its own body. Drive its absolute target explicitly:
+                    // applying a delta to its already-parented pose could apply the root twice.
+                    geometry.Body.MovePosition(nextPosition + (Vector2)(nextOrientation * (Vector3)geometry.Offset));
+                    geometry.Body.MoveRotation(nextAngle + geometry.RelativeAngle);
+                }
             }
-            else IsRotating = Time.realtimeSinceStartupAsDouble - _lastRotationTime <= GyroProcessor.HoldSeconds;
-            Quaternion nextOrientation = Quaternion.Euler(0f, 0f, nextAngle);
-            foreach (AttachedGeometryBody geometry in _attachedBodies)
+            catch
             {
-                if (geometry.Body == null || !geometry.Body.gameObject.activeInHierarchy) continue;
-                // A Composite requires its own body. Drive its absolute target explicitly:
-                // applying a delta to its already-parented pose could apply the root twice.
-                geometry.Body.MovePosition(nextPosition + (Vector2)(nextOrientation * (Vector3)geometry.Offset));
-                geometry.Body.MoveRotation(nextAngle + geometry.RelativeAngle);
+                RestoreWheelPhysicsLimits();
+                throw;
             }
         }
 
-        /// <summary>Queue the latest clockwise target; physics applies it over bounded real steps.</summary>
+        /// <summary>Queue the latest clockwise target for the next real physics update.</summary>
         public void SetTargetAngle(float clockwiseAngle)
         {
             if (float.IsNaN(clockwiseAngle) || float.IsInfinity(clockwiseAngle)) return;
@@ -288,18 +318,36 @@ namespace Resource.Scripts
             HasPendingPhysicsPose = false;
             LastAppliedStepAngle = 0f;
             _incrementalTarget = false;
-            SynchronizeActualAngle();
+            // Disable / recenter can occur after simulation but before the next Update.
+            // An observed angular change proves this is not an unsimulated equal-endpoint turn.
+            bool directPoseMoved = _pendingDirectPose && _body != null &&
+                Mathf.Abs(Mathf.DeltaAngle(_lastBodyAngle, _body.rotation)) > .00001f;
+            SynchronizeActualAngle(directPoseMoved);
+            bool cancelDirectPose = _pendingDirectPose;
+            _pendingDirectPose = false;
+            RestoreWheelPhysicsLimits();
             _pendingAudioDegrees = 0f;
             _lastRotateSpeed = 0f;
             _targetClockwiseAngle = -_steeringAngle;
             if (_body == null) return;
+            _lastBodyAngle = _body.rotation;
             NextPosition = _body.position;
             NextAngle = _body.rotation;
+            if (cancelDirectPose)
+            {
+                _body.MovePosition(_body.position);
+                _body.MoveRotation(_body.rotation);
+            }
             _body.linearVelocity = Vector2.zero;
             _body.angularVelocity = 0f;
             foreach (AttachedGeometryBody geometry in _attachedBodies)
             {
                 if (geometry.Body == null) continue;
+                if (cancelDirectPose)
+                {
+                    geometry.Body.MovePosition(geometry.Body.position);
+                    geometry.Body.MoveRotation(geometry.Body.rotation);
+                }
                 geometry.Body.linearVelocity = Vector2.zero;
                 geometry.Body.angularVelocity = 0f;
             }
@@ -319,6 +367,7 @@ namespace Resource.Scripts
         {
             var geometry = new List<Collider2D>(GetComponentsInChildren<Collider2D>(true));
             _hasIndependentPendulumGeometry = false;
+            _independentSwingTravel.Clear();
             // These boards have independent bodies outside the root hierarchy, but their hinges
             // and reference axes follow it. Include them in the root's transport travel budget.
             foreach (var pendulum in FindObjectsByType<PivotPendulum>(FindObjectsInactive.Include, FindObjectsSortMode.None))
@@ -328,9 +377,60 @@ namespace Resource.Scripts
                         if (!geometry.Contains(collider)) geometry.Add(collider);
                         if (collider.enabled && !collider.isTrigger && collider.gameObject.activeInHierarchy &&
                             collider.attachedRigidbody != _body)
+                        {
                             _hasIndependentPendulumGeometry = true;
+                            Rigidbody2D body = collider.attachedRigidbody;
+                            if (body != null)
+                            {
+                                float swingTravel = 2f * (Vector2.Distance(body.position, collider.bounds.center) + collider.bounds.extents.magnitude);
+                                if (!_independentSwingTravel.TryGetValue(body, out float previous) || swingTravel > previous)
+                                    _independentSwingTravel[body] = swingTravel;
+                            }
+                        }
                     }
             _movingGeometry = geometry.ToArray();
+            var bodies = new HashSet<Rigidbody2D>(GetComponentsInChildren<Rigidbody2D>(true));
+            foreach (Collider2D collider in _movingGeometry)
+                if (collider != null && collider.attachedRigidbody != null)
+                    bodies.Add(collider.attachedRigidbody);
+            bodies.RemoveWhere(body => body == null || body.GetComponent<PlayerController>() != null);
+            _transportBodies = new List<Rigidbody2D>(bodies).ToArray();
+        }
+
+        private void PrepareWheelPhysicsLimits(Vector2 center, float step, Vector2 rootPosition)
+        {
+            if (!_wheelPhysicsLimitsActive)
+            {
+                RefreshMotionGeometry();
+                _previousMaxTranslation = Physics2D.maxTranslationSpeed;
+                _previousMaxRotation = Physics2D.maxRotationSpeed;
+                _wheelPhysicsLimitsActive = true;
+            }
+            // These engine limits are per physics update, not degrees/units per second.
+            // Include independently driven geometry so its transport reaches the same NextPose.
+            float travel = Vector2.Distance(_body.position, rootPosition);
+            Quaternion rotation = Quaternion.Euler(0f, 0f, step);
+            foreach (Rigidbody2D body in _transportBodies)
+            {
+                if (body == null || !body.gameObject.activeInHierarchy || body == _body) continue;
+                Vector2 transported = center + (Vector2)(rotation * (Vector3)(body.position - center));
+                _independentSwingTravel.TryGetValue(body, out float swingTravel);
+                travel = Mathf.Max(travel, Vector2.Distance(body.position, transported) + swingTravel);
+            }
+            Physics2D.maxTranslationSpeed = Mathf.Max(_previousMaxTranslation, travel + .01f);
+            float rotationTravel = Mathf.Abs(step);
+            // Independently moving boards may add their own swing to the root's transport.
+            if (_transportBodies.Length > _attachedBodies.Count + 1)
+                rotationTravel = Mathf.Max(rotationTravel, 180f);
+            Physics2D.maxRotationSpeed = Mathf.Max(_previousMaxRotation, rotationTravel + .01f);
+        }
+
+        private void RestoreWheelPhysicsLimits()
+        {
+            if (!_wheelPhysicsLimitsActive) return;
+            Physics2D.maxTranslationSpeed = _previousMaxTranslation;
+            Physics2D.maxRotationSpeed = _previousMaxRotation;
+            _wheelPhysicsLimitsActive = false;
         }
 
         private void CacheAttachedGeometryBodies()
@@ -404,11 +504,21 @@ namespace Resource.Scripts
             return target;
         }
 
-        private void SynchronizeActualAngle()
+        private void SynchronizeActualAngle(bool allowCompletedDirectPose = false)
         {
             if (_body == null) return;
             InitializeAngle();
+            // A getter can run after MoveRotation but before simulation. Only the next Update /
+            // FixedUpdate may confirm the scheduled pose, including a full turn with equal endpoints.
+            if (_pendingDirectPose && !allowCompletedDirectPose) return;
             float actualDelta = Mathf.DeltaAngle(_lastBodyAngle, _body.rotation);
+            if (_pendingDirectPose)
+            {
+                if (Mathf.Abs(Mathf.DeltaAngle(_body.rotation, _directAngle)) < .01f &&
+                    Vector2.Distance(_body.position, _directPosition) < .001f)
+                    actualDelta = _directStep;
+                _pendingDirectPose = false;
+            }
             _lastBodyAngle = _body.rotation;
             _steeringAngle += actualDelta;
             if (Mathf.Abs(actualDelta) <= 0.00001f) return;
